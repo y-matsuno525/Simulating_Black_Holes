@@ -600,27 +600,6 @@ def save_density_pair_average_animation(
     print("保存しました: {}".format(gif_path))
     plt.close(fig)
 
-# def initialize_state_vector_a_plus(eigenvectors):
-#     psi_tmp = np.zeros((L, 1), dtype=complex)
-#     j0 = int(0.7*L)
-#     sigma = 0.03*L
-#     # j0を中心としたガウシアン波束の重み
-#     weights = np.exp(-((np.arange(L) - j0) ** 2) / (2 * sigma ** 2))
-#     weights /= np.linalg.norm(weights)  # 規格化
-
-#     for j in range(L):
-#         for n in range(L):
-#             psi_tmp[n, 0] += weights[j] * (
-#             #a+
-#             #(1 - 1j)*eigenvectors[j, n].conj() + (1 + 1j)*eigenvectors[j, n+L]/2
-#             #a-
-#             (-1 - 1j)*eigenvectors[j, n].conj() + (-1 + 1j)*eigenvectors[j, n+L]/2
-#         )
-
-#     # 最終的な規格化
-#     psi_tmp /= np.linalg.norm(psi_tmp)
-#     return psi_tmp
-
 def initialize_state_vector_a_plus(eigenvectors):
     psi_tmp = np.zeros((L, 1), dtype=complex)
     if pos == "ur" or pos == "lr":
@@ -656,11 +635,8 @@ h = generate_BdG_matrix()
 #BdG行列を対角化
 eigenvalues, eigenvectors = LA.eigh(h)
 eigenvectors = adjust_eigenvectors(eigenvectors)
-eigenvalues, eigenvectors = arrange_eigenvectors(eigenvalues, eigenvectors)
-eigenvectors = fix_phase(eigenvectors)
-c_dag_c_list = generate_c_dag_c(eigenvectors)
 
-#a+から移植
+c_dag_c_list = generate_c_dag_c(eigenvectors)
 cj1_cj_list = my_operator.generate_cj_dag_cj1_dag(eigenvectors,L)
 cj1_dag_cj_list = my_operator.generate_cj_dag_cj1(eigenvectors,L)
 H_ps, H_ms = my_operator.H_p_m_K(cj1_cj_list, cj1_dag_cj_list, L, epsilon, pos)
