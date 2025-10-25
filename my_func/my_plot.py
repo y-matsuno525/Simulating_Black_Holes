@@ -134,8 +134,8 @@ def plot_density_evolution(density, diff, PBC, times, value_name):
         x_scaled = (x / (2 * np.pi)) * L
         t_scaled = (t / 20.0) * (times[-1] - times[0]) + times[0]
 
-        #plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
-        #plt.legend(loc='upper right', fontsize=12)
+        plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
+        plt.legend(loc='upper right', fontsize=12)
     except Exception as e:
         print(f"Warning: geodesic.dat の重ね描画に失敗しました: {e}")
     # ————————————————————————————————

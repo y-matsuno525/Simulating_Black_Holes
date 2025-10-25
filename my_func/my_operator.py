@@ -5,6 +5,86 @@ import scipy.linalg
 from .my_check import is_hermitian
 from .beta import beta
 
+def generate_BdG_matrix(L, m, p_val, PBC, p_const, pos, epsilon):
+
+    H = np.zeros((2*L, 2*L), dtype=complex)
+
+    def p(j):
+        if p_const:
+            return p_val
+        else:
+            return 1 - beta(j,L,pos,epsilon)
+    def dif_x_p(j):
+        return (p(j+1) - p(j-1))/2
+
+    # beta(j) の値
+    beta_vals = [beta(j,L,pos,epsilon) for j in range(L)]
+    for j in range(L):
+        print(str(j)+" : "+str(beta(j,L,pos,epsilon)))
+    # プロット
+    plt.figure(figsize=(12, 8))
+
+    # beta(j)
+    plt.subplot(3, 1, 1)
+    plt.plot(range(L), beta_vals, label='beta(j)')
+    plt.ylim(-2,2)
+    plt.title("beta(j)")
+    plt.grid()
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+    for i in range(2*L):
+        for j in range(2*L):
+            #左上
+            if i < L and j < L:
+                if i == j:
+                    H[i, j] = -1/(2*epsilon) * (2*p(i) - epsilon*(2*m + 0.5*dif_x_p(i)))*(-1)
+                elif i-j == 1:
+                    H[i, j] = -1/(2*epsilon) * (p(i) - 1j*beta(i,L,pos,epsilon))
+                elif j-i == 1:
+                    H[i, j] = -1/(2*epsilon) * (p(i) + 1j*beta(i,L,pos,epsilon))
+            #右上
+            elif i < L and j >= L:
+                if j-i == L-1:
+                    H[i, j] = -1/(2*epsilon) * (-1)
+                elif j-i == L+1:
+                    H[i, j] = -1/(2*epsilon) * (1)
+            #左下
+            elif i >= L and j < L:
+                if i-j == L-1:
+                    H[i, j] = -1/(2*epsilon) * (-1)
+                elif i-j == L+1:
+                    H[i, j] = -1/(2*epsilon) * (1)
+            #右下
+            else:
+                if i == j:
+                    H[i, j] = -1/(2*epsilon) * (2*p(i-L) - epsilon*(2*m + 2*dif_x_p(i-L)))
+                elif i-j == 1:
+                    H[i, j] = -1/(2*epsilon) * (-p(i-L) - 1j*beta(i-L,L,pos,epsilon))
+                elif j-i == 1:
+                    H[i, j] = -1/(2*epsilon) * (-p(j-L) + 1j*beta(j-L,L,pos,epsilon))
+    if PBC:
+        #周期境界条件
+        #orange
+        H[0,L-1] = 0.5*(p(L) - 1j*beta(L,L,pos,epsilon))
+        H[2*L-1,L] = -0.5*(p(L) - 1j*beta(L,L,pos,epsilon))
+        #blue
+        H[L-1,0] =  0.5*(p(L) + 1j*beta(L,L,pos,epsilon))
+        H[L,2*L-1] = -0.5*(p(L) + 1j*beta(L,L,pos,epsilon))
+        #black
+        H[0,2*L-1] = -0.5
+        H[L-1,L] = 0.5
+        #red
+        H[2*L-1,0] = -0.5
+        H[L,L-1] = 0.5
+
+    return H
+
 def generate_c_dag_c(eigenvectors, L):
     c_dag_c_list = []
     for j in range(L):
@@ -17,7 +97,7 @@ def generate_c_dag_c(eigenvectors, L):
                     for n in range(L):
                         c_dag_c_tmp[k,l] += np.conj(eigenvectors[j,n]) * eigenvectors[j,n]
         c_dag_c_list.append(c_dag_c_tmp)
-        print("cj†cj作成中:" + str(int(i/L*100))+"%")
+        print("cj†cj作成中:" + str(int(j/L*100))+"%")
     return c_dag_c_list
 
 def generate_time_evolution_operator(eigenvalues, dt, L):
@@ -70,11 +150,11 @@ def generate_cj1_cj(eigenvectors, L):
         cj1_cj_tmp = np.zeros((L, L), dtype=complex)
         for k in range(L):
             for l in range(L):
-                cj1_cj_tmp[k,l] = eigenvectors[j+1,k+L] * eigenvectors[j,l]
-                cj1_cj_tmp[k,l] += -1*eigenvectors[j+1,l] * eigenvectors[j,k+L]
+                cj1_cj_tmp[k,l] = eigenvectors[j+1,k] * eigenvectors[j,(2*L-1)-l]
+                cj1_cj_tmp[k,l] -= eigenvectors[j+1,(2*L-1)-l] * eigenvectors[j,k]
                 if k == l:
                     for n in range(L):
-                        cj1_cj_tmp[k,l] += eigenvectors[j+1,n] * eigenvectors[j,n+L]
+                        cj1_cj_tmp[k,l] += eigenvectors[j+1,(2*L-1)-n] * eigenvectors[j,n]
         cj1_cj_list.append(cj1_cj_tmp)
         print("cj1_cj作成中:" + str(int(j/L*100))+"%")
 
@@ -90,11 +170,11 @@ def generate_cj1_dag_cj(eigenvectors, L):
         cj1_dag_cj_tmp = np.zeros((L, L), dtype=complex)
         for k in range(L):
             for l in range(L):
-                cj1_dag_cj_tmp[k,l] = eigenvectors[j+1,k].conj() * eigenvectors[j,l]
-                cj1_dag_cj_tmp[k,l] += -1*eigenvectors[j+1,l+L].conj() * eigenvectors[j,k+L]
+                cj1_dag_cj_tmp[k,l] = eigenvectors[j+1,(2*L-1)-k].conj() * eigenvectors[j,(2*L-1)-l]
+                cj1_dag_cj_tmp[k,l] -= eigenvectors[j+1,l].conj() * eigenvectors[j,k]
                 if k == l:
                     for n in range(L):
-                        cj1_dag_cj_tmp[k,l] += np.conj(eigenvectors[j+1,n+L]) * eigenvectors[j,n+L]
+                        cj1_dag_cj_tmp[k,l] += np.conj(eigenvectors[j+1,n]) * eigenvectors[j,n]
         cj1_dag_cj_list.append(cj1_dag_cj_tmp)
         print("cj1†_cj作成中:" + str(int(j/L*100))+"%")
 
@@ -111,12 +191,12 @@ def H_p_m_K(cj1_cj_list, cj1_dag_cj_list, L, epsilon, pos):
     for j in range(L):
         H_p_j = np.zeros((L, L), dtype=complex)
         H_m_j = np.zeros((L, L), dtype=complex)
-    
+
         #cj+1_cjからcj_cj+1を作る
         cj_cj1_list = []
         for cj1_cj in cj1_cj_list:
             cj_cj1_list.append(-1*cj1_cj)
-        
+
         #cj+1†_cjからcj_cj+1†を作る
         cj_cj1_dag_list = []
         for cj1_dag_cj in cj1_dag_cj_list:
@@ -154,31 +234,15 @@ def H_vacuum_k(eigenvectors,L, epsilon,p_val,pos):
     for j in range(L):
         Hp_v_j = 0
         Hm_v_j = 0
-        G1 = 0
-        G2 = 0
+        F1 = 0
+        F2 = 0
         for n in range(L):
-            G1 += eigenvectors[j+1, n] * eigenvectors[j, n+L]
-            G2 += eigenvectors[j+1, n+L].conj() * eigenvectors[j, n+L]
-        Hp_v_j = -1/(2*epsilon) * 1j * (1+beta(j,L,pos,epsilon)) * 1/2 * (1j * (-1*G1) + (-1*G2) + (G2.conj()) - 1j * (G1.conj()))
-        Hm_v_j = -1/(2*epsilon) * 1j * (-1+beta(j,L,pos,epsilon)) * 1/2 * (-1j * (-1*G1) + (-1*G2) + (G2.conj()) + 1j * (G1.conj()))
+            F1 += eigenvectors[j+1, (2*L-1)-n] * eigenvectors[j, n]
+            F2 += eigenvectors[j+1, n].conj() * eigenvectors[j, n]
+        Hp_v_j = -1/(2*epsilon) * 1j * (1+beta(j,L,pos,epsilon)) * 1/2 * (1j * (-1*F1) + (-1*F2) + (F2.conj()) - 1j * (F1.conj()))
+        Hm_v_j = -1/(2*epsilon) * 1j * (-1+beta(j,L,pos,epsilon)) * 1/2 * (-1j * (-1*F1) + (-1*F2) + (F2.conj()) + 1j * (F1.conj()))
         assert abs(Hp_v_j - Hp_v_j.conj()) < 10**-5, "Hp_v_j(j=" + str(j) + ") is not Hermitian!"
         assert abs(Hm_v_j - Hm_v_j.conj()) < 10**-5, "Hm_v_j(j=" + str(j) + ") is not Hermitian!"
         Hp_v.append(Hp_v_j)
         Hm_v.append(Hm_v_j)
     return Hp_v, Hm_v
-
-#テスト用
-def generate_c_c_dag(eigenvectors, L):
-    c_c_dag_list = []
-    for j in range(L):
-        tmp = np.zeros((L, L), dtype=complex)
-        for k in range(L):
-            for l in range(L):
-                tmp[k,l] = np.conj(eigenvectors[j,k+L]) * eigenvectors[j,l+L]
-                tmp[k,l] += -1 * eigenvectors[j,l] * eigenvectors[j,k].conj()
-                if k == l:
-                    for n in range(L):
-                        tmp[k,l] += eigenvectors[j,n] * eigenvectors[j,n].conj()
-        c_c_dag_list.append(tmp)
-        print("cjcj†作成中:" + str(int(j/L*100))+"%")
-    return c_c_dag_list
