@@ -1,7 +1,7 @@
 import numpy as np
 
 def beta(j,L,pos,epsilon):
-        #return 0
+        return 0
         width = 1
         A = 0.6
         if pos == "lr":

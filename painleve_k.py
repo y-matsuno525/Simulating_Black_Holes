@@ -71,15 +71,15 @@ def initialize_state_vector_a_plus(eigenvectors):
 
     for j in range(L):
         for n in range(L):
-            #+
+            #chi_+
             if pos == "ur" or pos == "lr":
                 psi_tmp[n, 0] += weights[j] * (
-                1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j, n] + np.exp(-1j*np.pi/4) * eigenvectors[j, (2*L-1)-n].conj())
+                1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j, n] + np.exp(1j*np.pi/4) * eigenvectors[j, (2*L-1)-n].conj())
             )
-            #-
+            #chi_-
             else:
                 psi_tmp[n, 0] += weights[j] * (
-                1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j, n] + np.exp(1j*np.pi/4) * eigenvectors[j, (2*L-1)-n].conj())
+                1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j, n] + np.exp(-1j*np.pi/4) * eigenvectors[j, (2*L-1)-n].conj())
                 )
 
     # 最終的な規格化
