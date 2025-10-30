@@ -6,14 +6,15 @@ import matplotlib.pyplot as plt
 
 #パラメータ
 L = 100
-l = 2*np.pi
+l = 2#*np.pi
 epsilon = l / L
 p = 0
 m = 0
-pos = "lr" #lr, ur, ll, ul
+pos = "lr" #(lr, ul), (ll, ur)
 t_i = 0
-t_f = 0.5
+t_f = 1
 dt = 0.01*(300/L) #この値は後で検討
+PBC = True
 
 times = np.arange(t_i + dt, t_f, dt)
 
@@ -77,6 +78,20 @@ for i in range(2*L):
                 H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*beta(i-L,L,pos,epsilon))
             elif j-i == 1:
                 H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*beta(j-L,L,pos,epsilon))
+
+if PBC == True:
+    #red
+    H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * 1/2
+    H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * -1/2
+    #blue
+    H_BdG[L-1,0] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * 1/2
+    H_BdG[L,2*L-1] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * -1/2
+    #orange
+    H_BdG[0,2*L-1] = -1/(2*epsilon) * -1/2
+    H_BdG[L-1,L] = -1/(2*epsilon) * 1/2
+    #black
+    H_BdG[2*L-1,0] = -1/(2*epsilon) * -1/2
+    H_BdG[L,L-1] = -1/(2*epsilon) * 1/2
 
 bs = []
 for j in range(L):
@@ -174,24 +189,30 @@ if pos == "ur" or pos == "lr":
 else:
     j0 = int(0.95*L)
 sigma = 0.05*L
-weights = np.exp(-((np.arange(L) - j0) ** 2) / (2 * sigma ** 2))
+if PBC == True:
+    idx = np.arange(L)
+    delta = np.abs(idx - j0)
+    periodic_delta = np.minimum(delta, L - delta)
+    weights = np.exp(-(periodic_delta**2) / (2 * sigma**2))
+    mask = periodic_delta <= 0.2*L
+else:
+    weights = np.exp(-((np.arange(L) - j0) ** 2) / (2 * sigma ** 2))
+    mask = np.abs(np.arange(L) - j0) <= 0.2*L
 
-mask = np.abs(np.arange(L) - j0) <= 0.2*L
 weights[~mask] = 0
-
 weights /= np.linalg.norm(weights) 
 
 for j in range(L):
     for n in range(L):
         #+
-        if pos == "ur" or pos == "lr":
+        if pos == "ur" or pos == "lr":# or pos == "ul":
             psi[n, 0] += weights[j] * (
             1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
         )
         #-
         else:
             psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(+1j*np.pi/4) * eigenvectors[j,n].conj())
+            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
             )
 #状態ベクトルの規格化
 psi /= np.linalg.norm(psi)
@@ -269,6 +290,30 @@ for j in range(L):
     for n in range(L):
         total += abs(eigenvectors[j, n])**2
     c_dag_c_v.append(total)
+
+#初期状態での期待値をプロット
+#H_pの期待値
+H_p_init_val = []
+for j, H_p_j in enumerate(H_p):
+    val = psi.T.conj() @ H_p_j @ psi
+    H_p_init_val.append(val.item() - Hp_v[j])
+plt.plot(np.real(H_p_init_val), label="H_p initial")
+#H_mの期待値
+H_m_init_val = []
+for j, H_m_j in enumerate(H_m):
+    val = psi.T.conj() @ H_m_j @ psi
+    H_m_init_val.append(val.item() - Hm_v[j])
+plt.plot(np.real(H_m_init_val), label="H_m initial")
+plt.legend()
+plt.show()
+#c_dag_cの期待値
+c_dag_c_init_val = []
+for j, cj_dag_cj in enumerate(cj_dag_cj_list):
+    val = psi.T.conj() @ cj_dag_cj @ psi
+    c_dag_c_init_val.append(val.item() - c_dag_c_v[j])
+plt.plot(np.real(c_dag_c_init_val), label="c†c initial")
+plt.legend()
+plt.show()
 
 #時間発展
 H_p_val = []
