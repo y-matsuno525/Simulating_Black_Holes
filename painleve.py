@@ -14,6 +14,7 @@ pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
 dt = 0.01*(300/L) #この値は後で検討
+PBC = True
 
 times = np.arange(t_i + dt, t_f, dt)
 
@@ -77,6 +78,20 @@ for i in range(2*L):
                 H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*beta(i-L,L,pos,epsilon))
             elif j-i == 1:
                 H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*beta(j-L,L,pos,epsilon))
+
+if PBC == True:
+    #red
+    H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * 1/2
+    H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * -1/2
+    #blue
+    H_BdG[L-1,0] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * 1/2
+    H_BdG[L,2*L-1] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * -1/2
+    #orange
+    H_BdG[0,2*L-1] = -1/(2*epsilon) * -1/2
+    H_BdG[L-1,L] = -1/(2*epsilon) * 1/2
+    #black
+    H_BdG[2*L-1,0] = -1/(2*epsilon) * -1/2
+    H_BdG[L,L-1] = -1/(2*epsilon) * 1/2
 
 bs = []
 for j in range(L):
