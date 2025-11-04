@@ -103,6 +103,12 @@ plt.show()
 #BdG行列を対角化
 eigenvalues, eigenvectors = LA.eigh(H_BdG)
 
+#絶対値最大成分の位相を基準に揃える（要確認）
+idx_max = np.argmax(np.abs(eigenvectors), axis=0)
+phases = np.angle(eigenvectors[idx_max, np.arange(eigenvectors.shape[1])])
+phase_factors = np.exp(-1j * phases)
+eigenvectors = eigenvectors * phase_factors
+
 #粒子-反粒子対称性を満たすように調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
 V = np.zeros((2*L, 2*L), dtype=complex)
 for i in range(L):
@@ -115,11 +121,29 @@ eigenvectors = V
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
 
-#絶対値最大成分の位相を基準に揃える（要確認）
-idx_max = np.argmax(np.abs(eigenvectors), axis=0)
-phases = np.angle(eigenvectors[idx_max, np.arange(eigenvectors.shape[1])])
-phase_factors = np.exp(-1j * phases)
-eigenvectors = eigenvectors * phase_factors
+#縮退してるやつの並び替え(平坦な場合のみ)
+print("固有値1")
+print(eigenvalues)
+print("固有ベクトル1")
+print(eigenvectors)
+for i in range(1, 2*L):
+    if abs(eigenvalues[i] - eigenvalues[i-1]) < 1e-8:
+        #縮退している場合、絶対値最大成分の位置でソート
+        max_idx_i = np.argmax(np.abs(eigenvectors[:,i]))
+        max_idx_i_1 = np.argmax(np.abs(eigenvectors[:,i-1]))
+        if max_idx_i < max_idx_i_1:
+            #入れ替え
+            temp_val = eigenvalues[i-1]
+            eigenvalues[i-1] = eigenvalues[i]
+            eigenvalues[i] = temp_val
+            temp_vec = eigenvectors[:,i-1].copy()
+            eigenvectors[:,i-1] = eigenvectors[:,i]
+            eigenvectors[:,i] = temp_vec
+
+print("固有値2")
+print(eigenvalues)
+print("固有ベクトル2")
+print(eigenvectors)
 
 # #粒子-反粒子対称性の確認(確認済み)
 # for j in range(L):
