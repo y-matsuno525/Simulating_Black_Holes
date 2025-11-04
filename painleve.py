@@ -189,10 +189,17 @@ if pos == "ur" or pos == "lr":
 else:
     j0 = int(0.8*L)
 sigma = 0.05*L
-weights = np.exp(-((np.arange(L) - j0) ** 2) / (2 * sigma ** 2))
+if PBC == True:
+    idx = np.arange(L)
+    delta = np.abs(idx - j0)
+    periodic_delta = np.minimum(delta, L - delta)
+    weights = np.exp(-(periodic_delta**2) / (2 * sigma**2))
+    #mask = periodic_delta <= 0.2*L
+else:
+    weights = np.exp(-((np.arange(L) - j0) ** 2) / (2 * sigma ** 2))
+    #mask = np.abs(np.arange(L) - j0) <= 0.2*L
 
-# mask = np.abs(np.arange(L) - j0) <= 0.05*L
-# weights[~mask] = 0
+#weights[~mask] = 0
 
 weights /= np.linalg.norm(weights) 
 
