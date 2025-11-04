@@ -118,19 +118,29 @@ print("固有値1")
 print(eigenvalues)
 print("固有ベクトル1")
 print(eigenvectors)
-for i in range(1, 2*L):
-    if abs(eigenvalues[i] - eigenvalues[i-1]) < 1e-8:
-        #縮退している場合、絶対値最大成分の位置でソート
-        max_idx_i = np.argmax(np.abs(eigenvectors[:,i]))
-        max_idx_i_1 = np.argmax(np.abs(eigenvectors[:,i-1]))
-        if max_idx_i < max_idx_i_1:
-            #入れ替え
-            temp_val = eigenvalues[i-1]
-            eigenvalues[i-1] = eigenvalues[i]
-            eigenvalues[i] = temp_val
-            temp_vec = eigenvectors[:,i-1].copy()
-            eigenvectors[:,i-1] = eigenvectors[:,i]
-            eigenvectors[:,i] = temp_vec
+# --- 縮退ブロックを決定的に並べる（+E 側 L 本のみ） ---
+# +E 側 L 列を取り出し
+Vp = eigenvectors[:, :L]
+Ap = np.abs(Vp)
+
+# 安定化：列ごと最大で規格化し、丸めて微小差を殺す
+den = np.maximum(np.max(Ap, axis=0, keepdims=True), 1e-14)
+Fp  = np.round(Ap / den, 14)
+
+# 絶対値プロファイル Fp に基づく辞書順（np.lexsort は最後のキーが最優先）
+order = np.lexsort(Fp[::-1, :])
+
+# +E 側の並び替えを適用
+eigenvectors[:, :L] = Vp[:, order]
+eigenvalues[:L]     = eigenvalues[:L][order]
+
+# --- 並べ替え後、−E 側を PHS から再生成して対応を揃える ---
+Vneg = np.zeros((2*L, L), dtype=complex)
+for i in range(L):
+    # +E 側 i 列 ↔ −E 側の (L-1-i) 列 に対応させる（負側は逆順に積む）
+    Vneg[:L, L-1-i] = np.conj(eigenvectors[L:, i])
+    Vneg[L:, L-1-i] = np.conj(eigenvectors[:L, i])
+eigenvectors[:, L:] = Vneg
 
 print("固有値2")
 print(eigenvalues)
