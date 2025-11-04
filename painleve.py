@@ -115,6 +115,12 @@ eigenvectors = V
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
 
+#絶対値最大成分の位相を基準に揃える（要確認）
+idx_max = np.argmax(np.abs(eigenvectors), axis=0)
+phases = np.angle(eigenvectors[idx_max, np.arange(eigenvectors.shape[1])])
+phase_factors = np.exp(-1j * phases)
+eigenvectors = eigenvectors * phase_factors
+
 # #粒子-反粒子対称性の確認(確認済み)
 # for j in range(L):
 #     print(eigenvectors[j,:L] - eigenvectors[j+L,L:].conj())
