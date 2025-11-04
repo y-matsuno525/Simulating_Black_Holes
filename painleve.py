@@ -6,15 +6,14 @@ import matplotlib.pyplot as plt
 
 #パラメータ
 L = 100
-l = 2#*np.pi
+l = 2*np.pi
 epsilon = l / L
-p = 0
+p = 1
 m = 0
-pos = "lr" #(lr, ul), (ll, ur)
+pos = "lr" #lr, ur, ll, ul
 t_i = 0
-t_f = 1
+t_f = 10
 dt = 0.01*(300/L) #この値は後で検討
-PBC = True
 
 times = np.arange(t_i + dt, t_f, dt)
 
@@ -79,20 +78,6 @@ for i in range(2*L):
             elif j-i == 1:
                 H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*beta(j-L,L,pos,epsilon))
 
-if PBC == True:
-    #red
-    H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * 1/2
-    H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * -1/2
-    #blue
-    H_BdG[L-1,0] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * 1/2
-    H_BdG[L,2*L-1] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * -1/2
-    #orange
-    H_BdG[0,2*L-1] = -1/(2*epsilon) * -1/2
-    H_BdG[L-1,L] = -1/(2*epsilon) * 1/2
-    #black
-    H_BdG[2*L-1,0] = -1/(2*epsilon) * -1/2
-    H_BdG[L,L-1] = -1/(2*epsilon) * 1/2
-
 bs = []
 for j in range(L):
     bs.append(float(beta(j,L,pos,epsilon)))
@@ -115,14 +100,14 @@ eigenvectors = V
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
 
-#粒子-反粒子対称性の確認(確認済み)
-for j in range(L):
-    print(eigenvectors[j,:L] - eigenvectors[j+L,L:].conj())
-    print(eigenvectors[j,L:] - eigenvectors[j+L,:L].conj())
-print()
-for j in range(L):
-    print(eigenvectors[j,:L].T.conj() - eigenvectors[j+L,L:].T.conj().conj())
-    print(eigenvectors[j,L:].T.conj() - eigenvectors[j+L,:L].T.conj().conj())
+# #粒子-反粒子対称性の確認(確認済み)
+# for j in range(L):
+#     print(eigenvectors[j,:L] - eigenvectors[j+L,L:].conj())
+#     print(eigenvectors[j,L:] - eigenvectors[j+L,:L].conj())
+# print()
+# for j in range(L):
+#     print(eigenvectors[j,:L].T.conj() - eigenvectors[j+L,L:].T.conj().conj())
+#     print(eigenvectors[j,L:].T.conj() - eigenvectors[j+L,:L].T.conj().conj())
 
 #演算子の作成
 #cj_dag_cj
@@ -131,8 +116,8 @@ for j in range(L):
     cj_dag_cj_tmp = np.zeros((L, L), dtype=complex)
     for k in range(L):
         for l in range(L):
-            cj_dag_cj_tmp[k,l] = eigenvectors[j,k] * eigenvectors[j,l].conj()
-            cj_dag_cj_tmp[k,l] -= eigenvectors[j,l+L] * eigenvectors[j,k+L].conj()
+            cj_dag_cj_tmp[k,l] = eigenvectors[j,k].conj() * eigenvectors[j,l]
+            cj_dag_cj_tmp[k,l] -= eigenvectors[j,l+L].conj() * eigenvectors[j,k+L]
             if k == l:
                 for n in range(L):
                     cj_dag_cj_tmp[k,l] += eigenvectors[j,n+L].conj() * eigenvectors[j,n+L]
@@ -185,35 +170,30 @@ U_dt = scipy.linalg.expm(-1j*H*dt)
 #初期状態作成
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = int(0.05*L)
+    j0 = int(0.2*L)
 else:
-    j0 = int(0.95*L)
+    j0 = int(0.8*L)
 sigma = 0.05*L
-if PBC == True:
-    idx = np.arange(L)
-    delta = np.abs(idx - j0)
-    periodic_delta = np.minimum(delta, L - delta)
-    weights = np.exp(-(periodic_delta**2) / (2 * sigma**2))
-    mask = periodic_delta <= 0.2*L
-else:
-    weights = np.exp(-((np.arange(L) - j0) ** 2) / (2 * sigma ** 2))
-    mask = np.abs(np.arange(L) - j0) <= 0.2*L
+weights = np.exp(-((np.arange(L) - j0) ** 2) / (2 * sigma ** 2))
 
-weights[~mask] = 0
+# mask = np.abs(np.arange(L) - j0) <= 0.05*L
+# weights[~mask] = 0
+
 weights /= np.linalg.norm(weights) 
 
 for j in range(L):
     for n in range(L):
-        #+
-        if pos == "ur" or pos == "lr":# or pos == "ul":
-            psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
-        )
-        #-
-        else:
-            psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
-            )
+        psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
+        # #+
+        # if pos == "ur" or pos == "lr":
+        #     psi[n, 0] += weights[j] * (
+        #     1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
+        # )
+        # #-
+        # else:
+        #     psi[n, 0] += weights[j] * (
+        #     1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
+        #     )
 #状態ベクトルの規格化
 psi /= np.linalg.norm(psi)
 
@@ -260,6 +240,8 @@ for j in range(L):
     H_p.append(H_p_j)
     H_m.append(H_m_j)
 
+
+
 #真空のエネルギーを計算
 Hp_v = []
 Hm_v = []
@@ -277,6 +259,9 @@ for j in range(L):
     assert abs(Hm_v_j - Hm_v_j.conj()) < 10**-5, "Hm_v_j(j=" + str(j) + ") is not Hermitian!"
     Hp_v.append(Hp_v_j)
     Hm_v.append(Hm_v_j)
+    if j == L-1:
+        Hp_v[-1] = 0
+        Hm_v[-1] = 0
 
 # plt.plot(Hp_v, label="Hp_v")
 # plt.plot(Hm_v, label="Hm_v")
@@ -288,31 +273,35 @@ c_dag_c_v = []
 for j in range(L):
     total = 0.0
     for n in range(L):
-        total += abs(eigenvectors[j, n])**2
+        total += abs(eigenvectors[j, n+L])**2
     c_dag_c_v.append(total)
 
-#初期状態での期待値をプロット
+plt.plot(c_dag_c_v)
+plt.show()
+
+H_p_0 = []
+H_m_0 = []
+c_0 = []
 #H_pの期待値
-H_p_init_val = []
 for j, H_p_j in enumerate(H_p):
     val = psi.T.conj() @ H_p_j @ psi
-    H_p_init_val.append(val.item() - Hp_v[j])
-plt.plot(np.real(H_p_init_val), label="H_p initial")
+    H_p_0.append(val.item() - Hp_v[j])
+
 #H_mの期待値
-H_m_init_val = []
 for j, H_m_j in enumerate(H_m):
     val = psi.T.conj() @ H_m_j @ psi
-    H_m_init_val.append(val.item() - Hm_v[j])
-plt.plot(np.real(H_m_init_val), label="H_m initial")
-plt.legend()
-plt.show()
+    H_m_0.append(val.item() - Hm_v[j])
+
 #c_dag_cの期待値
-c_dag_c_init_val = []
 for j, cj_dag_cj in enumerate(cj_dag_cj_list):
     val = psi.T.conj() @ cj_dag_cj @ psi
-    c_dag_c_init_val.append(val.item() - c_dag_c_v[j])
-plt.plot(np.real(c_dag_c_init_val), label="c†c initial")
+    c_0.append(val.item() - c_dag_c_v[j])
+
+plt.plot(H_p_0, label="H_p_0")
+plt.plot(H_m_0, label="H_m_0")
+plt.plot(c_0, label="c_0")
 plt.legend()
+plt.grid()
 plt.show()
 
 #時間発展
