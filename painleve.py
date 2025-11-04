@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 L = 100
 l = 2*np.pi
 epsilon = l / L
-p = 1
+p = 1#10**(-3)
 m = 0
-pos = "lr" #lr, ur, ll, ul
+pos = "ll" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
 dt = 0.01*(300/L) #この値は後で検討
@@ -81,17 +81,17 @@ for i in range(2*L):
 
 if PBC == True:
     #red
-    H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * 1/2
-    H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * -1/2
+    H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * (1)
+    H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * (-1)
     #blue
-    H_BdG[L-1,0] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * 1/2
-    H_BdG[L,2*L-1] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * -1/2
+    H_BdG[L-1,0] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * (1)
+    H_BdG[L,2*L-1] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * (-1)
     #orange
-    H_BdG[0,2*L-1] = -1/(2*epsilon) * -1/2
-    H_BdG[L-1,L] = -1/(2*epsilon) * 1/2
+    H_BdG[0,2*L-1] = -1/(2*epsilon) * (-1)
+    H_BdG[L-1,L] = -1/(2*epsilon) * (1)
     #black
-    H_BdG[2*L-1,0] = -1/(2*epsilon) * -1/2
-    H_BdG[L,L-1] = -1/(2*epsilon) * 1/2
+    H_BdG[2*L-1,0] = -1/(2*epsilon) * (-1)
+    H_BdG[L,L-1] = -1/(2*epsilon) * (1)
 
 bs = []
 for j in range(L):
@@ -152,9 +152,19 @@ for j in range(L-1):
                     cj1_cj_tmp[k,l] += eigenvectors[j+1,n] * eigenvectors[j,n+L]
     cj1_cj_list.append(cj1_cj_tmp)
     print("cj1_cj作成中:" + str(int(j/L*100))+"%")
-
-#j = L-1 の場合は0にする
-cj1_cj_list.append(np.zeros((L,L), dtype=complex))
+#PBCの場合、右端は非ゼロ
+if PBC == True:
+    cj1_cj_tmp = np.zeros((L, L), dtype=complex)
+    for k in range(L):
+        for l in range(L):
+            cj1_cj_tmp[k,l] = eigenvectors[0,k+L] * eigenvectors[L-1,l]
+            cj1_cj_tmp[k,l] -= eigenvectors[0,l] * eigenvectors[L-1,k+L]
+            if k == l:
+                for n in range(L):
+                    cj1_cj_tmp[k,l] += eigenvectors[0,n] * eigenvectors[L-1,n+L]
+    cj1_cj_list.append(cj1_cj_tmp)
+else:
+    cj1_cj_list.append(np.zeros((L, L), dtype=complex))
 
 #cj1_dag_cj
 cj1_dag_cj_list = []
@@ -169,9 +179,19 @@ for j in range(L-1):
                     cj1_dag_cj_tmp[k,l] += eigenvectors[j+1,n+L].conj() * eigenvectors[j,n+L]
     cj1_dag_cj_list.append(cj1_dag_cj_tmp)
     print("cj1†_cj作成中:" + str(int(j/L*100))+"%")
-
-#j = L-1 の場合は0にする
-cj1_dag_cj_list.append(np.zeros((L,L), dtype=complex))
+#PBCの場合、右端は非ゼロ
+if PBC == True:
+    cj1_dag_cj_tmp = np.zeros((L, L), dtype=complex)
+    for k in range(L):
+        for l in range(L):
+            cj1_dag_cj_tmp[k,l] = eigenvectors[0,k].conj() * eigenvectors[L-1,l]
+            cj1_dag_cj_tmp[k,l] -= eigenvectors[0,l+L].conj() * eigenvectors[L-1,k+L]
+            if k == l:
+                for n in range(L):
+                    cj1_dag_cj_tmp[k,l] += eigenvectors[0,n+L].conj() * eigenvectors[L-1,n+L]
+    cj1_dag_cj_list.append(cj1_dag_cj_tmp)
+else:
+    cj1_dag_cj_list.append(np.zeros((L, L), dtype=complex))
 
 
 #時間発展演算子作成
@@ -185,37 +205,43 @@ U_dt = scipy.linalg.expm(-1j*H*dt)
 #初期状態作成
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = int(0.2*L)
+    j0 = int(0.5*L)
 else:
-    j0 = int(0.8*L)
+    j0 = int(0.5*L)
 sigma = 0.05*L
 if PBC == True:
     idx = np.arange(L)
     delta = np.abs(idx - j0)
     periodic_delta = np.minimum(delta, L - delta)
     weights = np.exp(-(periodic_delta**2) / (2 * sigma**2))
-    #mask = periodic_delta <= 0.2*L
+    mask = periodic_delta <= 0.2*L
 else:
     weights = np.exp(-((np.arange(L) - j0) ** 2) / (2 * sigma ** 2))
-    #mask = np.abs(np.arange(L) - j0) <= 0.2*L
+    mask = np.abs(np.arange(L) - j0) <= 0.2*L
 
-#weights[~mask] = 0
+weights[~mask] = 0
 
-weights /= np.linalg.norm(weights) 
+weights /= np.linalg.norm(weights)
+#plt.plot(weights)
+plt.plot(np.r_[weights, weights[0]])
+plt.title("weights")
+plt.grid()
+plt.show()
 
 for j in range(L):
     for n in range(L):
-        psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
-        # #+
-        # if pos == "ur" or pos == "lr":
-        #     psi[n, 0] += weights[j] * (
-        #     1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
-        # )
-        # #-
-        # else:
-        #     psi[n, 0] += weights[j] * (
-        #     1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
-        #     )
+        #cを置く場合
+        #psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
+        #+
+        if pos == "ur" or pos == "lr":
+            psi[n, 0] += weights[j] * (
+            1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
+        )
+        #-
+        else:
+            psi[n, 0] += weights[j] * (
+            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
+            )
 #状態ベクトルの規格化
 psi /= np.linalg.norm(psi)
 
@@ -273,22 +299,27 @@ for j in range(L):
     F1 = 0
     F2 = 0
     for n in range(L):
-        F1 += eigenvectors[j+1,n] * eigenvectors[j,n+L]
-        F2 += eigenvectors[j+1,n+L].conj() * eigenvectors[j,n+L]
+        if PBC == True and j == L-1:
+            F1 += eigenvectors[0,n] * eigenvectors[L-1,n+L]
+            F2 += eigenvectors[0,n+L].conj() * eigenvectors[L-1,n+L]
+        else:
+            F1 += eigenvectors[j+1,n] * eigenvectors[j,n+L]
+            F2 += eigenvectors[j+1,n+L].conj() * eigenvectors[j,n+L]
     Hp_v_j = -1/(2*epsilon) * 1j * (1+beta(j,L,pos,epsilon)) * 1/2 * (1j * (-1*F1) + (-1*F2) + (F2.conj()) - 1j * (F1.conj()))
     Hm_v_j = -1/(2*epsilon) * 1j * (-1+beta(j,L,pos,epsilon)) * 1/2 * (-1j * (-1*F1) + (-1*F2) + (F2.conj()) + 1j * (F1.conj()))
     assert abs(Hp_v_j - Hp_v_j.conj()) < 10**-5, "Hp_v_j(j=" + str(j) + ") is not Hermitian!"
     assert abs(Hm_v_j - Hm_v_j.conj()) < 10**-5, "Hm_v_j(j=" + str(j) + ") is not Hermitian!"
     Hp_v.append(Hp_v_j)
     Hm_v.append(Hm_v_j)
-    if j == L-1:
-        Hp_v[-1] = 0
-        Hm_v[-1] = 0
+    if not PBC:
+        if j == L-1:
+            Hp_v[-1] = 0
+            Hm_v[-1] = 0
 
-# plt.plot(Hp_v, label="Hp_v")
-# plt.plot(Hm_v, label="Hm_v")
-# plt.legend()
-# plt.show()
+plt.plot(Hp_v, label="Hp_v")
+plt.plot(Hm_v, label="Hm_v")
+plt.legend()
+plt.show()
 
 #真空のc_dag_cを計算
 c_dag_c_v = []
@@ -299,6 +330,8 @@ for j in range(L):
     c_dag_c_v.append(total)
 
 plt.plot(c_dag_c_v)
+plt.title("c_dag_c_v")
+plt.grid()
 plt.show()
 
 H_p_0 = []
