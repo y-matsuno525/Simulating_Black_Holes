@@ -109,14 +109,6 @@ phases = np.angle(eigenvectors[idx_max, np.arange(eigenvectors.shape[1])])
 phase_factors = np.exp(-1j * phases)
 eigenvectors = eigenvectors * phase_factors
 
-#粒子-反粒子対称性を満たすように調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
-V = np.zeros((2*L, 2*L), dtype=complex)
-for i in range(L):
-    V[:,i] = eigenvectors[:,i]
-    V[:L,2*L-1-i] = np.conj(eigenvectors[L:,i])
-    V[L:,2*L-1-i] = np.conj(eigenvectors[:L,i])
-eigenvectors = V
-
 #固有値、固有ベクトルのソート(確認済み)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
@@ -144,6 +136,14 @@ print("固有値2")
 print(eigenvalues)
 print("固有ベクトル2")
 print(eigenvectors)
+
+#粒子-反粒子対称性を満たすように調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
+V = np.zeros((2*L, 2*L), dtype=complex)
+for i in range(L):
+    V[:,i] = eigenvectors[:,i]
+    V[:L,i+L] = np.conj(eigenvectors[L:,i])
+    V[L:,i+L] = np.conj(eigenvectors[:L,i])
+eigenvectors = V
 
 # #粒子-反粒子対称性の確認(確認済み)
 # for j in range(L):
