@@ -5,12 +5,12 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 
 #パラメータ
-L = 300
+L = 100
 l = 2*np.pi
 epsilon = l / L
 p = 1#0**(-5)
 m = 0
-pos = "ll" #lr, ur, ll, ul
+pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
 dt = 0.01*(300/L) #この値は後で検討
@@ -100,14 +100,17 @@ plt.plot(bs)
 plt.grid()
 plt.show()
 
+#bogoliubov変換行列の作成##########################################################################################################################
 #BdG行列を対角化
 eigenvalues, eigenvectors = LA.eigh(H_BdG)
+print(eigenvalues)
+print(eigenvectors)
 
 #固有値、固有ベクトルのソート(確認済み)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
 
-#粒子-反粒子対称性を満たすように調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
+#粒子-反粒子対称性を満たすように固有ベクトルを調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
 V = np.zeros((2*L, 2*L), dtype=complex)
 for i in range(L):
     V[:,i] = eigenvectors[:,i]
@@ -118,15 +121,18 @@ print(eigenvalues)
 print(eigenvectors)
 
 # #粒子-反粒子対称性の確認(確認済み)
+# #c = sum gamma
 # for j in range(L):
 #     print(eigenvectors[j,:L] - eigenvectors[j+L,L:].conj())
 #     print(eigenvectors[j,L:] - eigenvectors[j+L,:L].conj())
 # print()
+# #gamma = sum c
 # for j in range(L):
 #     print(eigenvectors[j,:L].T.conj() - eigenvectors[j+L,L:].T.conj().conj())
 #     print(eigenvectors[j,L:].T.conj() - eigenvectors[j+L,:L].T.conj().conj())
-
-#演算子の作成
+# import sys
+# sys.exit()
+#演算子の作成########################################################################################################################################
 #cj_dag_cj(作り方は以前と変わらない)
 cj_dag_cj_list = []
 for j in range(L):
@@ -134,7 +140,7 @@ for j in range(L):
     for k in range(L):
         for l in range(L):
             cj_dag_cj_tmp[k,l] = eigenvectors[j,k].conj() * eigenvectors[j,l]
-            cj_dag_cj_tmp[k,l] -= eigenvectors[j,l+L].conj() * eigenvectors[j,k+L]
+            cj_dag_cj_tmp[k,l] += -1*eigenvectors[j,l+L].conj() * eigenvectors[j,k+L]
             if k == l:
                 for n in range(L):
                     cj_dag_cj_tmp[k,l] += eigenvectors[j,n+L].conj() * eigenvectors[j,n+L]
