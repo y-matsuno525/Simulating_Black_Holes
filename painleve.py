@@ -5,7 +5,7 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 
 #パラメータ
-L = 100
+L = 300
 l = 2*np.pi
 epsilon = l / L
 p = 1#0**(-5)
@@ -14,7 +14,7 @@ pos = "ll" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
 dt = 0.01*(300/L) #この値は後で検討
-PBC = True
+PBC = False
 
 times = np.arange(t_i + dt, t_f, dt)
 
@@ -30,7 +30,7 @@ def is_hermitian(matrix):
         return False
 
 def beta(j,L,pos,epsilon):
-    return 3
+    #return 0.5
     width = 1
     A = 0.6
     jh = int(L/3)
@@ -116,24 +116,6 @@ for i in range(L):
 eigenvectors = V
 print(eigenvalues)
 print(eigenvectors)
-
-# ---- 固有値行列 H_diag の確認 ----
-H_diag = eigenvectors.T.conj() @ H_BdG @ eigenvectors
-
-# 固有値列は H_diag の対角成分から抽出する
-eigs_from_Hdiag = np.diag(H_diag)
-
-import test
-expected_eigs = test.compute_eigenvalues()
-
-# ---- 固有値列のプロット ----
-plt.figure()
-plt.plot(np.real(eigs_from_Hdiag), marker='o')
-plt.plot(np.real(expected_eigs), marker='x')
-plt.xlabel("index")
-plt.ylabel("eigenvalue (real part)")
-plt.grid(True)
-plt.show()
 
 # #粒子-反粒子対称性の確認(確認済み)
 # for j in range(L):
@@ -222,7 +204,7 @@ U_dt = scipy.linalg.expm(-1j*H*dt)
 
 
 
-#初期状態作成
+#初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
     j0 = int(0.2*L)
@@ -267,7 +249,7 @@ psi /= np.linalg.norm(psi)
 
 
 
-#ハミルトニアン密度作成
+#ハミルトニアン密度作成###############################################################################################################
 H_p = []
 H_m = []
 
@@ -310,7 +292,7 @@ for j in range(L):
 
 
 
-#真空のエネルギーを計算
+#真空の量を計算##########################################################################################
 Hp_v = []
 Hm_v = []
 for j in range(L):
@@ -354,6 +336,8 @@ plt.title("c_dag_c_v")
 plt.grid()
 plt.show()
 
+#初期状態の量###############################################################################################################
+
 H_p_0 = []
 H_m_0 = []
 c_0 = []
@@ -381,7 +365,9 @@ plt.plot(c_0, label="c_0")
 plt.legend()
 plt.grid()
 plt.show()
-#時間発展
+
+
+#時間発展###########################################################################################################################
 H_p_val = []
 H_m_val = []
 c_dag_c_val = []
@@ -413,7 +399,7 @@ for i, _ in enumerate(times):
 
     print("時間発展中:"+str(int(i/len(times)*100)) + "%")
 
-########################################################################
+#################################################################################################################################
 #プロット
 #+
 H_p_arr = np.array(H_p_val, dtype=complex)
