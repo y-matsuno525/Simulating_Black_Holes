@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 L = 100
 l = 2*np.pi
 epsilon = l / L
-p = 1#10**(-3)
+p = 1#0**(-5)
 m = 0
 pos = "ll" #lr, ur, ll, ul
 t_i = 0
@@ -30,7 +30,7 @@ def is_hermitian(matrix):
         return False
 
 def beta(j,L,pos,epsilon):
-    return 0
+    return 3
     width = 1
     A = 0.6
     jh = int(L/3)
@@ -103,49 +103,9 @@ plt.show()
 #BdG行列を対角化
 eigenvalues, eigenvectors = LA.eigh(H_BdG)
 
-#絶対値最大成分の位相を基準に揃える（要確認）
-idx_max = np.argmax(np.abs(eigenvectors), axis=0)
-phases = np.angle(eigenvectors[idx_max, np.arange(eigenvectors.shape[1])])
-phase_factors = np.exp(-1j * phases)
-eigenvectors = eigenvectors * phase_factors
-
 #固有値、固有ベクトルのソート(確認済み)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
-
-#縮退してるやつの並び替え(平坦な場合のみ)
-print("固有値1")
-print(eigenvalues)
-print("固有ベクトル1")
-print(eigenvectors)
-# --- 縮退ブロックを決定的に並べる（+E 側 L 本のみ） ---
-# +E 側 L 列を取り出し
-Vp = eigenvectors[:, :L]
-Ap = np.abs(Vp)
-
-# 安定化：列ごと最大で規格化し、丸めて微小差を殺す
-den = np.maximum(np.max(Ap, axis=0, keepdims=True), 1e-14)
-Fp  = np.round(Ap / den, 14)
-
-# 絶対値プロファイル Fp に基づく辞書順（np.lexsort は最後のキーが最優先）
-order = np.lexsort(Fp[::-1, :])
-
-# +E 側の並び替えを適用
-eigenvectors[:, :L] = Vp[:, order]
-eigenvalues[:L]     = eigenvalues[:L][order]
-
-# --- 並べ替え後、−E 側を PHS から再生成して対応を揃える ---
-Vneg = np.zeros((2*L, L), dtype=complex)
-for i in range(L):
-    # +E 側 i 列 ↔ −E 側の (L-1-i) 列 に対応させる（負側は逆順に積む）
-    Vneg[:L, L-1-i] = np.conj(eigenvectors[L:, i])
-    Vneg[L:, L-1-i] = np.conj(eigenvectors[:L, i])
-eigenvectors[:, L:] = Vneg
-
-print("固有値2")
-print(eigenvalues)
-print("固有ベクトル2")
-print(eigenvectors)
 
 #粒子-反粒子対称性を満たすように調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
 V = np.zeros((2*L, 2*L), dtype=complex)
@@ -154,6 +114,26 @@ for i in range(L):
     V[:L,i+L] = np.conj(eigenvectors[L:,i])
     V[L:,i+L] = np.conj(eigenvectors[:L,i])
 eigenvectors = V
+print(eigenvalues)
+print(eigenvectors)
+
+# ---- 固有値行列 H_diag の確認 ----
+H_diag = eigenvectors.T.conj() @ H_BdG @ eigenvectors
+
+# 固有値列は H_diag の対角成分から抽出する
+eigs_from_Hdiag = np.diag(H_diag)
+
+import test
+expected_eigs = test.compute_eigenvalues()
+
+# ---- 固有値列のプロット ----
+plt.figure()
+plt.plot(np.real(eigs_from_Hdiag), marker='o')
+plt.plot(np.real(expected_eigs), marker='x')
+plt.xlabel("index")
+plt.ylabel("eigenvalue (real part)")
+plt.grid(True)
+plt.show()
 
 # #粒子-反粒子対称性の確認(確認済み)
 # for j in range(L):
@@ -165,7 +145,7 @@ eigenvectors = V
 #     print(eigenvectors[j,L:].T.conj() - eigenvectors[j+L,:L].T.conj().conj())
 
 #演算子の作成
-#cj_dag_cj
+#cj_dag_cj(作り方は以前と変わらない)
 cj_dag_cj_list = []
 for j in range(L):
     cj_dag_cj_tmp = np.zeros((L, L), dtype=complex)
@@ -245,19 +225,19 @@ U_dt = scipy.linalg.expm(-1j*H*dt)
 #初期状態作成
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = int(0.5*L)
+    j0 = int(0.2*L)
 else:
-    j0 = int(0.5*L)
+    j0 = int(0.8*L)
 sigma = 0.05*L
 if PBC == True:
     idx = np.arange(L)
     delta = np.abs(idx - j0)
     periodic_delta = np.minimum(delta, L - delta)
     weights = np.exp(-(periodic_delta**2) / (2 * sigma**2))
-    mask = periodic_delta <= 0.2*L
+    mask = periodic_delta <= 0.5*L
 else:
     weights = np.exp(-((np.arange(L) - j0) ** 2) / (2 * sigma ** 2))
-    mask = np.abs(np.arange(L) - j0) <= 0.2*L
+    mask = np.abs(np.arange(L) - j0) <= 0.5*L
 
 weights[~mask] = 0
 
@@ -281,7 +261,7 @@ for j in range(L):
         else:
             psi[n, 0] += weights[j] * (
             1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
-            )
+        )
 #状態ベクトルの規格化
 psi /= np.linalg.norm(psi)
 
@@ -394,11 +374,13 @@ for j, cj_dag_cj in enumerate(cj_dag_cj_list):
 
 plt.plot(H_p_0, label="H_p_0")
 plt.plot(H_m_0, label="H_m_0")
+plt.legend()
+plt.grid()
+plt.show()
 plt.plot(c_0, label="c_0")
 plt.legend()
 plt.grid()
 plt.show()
-
 #時間発展
 H_p_val = []
 H_m_val = []
