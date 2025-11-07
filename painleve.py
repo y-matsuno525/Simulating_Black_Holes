@@ -5,12 +5,12 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 
 #パラメータ
-L = 50
+L = 100
 l = 2*np.pi
 epsilon = l / L
-p = 1
+p = 0
 m = 0
-pos = "lr" #lr, ur, ll, ul
+pos = "ul" #lr, ur, ll, ul
 t_i = 0
 t_f = 20
 dt = 0.01*(300/L) #この値は後で検討
@@ -34,19 +34,20 @@ def beta(j,L,pos,epsilon):
     width = 1
     A = 0.6
     jh = int(L/3)
+    c1=0.730833344
     if pos == "lr":
         # β = -1 を j = 71 で踏むように調整
-        return -A*np.tanh(3/width*(j - 2*jh - 0.730833344)*epsilon) - 0.6
+        return -A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) - 0.6
     elif pos == "ur":
         # β = +1 を j = 70 で踏むように調整
-        return  A*np.tanh(3/width*(j - 2*jh + 0.269166656056467)*epsilon) + 0.6
+        return  A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) + 0.6
         # （注）式は (j - center - c) なので c = -0.269... は “+0.269...” と等価
     elif pos == "ll":
         # β = -1 を j = 29 で踏むように調整
-        return  A*np.tanh(3/width*(j - jh - 0.269166656056467)*epsilon) - 0.6
+        return  A*np.tanh(3/width*(j - jh + c1)*epsilon) - 0.6
     elif pos == "ul":
         # β = +1 を j = 29 で踏むように調整
-        return -A*np.tanh(3/width*(j - jh - 0.269166656056467)*epsilon) + 0.6
+        return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + 0.6
 
 for i in range(2*L):
     for j in range(2*L):
