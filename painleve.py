@@ -5,7 +5,7 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 
 #パラメータ
-L = 100
+L = 50
 l = 2*np.pi
 epsilon = l / L
 p = 1
@@ -323,6 +323,11 @@ for j in range(L):
     H_p.append(H_p_j)
     H_m.append(H_m_j)
     H_pm.append(H_pm_j)
+    if not PBC:
+        if j == L-1:
+            H_p[-1] = np.zeros((L, L), dtype=complex)
+            H_m[-1] = np.zeros((L, L), dtype=complex)
+            H_pm[-1] = np.zeros((L, L), dtype=complex)
 
 #真空の量を計算##########################################################################################
 Hp_v = []
@@ -395,7 +400,6 @@ for j, H_m_j in enumerate(H_m):
 for j, H_pm_j in enumerate(H_pm):
     val = psi.T.conj() @ H_pm_j @ psi
     H_pm_0.append(val.item() - Hpm_v[j])
-H_pm_0[-1] = 0
 
 #c_dag_cの期待値
 for j, cj_dag_cj in enumerate(cj_dag_cj_list):
