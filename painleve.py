@@ -8,11 +8,11 @@ import matplotlib.pyplot as plt
 L = 100
 l = 2*np.pi
 epsilon = l / L
-p = 1#0**(-5)
+p = 10**(-5)
 m = 0
-pos = "lr" #lr, ur, ll, ul
+pos = "ul" #lr, ur, ll, ul
 t_i = 0
-t_f = 10
+t_f = 20
 dt = 0.01*(300/L) #この値は後で検討
 PBC = False
 
@@ -55,7 +55,7 @@ for i in range(2*L):
             if i == j:
                 H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))*(-1)
             elif i-j == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (p - 1j*beta(i,L,pos,epsilon))
+                H_BdG[i, j] = -1/(2*epsilon) * (p - 1j*beta(j,L,pos,epsilon))
             elif j-i == 1:
                 H_BdG[i, j] = -1/(2*epsilon) * (p + 1j*beta(i,L,pos,epsilon))
         #右上
@@ -75,9 +75,9 @@ for i in range(2*L):
             if i == j:
                 H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))
             elif i-j == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*beta(i-L,L,pos,epsilon))
+                H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*beta(j-L,L,pos,epsilon))
             elif j-i == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*beta(j-L,L,pos,epsilon))
+                H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*beta(i-L,L,pos,epsilon))
 
 if PBC == True:
     #red
@@ -102,6 +102,7 @@ plt.show()
 
 #bogoliubov変換行列の作成##########################################################################################################################
 #BdG行列を対角化
+H_BdG = 0.5*(H_BdG + H_BdG.conj().T)
 eigenvalues, eigenvectors = LA.eigh(H_BdG)
 print(eigenvalues)
 print(eigenvectors)
@@ -203,10 +204,12 @@ else:
 
 
 #時間発展演算子作成
-H = np.zeros((L, L), dtype=complex)
-for i in range(L):
-    H[i,i] = eigenvalues[i]
-U_dt = scipy.linalg.expm(-1j*H*dt)
+def generate_time_evolution_operator(eigenvalues, n):
+    H = np.zeros((L, L), dtype=complex)
+    for i in range(L):
+        H[i,i] = eigenvalues[i]
+    U_dt = scipy.linalg.expm(-1j*H*(dt*(n+1)))
+    return U_dt
 
 
 
@@ -253,7 +256,27 @@ for j in range(L):
 #状態ベクトルの規格化
 psi /= np.linalg.norm(psi)
 
+# psi = np.zeros((L, 1), dtype=complex)
+# if pos == "ur" or pos == "lr":
+#     j0 = int(0.2*L)
+# else:
+#     j0 = int(0.8*L)
 
+# for n in range(L):
+#     #cを置く場合
+#     #psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
+#     #+
+#     if pos == "ur" or pos == "lr":
+#         psi[n, 0] += (
+#         1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j0,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j0,n].conj())
+#     )
+#     #-
+#     else:
+#         psi[n, 0] += (
+#         1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j0,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j0,n].conj())
+#     )
+# #状態ベクトルの規格化
+# psi /= np.linalg.norm(psi)
 
 #ハミルトニアン密度作成###############################################################################################################
 H_p = []
@@ -358,8 +381,10 @@ for j, H_m_j in enumerate(H_m):
     H_m_0.append(val.item() - Hm_v[j])
 
 #c_dag_cの期待値
+print("val")
 for j, cj_dag_cj in enumerate(cj_dag_cj_list):
     val = psi.T.conj() @ cj_dag_cj @ psi
+    print(val)
     c_0.append(val.item() - c_dag_c_v[j])
 
 plt.plot(H_p_0, label="H_p_0")
@@ -377,31 +402,51 @@ plt.show()
 H_p_val = []
 H_m_val = []
 c_dag_c_val = []
+psi_initial = psi.copy()
+def log_imag(name, arr):
+    max_im = np.max(np.abs(np.imag(arr)))
+    if max_im > 1e-8:  # 目安
+        print(f"[Warn] {name} has non-negligible imaginary part: max={max_im:.2e}")
+
 for i, _ in enumerate(times):
-    psi = U_dt @ psi
-    psi /= np.linalg.norm(psi)
+    # U_dt = generate_time_evolution_operator(eigenvalues, i)
+    # psi = U_dt @ psi_initial
+    for n,E in enumerate(eigenvalues[:L]):
+        psi[n] = np.exp(-1j*E*(dt*(i+1))) * psi_initial[n]
 
     H_p_t_val = []
     H_m_t_val = []
     c_dag_c_t_val = []
+    H_p_test = []
+    H_m_test = []
+    c_dag_c_test = []
 
     #H_pの期待値
     for j, H_p_j in enumerate(H_p):
         val = psi.T.conj() @ H_p_j @ psi
         H_p_t_val.append(val.item() - Hp_v[j])
+        H_p_test.append(val)
     H_p_val.append(H_p_t_val)
 
     #H_mの期待値
     for j, H_m_j in enumerate(H_m):
         val = psi.T.conj() @ H_m_j @ psi
         H_m_t_val.append(val.item() - Hm_v[j])
+        H_m_test.append(val)
     H_m_val.append(H_m_t_val)
 
     #c_dag_cの期待値
     for j, cj_dag_cj in enumerate(cj_dag_cj_list):
         val = psi.T.conj() @ cj_dag_cj @ psi
         c_dag_c_t_val.append(val.item() - c_dag_c_v[j])
+        c_dag_c_test.append(val)
     c_dag_c_val.append(c_dag_c_t_val)
+
+    log_imag("H_p", H_p_test)
+    log_imag("H_m", H_m_test)
+    log_imag("c_dag_c", c_dag_c_test)
+
+    psi = psi_initial.copy()
 
     print("時間発展中:"+str(int(i/len(times)*100)) + "%")
 
