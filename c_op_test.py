@@ -10,7 +10,7 @@ l = 2*np.pi
 epsilon = l / L
 p = 10**(-5)
 m = 0
-pos = "lr" #lr, ur, ll, ul
+pos = "ur" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
 dt = 0.01*(300/L) #この値は後で検討
@@ -283,4 +283,4 @@ for j in range(L):
     print("2")
     print(cj1_cj_list[j] + cj1_dag_cj_dag_list[j].conj().T)
     print("3")
-    print(cj_cj1_list[j] - cj_dag_cj1_dag_list[j].conj().T)
+    print(cj1_cj_list[j] - cj_dag_cj1_dag_list[j].conj().T)

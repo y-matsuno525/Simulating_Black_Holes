@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 L = 100
 l = 2*np.pi
 epsilon = l / L
-p = 10**(-5)
+p = 1
 m = 0
 pos = "ul" #lr, ur, ll, ul
 t_i = 0
@@ -102,7 +102,6 @@ plt.show()
 
 #bogoliubov変換行列の作成##########################################################################################################################
 #BdG行列を対角化
-H_BdG = 0.5*(H_BdG + H_BdG.conj().T)
 eigenvalues, eigenvectors = LA.eigh(H_BdG)
 print(eigenvalues)
 print(eigenvectors)
@@ -281,6 +280,7 @@ psi /= np.linalg.norm(psi)
 #ハミルトニアン密度作成###############################################################################################################
 H_p = []
 H_m = []
+H_pm = []
 
 #cj_cj1
 cj_cj1_list = []
@@ -305,28 +305,42 @@ for cj1_cj in cj1_cj_list:
 for j in range(L):
     H_p_j = np.zeros((L, L), dtype=complex)
     H_m_j = np.zeros((L, L), dtype=complex)
+    H_pm_j = np.zeros((L, L), dtype=complex)
 
     #ハミルトニアン密度作成
     H_p_j = -1j/(4*epsilon) * (1+beta(j,L,pos,epsilon))  * (1j*cj_cj1_list[j] + cj_cj1_dag_list[j] + cj_dag_cj1_list[j] - 1j*cj_dag_cj1_dag_list[j])
     H_m_j = -1j/(4*epsilon) * (-1+beta(j,L,pos,epsilon))  * (-1j*cj_cj1_list[j] + cj_cj1_dag_list[j] + cj_dag_cj1_list[j] + 1j*cj_dag_cj1_dag_list[j])
+    H_pm_j = -1j/(2*epsilon) * (p*(1j*cj_cj1_dag_list[j] - 1j*cj_dag_cj1_list[j]) - (p - epsilon*m)*(-2*1j*cj_dag_cj_list[j]))
 
     #エルミートか確認
     isHermitian = is_hermitian(H_p_j)
     assert isHermitian, "H_p(j=" + str(j) + ") is not Hermitian!"
     isHermitian = is_hermitian(H_m_j)
     assert isHermitian, "H_m(j=" + str(j) + ") is not Hermitian!"
+    isHermitian = is_hermitian(H_pm_j)
+    assert isHermitian, "H_pm(j=" + str(j) + ") is not Hermitian!"
 
     H_p.append(H_p_j)
     H_m.append(H_m_j)
-
-
+    H_pm.append(H_pm_j)
 
 #真空の量を計算##########################################################################################
 Hp_v = []
 Hm_v = []
+Hpm_v = []
+
+#真空のc_dag_cを計算
+c_dag_c_v = []
+for j in range(L):
+    total = 0.0
+    for n in range(L):
+        total += abs(eigenvectors[j, n+L])**2
+    c_dag_c_v.append(total)
+
 for j in range(L):
     Hp_v_j = 0
     Hm_v_j = 0
+    H_pm_v_j = 0
     F1 = 0
     F2 = 0
     for n in range(L):
@@ -338,27 +352,23 @@ for j in range(L):
             F2 += eigenvectors[j+1,n+L].conj() * eigenvectors[j,n+L]
     Hp_v_j = -1/(2*epsilon) * 1j * (1+beta(j,L,pos,epsilon)) * 1/2 * (1j * (-1*F1) + (-1*F2) + (F2.conj()) - 1j * (F1.conj()))
     Hm_v_j = -1/(2*epsilon) * 1j * (-1+beta(j,L,pos,epsilon)) * 1/2 * (-1j * (-1*F1) + (-1*F2) + (F2.conj()) + 1j * (F1.conj()))
+    H_pm_v_j = -1j/(2*epsilon) * (1j * p * (-1*F2 - F2.conj()) - (p - epsilon*m) * (-2j * c_dag_c_v[j]))
     assert abs(Hp_v_j - Hp_v_j.conj()) < 10**-5, "Hp_v_j(j=" + str(j) + ") is not Hermitian!"
     assert abs(Hm_v_j - Hm_v_j.conj()) < 10**-5, "Hm_v_j(j=" + str(j) + ") is not Hermitian!"
     Hp_v.append(Hp_v_j)
     Hm_v.append(Hm_v_j)
+    Hpm_v.append(H_pm_v_j)
     if not PBC:
         if j == L-1:
             Hp_v[-1] = 0
             Hm_v[-1] = 0
+            Hpm_v[-1] = 0
 
 plt.plot(Hp_v, label="Hp_v")
 plt.plot(Hm_v, label="Hm_v")
+plt.plot(Hpm_v, label="Hpm_v")
 plt.legend()
 plt.show()
-
-#真空のc_dag_cを計算
-c_dag_c_v = []
-for j in range(L):
-    total = 0.0
-    for n in range(L):
-        total += abs(eigenvectors[j, n+L])**2
-    c_dag_c_v.append(total)
 
 plt.plot(c_dag_c_v)
 plt.title("c_dag_c_v")
@@ -369,6 +379,7 @@ plt.show()
 
 H_p_0 = []
 H_m_0 = []
+H_pm_0 = []
 c_0 = []
 #H_pの期待値
 for j, H_p_j in enumerate(H_p):
@@ -380,15 +391,19 @@ for j, H_m_j in enumerate(H_m):
     val = psi.T.conj() @ H_m_j @ psi
     H_m_0.append(val.item() - Hm_v[j])
 
+#H_pmの期待値
+for j, H_pm_j in enumerate(H_pm):
+    val = psi.T.conj() @ H_pm_j @ psi
+    H_pm_0.append(val.item() - Hpm_v[j])
+
 #c_dag_cの期待値
-print("val")
 for j, cj_dag_cj in enumerate(cj_dag_cj_list):
     val = psi.T.conj() @ cj_dag_cj @ psi
-    print(val)
     c_0.append(val.item() - c_dag_c_v[j])
 
 plt.plot(H_p_0, label="H_p_0")
 plt.plot(H_m_0, label="H_m_0")
+plt.plot(H_pm_0, label="H_pm_0")
 plt.legend()
 plt.grid()
 plt.show()
@@ -401,6 +416,7 @@ plt.show()
 #時間発展###########################################################################################################################
 H_p_val = []
 H_m_val = []
+H_pm_val = []
 c_dag_c_val = []
 psi_initial = psi.copy()
 def log_imag(name, arr):
@@ -416,9 +432,11 @@ for i, _ in enumerate(times):
 
     H_p_t_val = []
     H_m_t_val = []
+    H_pm_t_val = []
     c_dag_c_t_val = []
     H_p_test = []
     H_m_test = []
+    H_pm_test = []
     c_dag_c_test = []
 
     #H_pの期待値
@@ -435,6 +453,13 @@ for i, _ in enumerate(times):
         H_m_test.append(val)
     H_m_val.append(H_m_t_val)
 
+    #H_pmの期待値
+    for j, H_pm_j in enumerate(H_pm):
+        val = psi.T.conj() @ H_pm_j @ psi
+        H_pm_t_val.append(val.item() - Hpm_v[j])
+        H_pm_test.append(val)
+    H_pm_val.append(H_pm_t_val)
+
     #c_dag_cの期待値
     for j, cj_dag_cj in enumerate(cj_dag_cj_list):
         val = psi.T.conj() @ cj_dag_cj @ psi
@@ -444,6 +469,7 @@ for i, _ in enumerate(times):
 
     log_imag("H_p", H_p_test)
     log_imag("H_m", H_m_test)
+    log_imag("H_pm", H_pm_test)
     log_imag("c_dag_c", c_dag_c_test)
 
     psi = psi_initial.copy()
@@ -553,6 +579,9 @@ try:
     x_scaled = (x / (2 * np.pi)) * L
     t_scaled = (t / 20.0) * (times[-1] - times[0]) + times[0]
 
+    # 左右反転
+    x_scaled = L - x_scaled
+
     plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
     plt.legend(loc='upper right', fontsize=12)
 except Exception as e:
@@ -626,3 +655,52 @@ plt.tight_layout()
 plt.savefig('figure/c_dag_c.png',
             dpi=300, bbox_inches='tight', transparent=True)
 
+#+-
+H_pm_arr = np.array(H_pm_val, dtype=complex)
+H_pm_array = np.real(H_pm_arr).astype(float) #ここで実数にしていることに注意
+data_min = np.nanmin(H_pm_array)
+data_max = np.nanmax(H_pm_array)
+nt, L = H_pm_array.shape #時間ステップ数(使わない)とサイト数を取得
+plt.rcParams.update({
+    'font.size': 18,
+    'axes.labelsize': 25,
+    'axes.titlesize': 22,
+    'xtick.labelsize': 13,
+    'ytick.labelsize': 13,
+})
+plt.figure(figsize=(8, 6))
+# 背景の密度プロット
+plt.imshow(
+    H_pm_array,
+    aspect='auto',
+    origin='lower',
+    extent=[0, L, times[0], times[-1]],
+    cmap='viridis',
+    vmin=float(data_min),
+    vmax=float(data_max)
+)
+# —— geodesic.dat を重ねる（物理範囲→表示範囲の対応） ——
+try:
+    # 実行スクリプト基準で geodesic.dat を探す
+    file_path = "geodesic.dat"
+    geodesic_data = np.loadtxt(file_path, delimiter=",")
+
+    x = geodesic_data[:, 0]  # 物理空間座標（0〜2π）
+    t = geodesic_data[:, 1]  # 物理時間（0〜20）
+
+    # スケーリング変換
+    x_scaled = (x / (2 * np.pi)) * L
+    t_scaled = (t / 20.0) * (times[-1] - times[0]) + times[0]
+
+    plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
+    plt.legend(loc='upper right', fontsize=12)
+except Exception as e:
+    print(f"Warning: geodesic.dat の重ね描画に失敗しました: {e}")
+# ————————————————————————————————  
+cbar = plt.colorbar(location='left')
+cbar.ax.tick_params(labelsize=16)
+plt.xlabel('j', fontweight='bold')
+plt.ylabel('t', fontweight='bold')
+plt.tight_layout()
+plt.savefig('figure/H_pm.png',
+            dpi=300, bbox_inches='tight', transparent=True)
