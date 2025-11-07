@@ -10,7 +10,7 @@ l = 2*np.pi
 epsilon = l / L
 p = 1
 m = 0
-pos = "ul" #lr, ur, ll, ul
+pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 20
 dt = 0.01*(300/L) #この値は後で検討
@@ -395,6 +395,7 @@ for j, H_m_j in enumerate(H_m):
 for j, H_pm_j in enumerate(H_pm):
     val = psi.T.conj() @ H_pm_j @ psi
     H_pm_0.append(val.item() - Hpm_v[j])
+H_pm_0[-1] = 0
 
 #c_dag_cの期待値
 for j, cj_dag_cj in enumerate(cj_dag_cj_list):
@@ -516,10 +517,14 @@ try:
 
     x = geodesic_data[:, 0]  # 物理空間座標（0〜2π）
     t = geodesic_data[:, 1]  # 物理時間（0〜20）
-
+    
     # スケーリング変換
     x_scaled = (x / (2 * np.pi)) * L
     t_scaled = (t / 20.0) * (times[-1] - times[0]) + times[0]
+
+    if pos == "ul" or pos == "ll":
+        # 左右反転
+        x_scaled = L - x_scaled
 
     plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
     plt.legend(loc='upper right', fontsize=12)
@@ -579,8 +584,9 @@ try:
     x_scaled = (x / (2 * np.pi)) * L
     t_scaled = (t / 20.0) * (times[-1] - times[0]) + times[0]
 
-    # 左右反転
-    x_scaled = L - x_scaled
+    if pos == "ul" or pos == "ll":
+        # 左右反転
+        x_scaled = L - x_scaled
 
     plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
     plt.legend(loc='upper right', fontsize=12)
@@ -639,6 +645,9 @@ try:
     # スケーリング変換
     x_scaled = (x / (2 * np.pi)) * L
     t_scaled = (t / 20.0) * (times[-1] - times[0]) + times[0]
+    if pos == "ul" or pos == "ll":
+        # 左右反転
+        x_scaled = L - x_scaled
 
     plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
     plt.legend(loc='upper right', fontsize=12)
@@ -691,6 +700,9 @@ try:
     # スケーリング変換
     x_scaled = (x / (2 * np.pi)) * L
     t_scaled = (t / 20.0) * (times[-1] - times[0]) + times[0]
+    if pos == "ul" or pos == "ll":
+        # 左右反転
+        x_scaled = L - x_scaled
 
     plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
     plt.legend(loc='upper right', fontsize=12)
