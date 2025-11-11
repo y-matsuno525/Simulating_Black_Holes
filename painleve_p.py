@@ -9,7 +9,7 @@ L = 100
 l = 2*np.pi
 epsilon = l / L
 m = 0
-pos = "ul" #lr, ur, ll, ul
+pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 20
 dt = 0.01*(300/L) #この値は後で検討
@@ -30,7 +30,7 @@ def is_hermitian(matrix):
 
 def p(j,L,pos,epsilon):
     if pos == "lr":
-        return -1.2 - beta(j,L,pos,epsilon)
+        return -1 - beta(j,L,pos,epsilon)
     elif pos == "ur":
         return 1.2 - beta(j,L,pos,epsilon)
     elif pos == "ll":
@@ -39,7 +39,12 @@ def p(j,L,pos,epsilon):
         return 1.2 - beta(j,L,pos,epsilon)
 
 def diff_p(j,L,pos,epsilon):
-    return (p(j+1,L,pos,epsilon) - p(j-1,L,pos,epsilon)) / (2*epsilon)
+    if j == 0:
+        return (p(j+1,L,pos,epsilon) - p(j,L,pos,epsilon)) / epsilon
+    elif j == L-1:
+        return (p(j,L,pos,epsilon) - p(j-1,L,pos,epsilon)) / epsilon
+    else:
+        return (p(j+1,L,pos,epsilon) - p(j-1,L,pos,epsilon)) / (2*epsilon)
 
 def beta(j,L,pos,epsilon):
     #return 0
@@ -60,8 +65,6 @@ def beta(j,L,pos,epsilon):
     elif pos == "ul":
         # β = +1 を j = 29 で踏むように調整
         return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + 0.6
-
-
 
 for i in range(2*L):
     for j in range(2*L):

@@ -3,6 +3,9 @@ import numpy as np
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用
 import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
+#標準偏差の計算に使う
+import statistics
+import math
 
 #パラメータ
 L = 50
@@ -14,7 +17,7 @@ pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 20
 dt = 0.01*(300/L) #この値は後で検討
-PBC = False
+PBC = True
 
 times = np.arange(t_i + dt, t_f, dt)
 
@@ -216,9 +219,9 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = int(0.2*L)
+    j0 = int(0.5*L)
 else:
-    j0 = int(0.8*L)
+    j0 = int(0.5*L)
 sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
 
 if PBC == True:
@@ -418,6 +421,7 @@ plt.plot(c_0, label="c_0")
 plt.legend()
 plt.grid()
 plt.show()
+print(H_p_0)
 
 
 #時間発展###########################################################################################################################
@@ -425,6 +429,9 @@ H_p_val = []
 H_m_val = []
 H_pm_val = []
 c_dag_c_val = []
+H_p_sigmas = []
+H_m_sigmas = []
+H_pm_sigmas = []
 psi_initial = psi.copy()
 def log_imag(name, arr):
     max_im = np.max(np.abs(np.imag(arr)))
@@ -479,12 +486,27 @@ for i, _ in enumerate(times):
     log_imag("H_pm", H_pm_test)
     log_imag("c_dag_c", c_dag_c_test)
 
+    H_p_sigmas.append(statistics.stdev([complex(val).real for val in H_p_t_val]))
+    H_m_sigmas.append(statistics.stdev([complex(val).real for val in H_m_t_val]))
+    H_pm_sigmas.append(statistics.stdev([complex(val).real for val in H_pm_t_val]))
+
     psi = psi_initial.copy()
 
     print("時間発展中:"+str(int(i/len(times)*100)) + "%")
 
 #################################################################################################################################
 #プロット
+#標準偏差のプロット
+plt.plot(times, H_p_sigmas, label="H_p sigma")
+plt.plot(times, H_m_sigmas, label="H_m sigma")
+plt.plot(times, H_pm_sigmas, label="H_pm sigma")
+#plt.yscale("log")
+plt.xlabel("time")
+plt.ylabel("standard deviation")
+plt.legend()
+plt.grid()
+plt.show()
+
 #+
 H_p_arr = np.array(H_p_val, dtype=complex)
 H_p_array = np.real(H_p_arr).astype(float) #ここで実数にしていることに注意

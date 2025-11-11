@@ -5,10 +5,10 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 
 #パラメータ
-L = 10
+L = 100
 l = 2*np.pi
 epsilon = l / L
-p = 10**(-5)
+p = 100
 m = 0
 pos = "ur" #lr, ur, ll, ul
 t_i = 0
@@ -167,120 +167,120 @@ for j in range(L):
     print(cj_dag_cj_list[j] + cj_cj_dag_list[j])
     print()
 
-#################################################################################################
-#cj1_cj
-cj1_cj_list = []
-for j in range(L-1):
-    cj1_cj_tmp = np.zeros((L, L), dtype=complex)
-    for k in range(L):
-        for l in range(L):
-            cj1_cj_tmp[k,l] = eigenvectors[j+1,k+L] * eigenvectors[j,l]
-            cj1_cj_tmp[k,l] -= eigenvectors[j+1,l] * eigenvectors[j,k+L]
-            if k == l:
-                for n in range(L):
-                    cj1_cj_tmp[k,l] += eigenvectors[j+1,n] * eigenvectors[j,n+L]
-    cj1_cj_list.append(cj1_cj_tmp)
-    print("cj1_cj作成中:" + str(int(j/L*100))+"%")
-#PBCの場合、右端は非ゼロ
-if PBC == True:
-    cj1_cj_tmp = np.zeros((L, L), dtype=complex)
-    for k in range(L):
-        for l in range(L):
-            cj1_cj_tmp[k,l] = eigenvectors[0,k+L] * eigenvectors[L-1,l]
-            cj1_cj_tmp[k,l] -= eigenvectors[0,l] * eigenvectors[L-1,k+L]
-            if k == l:
-                for n in range(L):
-                    cj1_cj_tmp[k,l] += eigenvectors[0,n] * eigenvectors[L-1,n+L]
-    cj1_cj_list.append(cj1_cj_tmp)
-else:
-    cj1_cj_list.append(np.zeros((L, L), dtype=complex))
+# #################################################################################################
+# #cj1_cj
+# cj1_cj_list = []
+# for j in range(L-1):
+#     cj1_cj_tmp = np.zeros((L, L), dtype=complex)
+#     for k in range(L):
+#         for l in range(L):
+#             cj1_cj_tmp[k,l] = eigenvectors[j+1,k+L] * eigenvectors[j,l]
+#             cj1_cj_tmp[k,l] -= eigenvectors[j+1,l] * eigenvectors[j,k+L]
+#             if k == l:
+#                 for n in range(L):
+#                     cj1_cj_tmp[k,l] += eigenvectors[j+1,n] * eigenvectors[j,n+L]
+#     cj1_cj_list.append(cj1_cj_tmp)
+#     print("cj1_cj作成中:" + str(int(j/L*100))+"%")
+# #PBCの場合、右端は非ゼロ
+# if PBC == True:
+#     cj1_cj_tmp = np.zeros((L, L), dtype=complex)
+#     for k in range(L):
+#         for l in range(L):
+#             cj1_cj_tmp[k,l] = eigenvectors[0,k+L] * eigenvectors[L-1,l]
+#             cj1_cj_tmp[k,l] -= eigenvectors[0,l] * eigenvectors[L-1,k+L]
+#             if k == l:
+#                 for n in range(L):
+#                     cj1_cj_tmp[k,l] += eigenvectors[0,n] * eigenvectors[L-1,n+L]
+#     cj1_cj_list.append(cj1_cj_tmp)
+# else:
+#     cj1_cj_list.append(np.zeros((L, L), dtype=complex))
 
-#cj_cj1
-cj_cj1_list = []
-for j in range(L-1):
-    cj_cj1_tmp = np.zeros((L, L), dtype=complex)
-    for k in range(L):
-        for l in range(L):
-            cj_cj1_tmp[k,l] = eigenvectors[j,k+L] * eigenvectors[j+1,l]
-            cj_cj1_tmp[k,l] -= eigenvectors[j,l] * eigenvectors[j+1,k+L]
-            if k == l:
-                for n in range(L):
-                    cj_cj1_tmp[k,l] += eigenvectors[j,n] * eigenvectors[j+1,n+L]
-    cj_cj1_list.append(cj_cj1_tmp)
-    print("cj_cj1作成中:" + str(int(j/L*100))+"%")
-#PBCの場合、右端は非ゼロ
-if PBC == True:
-    cj_cj1_tmp = np.zeros((L, L), dtype=complex)
-    for k in range(L):
-        for l in range(L):
-            cj_cj1_tmp[k,l] = eigenvectors[L-1,k+L] * eigenvectors[0,l]
-            cj_cj1_tmp[k,l] -= eigenvectors[L-1,l] * eigenvectors[0,k+L]
-            if k == l:
-                for n in range(L):
-                    cj_cj1_tmp[k,l] += eigenvectors[L-1,n] * eigenvectors[0,n+L]
-    cj_cj1_list.append(cj_cj1_tmp)
-else:
-    cj_cj1_list.append(np.zeros((L, L), dtype=complex))
+# #cj_cj1
+# cj_cj1_list = []
+# for j in range(L-1):
+#     cj_cj1_tmp = np.zeros((L, L), dtype=complex)
+#     for k in range(L):
+#         for l in range(L):
+#             cj_cj1_tmp[k,l] = eigenvectors[j,k+L] * eigenvectors[j+1,l]
+#             cj_cj1_tmp[k,l] -= eigenvectors[j,l] * eigenvectors[j+1,k+L]
+#             if k == l:
+#                 for n in range(L):
+#                     cj_cj1_tmp[k,l] += eigenvectors[j,n] * eigenvectors[j+1,n+L]
+#     cj_cj1_list.append(cj_cj1_tmp)
+#     print("cj_cj1作成中:" + str(int(j/L*100))+"%")
+# #PBCの場合、右端は非ゼロ
+# if PBC == True:
+#     cj_cj1_tmp = np.zeros((L, L), dtype=complex)
+#     for k in range(L):
+#         for l in range(L):
+#             cj_cj1_tmp[k,l] = eigenvectors[L-1,k+L] * eigenvectors[0,l]
+#             cj_cj1_tmp[k,l] -= eigenvectors[L-1,l] * eigenvectors[0,k+L]
+#             if k == l:
+#                 for n in range(L):
+#                     cj_cj1_tmp[k,l] += eigenvectors[L-1,n] * eigenvectors[0,n+L]
+#     cj_cj1_list.append(cj_cj1_tmp)
+# else:
+#     cj_cj1_list.append(np.zeros((L, L), dtype=complex))
 
-#cj1_dag_cj_dag
-cj1_dag_cj_dag_list = []
-for j in range(L-1):
-    cj1_dag_cj_dag_tmp = np.zeros((L, L), dtype=complex)
-    for k in range(L):
-        for l in range(L):
-            cj1_dag_cj_dag_tmp[k,l] = eigenvectors[j+1,k].conj() * eigenvectors[j,l+L].conj()
-            cj1_dag_cj_dag_tmp[k,l] -= eigenvectors[j+1,l+L].conj() * eigenvectors[j,k].conj()
-            if k == l:
-                for n in range(L):
-                    cj1_dag_cj_dag_tmp[k,l] += eigenvectors[j+1,n+L].conj() * eigenvectors[j,n].conj()
-    cj1_dag_cj_dag_list.append(cj1_dag_cj_dag_tmp)
-    print("cj1† cj†作成中:" + str(int(j/L*100))+"%")
-#PBCの場合、右端は非ゼロ
-if PBC == True:
-    cj1_dag_cj_dag_tmp = np.zeros((L, L), dtype=complex)
-    for k in range(L):
-        for l in range(L):
-            cj1_dag_cj_dag_tmp[k,l] = eigenvectors[0,k].conj() * eigenvectors[L-1,l+L].conj()
-            cj1_dag_cj_dag_tmp[k,l] -= eigenvectors[0,l+L].conj() * eigenvectors[L-1,k].conj()
-            if k == l:
-                for n in range(L):
-                    cj1_dag_cj_dag_tmp[k,l] += eigenvectors[0,n+L].conj() * eigenvectors[L-1,n].conj()
-    cj1_dag_cj_dag_list.append(cj1_dag_cj_dag_tmp)
-else:
-    cj1_dag_cj_dag_list.append(np.zeros((L, L), dtype=complex))
+# #cj1_dag_cj_dag
+# cj1_dag_cj_dag_list = []
+# for j in range(L-1):
+#     cj1_dag_cj_dag_tmp = np.zeros((L, L), dtype=complex)
+#     for k in range(L):
+#         for l in range(L):
+#             cj1_dag_cj_dag_tmp[k,l] = eigenvectors[j+1,k].conj() * eigenvectors[j,l+L].conj()
+#             cj1_dag_cj_dag_tmp[k,l] -= eigenvectors[j+1,l+L].conj() * eigenvectors[j,k].conj()
+#             if k == l:
+#                 for n in range(L):
+#                     cj1_dag_cj_dag_tmp[k,l] += eigenvectors[j+1,n+L].conj() * eigenvectors[j,n].conj()
+#     cj1_dag_cj_dag_list.append(cj1_dag_cj_dag_tmp)
+#     print("cj1† cj†作成中:" + str(int(j/L*100))+"%")
+# #PBCの場合、右端は非ゼロ
+# if PBC == True:
+#     cj1_dag_cj_dag_tmp = np.zeros((L, L), dtype=complex)
+#     for k in range(L):
+#         for l in range(L):
+#             cj1_dag_cj_dag_tmp[k,l] = eigenvectors[0,k].conj() * eigenvectors[L-1,l+L].conj()
+#             cj1_dag_cj_dag_tmp[k,l] -= eigenvectors[0,l+L].conj() * eigenvectors[L-1,k].conj()
+#             if k == l:
+#                 for n in range(L):
+#                     cj1_dag_cj_dag_tmp[k,l] += eigenvectors[0,n+L].conj() * eigenvectors[L-1,n].conj()
+#     cj1_dag_cj_dag_list.append(cj1_dag_cj_dag_tmp)
+# else:
+#     cj1_dag_cj_dag_list.append(np.zeros((L, L), dtype=complex))
 
-#cj_dag_cj1_dag
-cj_dag_cj1_dag_list = []
-for j in range(L-1):
-    cj_dag_cj1_dag_tmp = np.zeros((L, L), dtype=complex)
-    for k in range(L):
-        for l in range(L):
-            cj_dag_cj1_dag_tmp[k,l] = eigenvectors[j,k].conj() * eigenvectors[j+1,l+L].conj()
-            cj_dag_cj1_dag_tmp[k,l] -= eigenvectors[j,l+L].conj() * eigenvectors[j+1,k].conj()
-            if k == l:
-                for n in range(L):
-                    cj_dag_cj1_dag_tmp[k,l] += eigenvectors[j,n+L].conj() * eigenvectors[j+1,n].conj()
-    cj_dag_cj1_dag_list.append(cj_dag_cj1_dag_tmp)
-    print("cj† cj1†作成中:" + str(int(j/L*100))+"%")
-#PBCの場合、右端は非ゼロ
-if PBC == True:
-    cj_dag_cj1_dag_tmp = np.zeros((L, L), dtype=complex)
-    for k in range(L):
-        for l in range(L):
-            cj_dag_cj1_dag_tmp[k,l] = eigenvectors[L-1,k].conj() * eigenvectors[0,l+L].conj()
-            cj_dag_cj1_dag_tmp[k,l] -= eigenvectors[L-1,l+L].conj() * eigenvectors[0,k].conj()
-            if k == l:
-                for n in range(L):
-                    cj_dag_cj1_dag_tmp[k,l] += eigenvectors[L-1,n+L].conj() * eigenvectors[0,n].conj()
-    cj_dag_cj1_dag_list.append(cj_dag_cj1_dag_tmp)
-else:
-    cj_dag_cj1_dag_list.append(np.zeros((L, L), dtype=complex))
+# #cj_dag_cj1_dag
+# cj_dag_cj1_dag_list = []
+# for j in range(L-1):
+#     cj_dag_cj1_dag_tmp = np.zeros((L, L), dtype=complex)
+#     for k in range(L):
+#         for l in range(L):
+#             cj_dag_cj1_dag_tmp[k,l] = eigenvectors[j,k].conj() * eigenvectors[j+1,l+L].conj()
+#             cj_dag_cj1_dag_tmp[k,l] -= eigenvectors[j,l+L].conj() * eigenvectors[j+1,k].conj()
+#             if k == l:
+#                 for n in range(L):
+#                     cj_dag_cj1_dag_tmp[k,l] += eigenvectors[j,n+L].conj() * eigenvectors[j+1,n].conj()
+#     cj_dag_cj1_dag_list.append(cj_dag_cj1_dag_tmp)
+#     print("cj† cj1†作成中:" + str(int(j/L*100))+"%")
+# #PBCの場合、右端は非ゼロ
+# if PBC == True:
+#     cj_dag_cj1_dag_tmp = np.zeros((L, L), dtype=complex)
+#     for k in range(L):
+#         for l in range(L):
+#             cj_dag_cj1_dag_tmp[k,l] = eigenvectors[L-1,k].conj() * eigenvectors[0,l+L].conj()
+#             cj_dag_cj1_dag_tmp[k,l] -= eigenvectors[L-1,l+L].conj() * eigenvectors[0,k].conj()
+#             if k == l:
+#                 for n in range(L):
+#                     cj_dag_cj1_dag_tmp[k,l] += eigenvectors[L-1,n+L].conj() * eigenvectors[0,n].conj()
+#     cj_dag_cj1_dag_list.append(cj_dag_cj1_dag_tmp)
+# else:
+#     cj_dag_cj1_dag_list.append(np.zeros((L, L), dtype=complex))
 
-for j in range(L):
-    print("確認中:" + str(j))
-    print("1")
-    print(cj1_cj_list[j] + cj_cj1_list[j])
-    print("2")
-    print(cj1_cj_list[j] + cj1_dag_cj_dag_list[j].conj().T)
-    print("3")
-    print(cj1_cj_list[j] - cj_dag_cj1_dag_list[j].conj().T)
+# for j in range(L):
+#     print("確認中:" + str(j))
+#     print("1")
+#     print(cj1_cj_list[j] + cj_cj1_list[j])
+#     print("2")
+#     print(cj1_cj_list[j] + cj1_dag_cj_dag_list[j].conj().T)
+#     print("3")
+#     print(cj1_cj_list[j] - cj_dag_cj1_dag_list[j].conj().T)

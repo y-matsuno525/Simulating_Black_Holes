@@ -10,9 +10,9 @@ def compute_eigenvalues():
     n = np.linspace(-(L/2),(L/2)-1,L)
     k = (2*np.pi/L)*(n)
     alpha = 1
-    beta = 3
+    beta = 0
     gamma = 1
-    p = -100
+    p = 2
 
     zeta = np.pi/2
     m = 0
