@@ -9,7 +9,7 @@ L = 100
 l = 2*np.pi
 epsilon = l / L
 m = 0
-pos = "lr" #lr, ur, ll, ul
+pos = "ul" #lr, ur, ll, ul
 t_i = 0
 t_f = 20
 dt = 0.01*(300/L) #この値は後で検討
@@ -29,7 +29,14 @@ def is_hermitian(matrix):
         return False
 
 def p(j,L,pos,epsilon):
-    return -1.2 - beta(j,L,pos,epsilon)
+    if pos == "lr":
+        return -1.2 - beta(j,L,pos,epsilon)
+    elif pos == "ur":
+        return 1.2 - beta(j,L,pos,epsilon)
+    elif pos == "ll":
+        return -1.2 - beta(j,L,pos,epsilon)
+    elif pos == "ul":
+        return 1.2 - beta(j,L,pos,epsilon)
 
 def diff_p(j,L,pos,epsilon):
     return (p(j+1,L,pos,epsilon) - p(j-1,L,pos,epsilon)) / (2*epsilon)
