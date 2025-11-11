@@ -5,10 +5,9 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 
 #パラメータ
-L = 50
+L = 100
 l = 2*np.pi
 epsilon = l / L
-p = 1
 m = 0
 pos = "lr" #lr, ur, ll, ul
 t_i = 0
@@ -29,8 +28,14 @@ def is_hermitian(matrix):
     else:
         return False
 
+def p(j,L,pos,epsilon):
+    return -1.2 - beta(j,L,pos,epsilon)
+
+def diff_p(j,L,pos,epsilon):
+    return (p(j+1,L,pos,epsilon) - p(j-1,L,pos,epsilon)) / (2*epsilon)
+
 def beta(j,L,pos,epsilon):
-    return 0
+    #return 0
     width = 1
     A = 0.6
     jh = int(L/3)
@@ -49,16 +54,18 @@ def beta(j,L,pos,epsilon):
         # β = +1 を j = 29 で踏むように調整
         return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + 0.6
 
+
+
 for i in range(2*L):
     for j in range(2*L):
         #左上
         if i < L and j < L:
             if i == j:
-                H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))*(-1)
+                H_BdG[i, j] = -1/(2*epsilon) * (2*p(j,L,pos,epsilon) - epsilon*(diff_p(j,L,pos,epsilon) + 2*m))*(-1)
             elif i-j == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (p - 1j*beta(j,L,pos,epsilon))
+                H_BdG[i, j] = -1/(2*epsilon) * (p(j,L,pos,epsilon) - 1j*beta(j,L,pos,epsilon))
             elif j-i == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (p + 1j*beta(i,L,pos,epsilon))
+                H_BdG[i, j] = -1/(2*epsilon) * (p(j,L,pos,epsilon) + 1j*beta(i,L,pos,epsilon))
         #右上
         elif i < L and j >= L:
             if j-i == L-1:
@@ -74,19 +81,19 @@ for i in range(2*L):
         #右下
         else:
             if i == j:
-                H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))
+                H_BdG[i, j] = -1/(2*epsilon) * (2*p(j,L,pos,epsilon) - epsilon*(diff_p(j,L,pos,epsilon) + 2*m))
             elif i-j == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*beta(j-L,L,pos,epsilon))
+                H_BdG[i, j] = -1/(2*epsilon) * (-p(j,L,pos,epsilon) - 1j*beta(j-L,L,pos,epsilon))
             elif j-i == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*beta(i-L,L,pos,epsilon))
+                H_BdG[i, j] = -1/(2*epsilon) * (-p(j,L,pos,epsilon) + 1j*beta(i-L,L,pos,epsilon))
 
 if PBC == True:
     #red
-    H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * (1)
-    H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * (-1)
+    H_BdG[0,L-1] = -1/(2*epsilon) * (p(L-1,L,pos,epsilon) - 1j*beta(L-1,L,pos,epsilon)) * (1)
+    H_BdG[2*L-1,L] = -1/(2*epsilon) * (p(L-1,L,pos,epsilon) - 1j*beta(L-1,L,pos,epsilon)) * (-1)
     #blue
-    H_BdG[L-1,0] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * (1)
-    H_BdG[L,2*L-1] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * (-1)
+    H_BdG[L-1,0] = -1/(2*epsilon) * (p(L-1,L,pos,epsilon) + 1j*beta(L-1,L,pos,epsilon)) * (1)
+    H_BdG[L,2*L-1] = -1/(2*epsilon) * (p(L-1,L,pos,epsilon) + 1j*beta(L-1,L,pos,epsilon)) * (-1)
     #orange
     H_BdG[0,2*L-1] = -1/(2*epsilon) * (-1)
     H_BdG[L-1,L] = -1/(2*epsilon) * (1)
@@ -97,15 +104,27 @@ if PBC == True:
 bs = []
 for j in range(L):
     bs.append(float(beta(j,L,pos,epsilon)))
-plt.plot(bs)
+plt.plot(bs,label="beta")
+
+ps = []
+for j in range(L):
+    ps.append(float(p(j,L,pos,epsilon)))
+plt.plot(ps,label="p")
+
+dps = []
+for j in range(L):
+    dps.append(float(diff_p(j,L,pos,epsilon)))
+plt.plot(dps,label="dp")
+
 plt.grid()
+plt.legend()
 plt.show()
+
+
 
 #bogoliubov変換行列の作成##########################################################################################################################
 #BdG行列を対角化
 eigenvalues, eigenvectors = LA.eigh(H_BdG)
-print(eigenvalues)
-print(eigenvectors)
 
 #固有値、固有ベクトルのソート(確認済み)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
@@ -118,21 +137,7 @@ for i in range(L):
     V[:L,i+L] = np.conj(eigenvectors[L:,i])
     V[L:,i+L] = np.conj(eigenvectors[:L,i])
 eigenvectors = V
-print(eigenvalues)
-print(eigenvectors)
 
-# #粒子-反粒子対称性の確認(確認済み)
-# #c = sum gamma
-# for j in range(L):
-#     print(eigenvectors[j,:L] - eigenvectors[j+L,L:].conj())
-#     print(eigenvectors[j,L:] - eigenvectors[j+L,:L].conj())
-# print()
-# #gamma = sum c
-# for j in range(L):
-#     print(eigenvectors[j,:L].T.conj() - eigenvectors[j+L,L:].T.conj().conj())
-#     print(eigenvectors[j,L:].T.conj() - eigenvectors[j+L,:L].T.conj().conj())
-# import sys
-# sys.exit()
 #演算子の作成########################################################################################################################################
 #cj_dag_cj(作り方は以前と変わらない)
 cj_dag_cj_list = []
@@ -312,7 +317,7 @@ for j in range(L):
     #ハミルトニアン密度作成
     H_p_j = -1j/(4*epsilon) * (1+beta(j,L,pos,epsilon))  * (1j*cj_cj1_list[j] + cj_cj1_dag_list[j] + cj_dag_cj1_list[j] - 1j*cj_dag_cj1_dag_list[j])
     H_m_j = -1j/(4*epsilon) * (-1+beta(j,L,pos,epsilon))  * (-1j*cj_cj1_list[j] + cj_cj1_dag_list[j] + cj_dag_cj1_list[j] + 1j*cj_dag_cj1_dag_list[j])
-    H_pm_j = -1j/(2*epsilon) * (p*(1j*cj_cj1_dag_list[j] - 1j*cj_dag_cj1_list[j]) - (p - epsilon*m)*(-2*1j*cj_dag_cj_list[j]))
+    H_pm_j = -1j/(2*epsilon) * (p(j,L,pos,epsilon)*(1j*cj_cj1_dag_list[j] - 1j*cj_dag_cj1_list[j]) - (p(j,L,pos,epsilon) - epsilon*(m + 0.5*diff_p(j,L,pos,epsilon)))*(-2*1j*cj_dag_cj_list[j]))
 
     #エルミートか確認
     isHermitian = is_hermitian(H_p_j)
@@ -359,7 +364,7 @@ for j in range(L):
             F2 += eigenvectors[j+1,n+L].conj() * eigenvectors[j,n+L]
     Hp_v_j = -1/(2*epsilon) * 1j * (1+beta(j,L,pos,epsilon)) * 1/2 * (1j * (-1*F1) + (-1*F2) + (F2.conj()) - 1j * (F1.conj()))
     Hm_v_j = -1/(2*epsilon) * 1j * (-1+beta(j,L,pos,epsilon)) * 1/2 * (-1j * (-1*F1) + (-1*F2) + (F2.conj()) + 1j * (F1.conj()))
-    H_pm_v_j = -1j/(2*epsilon) * (1j * p * (-1*F2 - F2.conj()) - (p - epsilon*m) * (-2j * c_dag_c_v[j]))
+    H_pm_v_j = -1j/(2*epsilon) * (1j * p(j,L,pos,epsilon) * (-1*F2 - F2.conj()) - (p(j,L,pos,epsilon) - epsilon*(m + 0.5*diff_p(j,L,pos,epsilon))) * (-2j * c_dag_c_v[j]))
     assert abs(Hp_v_j - Hp_v_j.conj()) < 10**-5, "Hp_v_j(j=" + str(j) + ") is not Hermitian!"
     assert abs(Hm_v_j - Hm_v_j.conj()) < 10**-5, "Hm_v_j(j=" + str(j) + ") is not Hermitian!"
     Hp_v.append(Hp_v_j)
