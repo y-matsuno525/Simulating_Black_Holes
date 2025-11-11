@@ -12,7 +12,7 @@ def compute_eigenvalues():
     alpha = 1
     beta = 0
     gamma = 1
-    p = 2
+    p = 0.01
 
     zeta = np.pi/2
     m = 0

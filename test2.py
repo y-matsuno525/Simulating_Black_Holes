@@ -6,12 +6,12 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 
 #パラメータ
-L = 100
+L = 6
 l = 2*np.pi
 epsilon = l / L
-p = 0
+p = 0.01
 m = 0
-pos = "ur" #lr, ur, ll, ul
+pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
 dt = 0.01*(300/L) #この値は後で検討
@@ -134,23 +134,23 @@ for j in range(L):
     print("cj†cj作成中:" + str(int(j/L*100))+"%")
 
 # #cj_cj_dag
-# cj_cj_dag_list = []
-# for j in range(L):
-#     cj_cj_dag_tmp = np.zeros((L, L), dtype=complex)
-#     for k in range(L):
-#         for l in range(L):
-#             cj_cj_dag_tmp[k,l] = eigenvectors[j,k+L] * eigenvectors[j,l+L].conj()
-#             cj_cj_dag_tmp[k,l] += -1*eigenvectors[j,l] * eigenvectors[j,k].conj()
-#             if k == l:
-#                 for n in range(L):
-#                     cj_cj_dag_tmp[k,l] += eigenvectors[j,n] * eigenvectors[j,n].conj()
-#     cj_cj_dag_list.append(cj_cj_dag_tmp)
-#     print("cj cj†作成中:" + str(int(j/L*100))+"%")
+cj_cj_dag_list = []
+for j in range(L):
+    cj_cj_dag_tmp = np.zeros((L, L), dtype=complex)
+    for k in range(L):
+        for l in range(L):
+            cj_cj_dag_tmp[k,l] = eigenvectors[j,k+L] * eigenvectors[j,l+L].conj()
+            cj_cj_dag_tmp[k,l] += -1*eigenvectors[j,l] * eigenvectors[j,k].conj()
+            if k == l:
+                for n in range(L):
+                    cj_cj_dag_tmp[k,l] += eigenvectors[j,n] * eigenvectors[j,n].conj()
+    cj_cj_dag_list.append(cj_cj_dag_tmp)
+    print("cj cj†作成中:" + str(int(j/L*100))+"%")
 
-# for j in range(L):
-#     print("確認中:" + str(j))
-#     print(cj_dag_cj_list[j] + cj_cj_dag_list[j])
-#     print()
+for j in range(L):
+    print("確認中:" + str(j))
+    print(cj_dag_cj_list[j] + cj_cj_dag_list[j])
+    print()
 
 #初期状態作成
 psi = np.zeros((L, 1), dtype=complex)
@@ -158,7 +158,7 @@ if pos == "ur" or pos == "lr":
     j0 = int(0.5*L)
 else:
     j0 = int(0.5*L)
-sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
+sigma = 0.1*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
 
 if PBC == True:
     idx = np.arange(L)
@@ -178,7 +178,11 @@ plt.plot(np.r_[weights, weights[0]])
 plt.title("weights")
 plt.grid()
 plt.show()
-
+print("左右非対称箇所")
+print(eigenvectors[2,:])
+print(eigenvectors[2+L,:])
+print(eigenvectors[4,:])
+print(eigenvectors[4+L,:])
 for j in range(L):
     for n in range(L):
         #cを置く場合

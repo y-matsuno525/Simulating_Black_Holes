@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 L = 100
 l = 2*np.pi
 epsilon = l / L
-p = 2#0**(-5)
+p = 0.01#0**(-5)
 m = 0
 pos = "ll" #lr, ur, ll, ul
 t_i = 0
