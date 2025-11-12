@@ -15,7 +15,7 @@ pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
 dt = 0.01*(300/L) #この値は後で検討
-PBC = False
+PBC = True
 
 times = np.arange(t_i + dt, t_f, dt)
 
@@ -31,7 +31,7 @@ def is_hermitian(matrix):
         return False
 
 def beta(j,L,pos,epsilon):
-    return 0
+    #return 0
     width = 1
     A = 0.6
     jh = int(L/3)
@@ -147,18 +147,18 @@ for j in range(L):
     cj_cj_dag_list.append(cj_cj_dag_tmp)
     print("cj cj†作成中:" + str(int(j/L*100))+"%")
 
-for j in range(L):
-    print("確認中:" + str(j))
-    print(cj_dag_cj_list[j] + cj_cj_dag_list[j])
-    print()
+# for j in range(L):
+#     print("確認中:" + str(j))
+#     print(cj_dag_cj_list[j] + cj_cj_dag_list[j])
+#     print()
 
 #初期状態作成
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = int(0.5*L)
+    j0 = int(0.2*L)
 else:
-    j0 = int(0.5*L)
-sigma = 0.1*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
+    j0 = int(0.8*L)
+sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
 
 if PBC == True:
     idx = np.arange(L)
