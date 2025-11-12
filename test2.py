@@ -6,16 +6,16 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 
 #パラメータ
-L = 6
+L = 100
 l = 2*np.pi
 epsilon = l / L
-p = 0.01
+p = 1
 m = 0
 pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
 dt = 0.01*(300/L) #この値は後で検討
-PBC = True
+PBC = False
 
 times = np.arange(t_i + dt, t_f, dt)
 
