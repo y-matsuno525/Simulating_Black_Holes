@@ -31,7 +31,7 @@ def is_hermitian(matrix):
         return False
 
 def beta(j,L,pos,epsilon):
-    #return 0
+    return 0
     width = 1
     A = 0.6
     jh = int(L/3)
