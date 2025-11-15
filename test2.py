@@ -6,7 +6,7 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 
 #パラメータ
-L = 100
+L = 101
 l = 2*np.pi
 epsilon = l / L
 p = 1
@@ -15,7 +15,7 @@ pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
 dt = 0.01*(300/L) #この値は後で検討
-PBC = True
+PBC = False
 
 times = np.arange(t_i + dt, t_f, dt)
 
@@ -31,7 +31,7 @@ def is_hermitian(matrix):
         return False
 
 def beta(j,L,pos,epsilon):
-    return 0
+    #return 0
     width = 1
     A = 0.6
     jh = int(L/3)
@@ -103,6 +103,7 @@ if PBC == True:
 
 #bogoliubov変換行列の作成##########################################################################################################################
 #BdG行列を対角化
+print(H_BdG)
 eigenvalues, eigenvectors = LA.eigh(H_BdG)
 
 #固有値、固有ベクトルのソート(確認済み)
@@ -178,11 +179,11 @@ plt.plot(np.r_[weights, weights[0]])
 plt.title("weights")
 plt.grid()
 plt.show()
-print("左右非対称箇所")
-print(eigenvectors[2,:])
-print(eigenvectors[2+L,:])
-print(eigenvectors[4,:])
-print(eigenvectors[4+L,:])
+# print("左右非対称箇所")
+# print(eigenvectors[2,:])
+# print(eigenvectors[2+L,:])
+# print(eigenvectors[4,:])
+# print(eigenvectors[4+L,:])
 for j in range(L):
     for n in range(L):
         #cを置く場合
