@@ -6,7 +6,7 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 
 #パラメータ
-L = 101
+L = 100
 l = 2*np.pi
 epsilon = l / L
 p = 1
