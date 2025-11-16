@@ -15,7 +15,7 @@ pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
 dt = 0.01*(300/L) #この値は後で検討
-PBC = False
+PBC = True
 
 times = np.arange(t_i + dt, t_f, dt)
 
@@ -31,7 +31,7 @@ def is_hermitian(matrix):
         return False
 
 def beta(j,L,pos,epsilon):
-    #return 0
+    return 0
     width = 1
     A = 0.6
     jh = int(L/3)
@@ -103,12 +103,26 @@ if PBC == True:
 
 #bogoliubov変換行列の作成##########################################################################################################################
 #BdG行列を対角化
-print(H_BdG)
+#print(H_BdG)
 eigenvalues, eigenvectors = LA.eigh(H_BdG)
 
 #固有値、固有ベクトルのソート(確認済み)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
+print(eigenvalues)
+# for i in range(1,L-1,2):
+#     print(str(i) + "番目と" + str(i+1) + "番目を入れ替え")
+#     tmp = eigenvectors[:,i].copy()
+#     eigenvectors[:,i] = -1*eigenvectors[:,i+1].copy()
+#     eigenvectors[:,i+1] = -1*tmp
+#     print(str(L + i) + "番目と" + str(L + i + 1) + "番目を入れ替え")
+#     tmp = eigenvectors[:,L+i].copy()
+#     eigenvectors[:,L+i] = -1*eigenvectors[:,L+i+1].copy()
+#     eigenvectors[:,L+i+1] = -1*tmp
+print("0番目と"+str(L)+"番目を入れ替え")
+# tmp = eigenvectors[:,0].copy()
+# eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
+# eigenvectors[:,L] = -1*tmp
 
 #粒子-反粒子対称性を満たすように固有ベクトルを調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
 V = np.zeros((2*L, 2*L), dtype=complex)
@@ -117,8 +131,16 @@ for i in range(L):
     V[:L,i+L] = np.conj(eigenvectors[L:,i])
     V[L:,i+L] = np.conj(eigenvectors[:L,i])
 eigenvectors = V
-print(eigenvalues)
-print(eigenvectors)
+# print("入れ替え前")
+# print(eigenvectors)
+# eigenvectors[:,1] = -1*eigenvectors[:,1]
+# eigenvectors[:,2] = -1*eigenvectors[:,2]
+# eigenvectors[:,6] = -1*eigenvectors[:,6]
+# eigenvectors[:,7] = -1*eigenvectors[:,7]
+
+# print("入れ替え後")
+# print(eigenvalues)
+# print(eigenvectors)
 
 #cj_dag_cj
 cj_dag_cj_list = []
@@ -156,9 +178,9 @@ for j in range(L):
 #初期状態作成
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = int(0.2*L)
+    j0 = int(0.5*L)
 else:
-    j0 = int(0.8*L)
+    j0 = int(0.5*L)
 sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
 
 if PBC == True:

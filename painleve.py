@@ -8,7 +8,7 @@ import statistics
 import math
 
 #パラメータ
-L = 50
+L = 100
 l = 2*np.pi
 epsilon = l / L
 p = 1
@@ -124,6 +124,20 @@ eigenvectors = V
 print(eigenvalues)
 print(eigenvectors)
 
+# for i in range(1,L-1,2):
+#     print(str(i) + "番目と" + str(i+1) + "番目を入れ替え")
+#     tmp = eigenvectors[:,i].copy()
+#     eigenvectors[:,i] = eigenvectors[:,i+1].copy()
+#     eigenvectors[:,i+1] = tmp
+#     print(str(L + i) + "番目と" + str(L + i + 1) + "番目を入れ替え")
+#     tmp = eigenvectors[:,L+i].copy()
+#     eigenvectors[:,L+i] = eigenvectors[:,L+i+1].copy()
+#     eigenvectors[:,L+i+1] = tmp
+
+# tmp = eigenvectors[:,0].copy()
+# eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
+# eigenvectors[:,L] = -1*tmp
+
 # #粒子-反粒子対称性の確認(確認済み)
 # #c = sum gamma
 # for j in range(L):
@@ -219,9 +233,9 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = int(0.5*L)
+    j0 = int(0.2*L)
 else:
-    j0 = int(0.5*L)
+    j0 = int(0.8*L)
 sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
 
 if PBC == True:
@@ -390,7 +404,9 @@ plt.show()
 H_p_0 = []
 H_m_0 = []
 H_pm_0 = []
-c_0 = []
+cdc_0 = []
+cj1_cj_0 = []
+cj1_dag_cj_0 = []
 #H_pの期待値
 for j, H_p_j in enumerate(H_p):
     val = psi.T.conj() @ H_p_j @ psi
@@ -409,19 +425,31 @@ for j, H_pm_j in enumerate(H_pm):
 #c_dag_cの期待値
 for j, cj_dag_cj in enumerate(cj_dag_cj_list):
     val = psi.T.conj() @ cj_dag_cj @ psi
-    c_0.append(val.item() - c_dag_c_v[j])
+    cdc_0.append(val.item())# - c_dag_c_v[j])
+
+#cj1_cjの期待値
+for j, cj1_cj in enumerate(cj1_cj_list):
+    val = psi.T.conj() @ cj1_cj @ psi
+    cj1_cj_0.append(val.item())
+
+#cj1_dag_cjの期待値
+for j, cj1_dag_cj in enumerate(cj1_dag_cj_list):
+    val = psi.T.conj() @ cj1_dag_cj @ psi
+    cj1_dag_cj_0.append(val.item())
 
 plt.plot(H_p_0, label="H_p_0")
 plt.plot(H_m_0, label="H_m_0")
 plt.plot(H_pm_0, label="H_pm_0")
+plt.ylim(-0.03, 0.14)
 plt.legend()
 plt.grid()
 plt.show()
-plt.plot(c_0, label="c_0")
+plt.plot(cdc_0, label="cdc_0")
+plt.plot(cj1_cj_0, label="cj1_cj_0")
+plt.plot(cj1_dag_cj_0, label="cj1_dag_cj_0")
 plt.legend()
 plt.grid()
 plt.show()
-print(H_p_0)
 
 
 #時間発展###########################################################################################################################
