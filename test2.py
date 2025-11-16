@@ -4,7 +4,7 @@ import numpy as np
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用
 import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
-
+import random
 #パラメータ
 L = 100
 l = 2*np.pi
@@ -109,20 +109,23 @@ eigenvalues, eigenvectors = LA.eigh(H_BdG)
 #固有値、固有ベクトルのソート(確認済み)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
+
 print(eigenvalues)
-# for i in range(1,L-1,2):
-#     print(str(i) + "番目と" + str(i+1) + "番目を入れ替え")
-#     tmp = eigenvectors[:,i].copy()
-#     eigenvectors[:,i] = -1*eigenvectors[:,i+1].copy()
-#     eigenvectors[:,i+1] = -1*tmp
-#     print(str(L + i) + "番目と" + str(L + i + 1) + "番目を入れ替え")
-#     tmp = eigenvectors[:,L+i].copy()
-#     eigenvectors[:,L+i] = -1*eigenvectors[:,L+i+1].copy()
-#     eigenvectors[:,L+i+1] = -1*tmp
-print("0番目と"+str(L)+"番目を入れ替え")
-# tmp = eigenvectors[:,0].copy()
-# eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
-# eigenvectors[:,L] = -1*tmp
+for i in range(1,L-1,2):
+    if random.random() < 0.5:
+        print(str(eigenvalues[i]) + "と" + str(eigenvalues[i+1]) + "を入れ替え")
+        tmp = eigenvectors[:,i].copy()
+        eigenvectors[:,i] = -1*eigenvectors[:,i+1].copy()
+        eigenvectors[:,i+1] = -1*tmp
+        print(str(eigenvalues[L + i]) + "と" + str(eigenvalues[L + i + 1]) + "を入れ替え")
+        tmp = eigenvectors[:,L+i].copy()
+        eigenvectors[:,L+i] = -1*eigenvectors[:,L+i+1].copy()
+        eigenvectors[:,L+i+1] = -1*tmp
+# if random.random() < 0.5:
+#     print(str(eigenvalues[0])+"と"+str(eigenvalues[L])+"番目を入れ替え")
+#     tmp = eigenvectors[:,0].copy()
+#     eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
+#     eigenvectors[:,L] = -1*tmp
 
 #粒子-反粒子対称性を満たすように固有ベクトルを調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
 V = np.zeros((2*L, 2*L), dtype=complex)
@@ -156,19 +159,19 @@ for j in range(L):
     cj_dag_cj_list.append(cj_dag_cj_tmp)
     print("cj†cj作成中:" + str(int(j/L*100))+"%")
 
-# #cj_cj_dag
-cj_cj_dag_list = []
-for j in range(L):
-    cj_cj_dag_tmp = np.zeros((L, L), dtype=complex)
-    for k in range(L):
-        for l in range(L):
-            cj_cj_dag_tmp[k,l] = eigenvectors[j,k+L] * eigenvectors[j,l+L].conj()
-            cj_cj_dag_tmp[k,l] += -1*eigenvectors[j,l] * eigenvectors[j,k].conj()
-            if k == l:
-                for n in range(L):
-                    cj_cj_dag_tmp[k,l] += eigenvectors[j,n] * eigenvectors[j,n].conj()
-    cj_cj_dag_list.append(cj_cj_dag_tmp)
-    print("cj cj†作成中:" + str(int(j/L*100))+"%")
+# # #cj_cj_dag
+# cj_cj_dag_list = []
+# for j in range(L):
+#     cj_cj_dag_tmp = np.zeros((L, L), dtype=complex)
+#     for k in range(L):
+#         for l in range(L):
+#             cj_cj_dag_tmp[k,l] = eigenvectors[j,k+L] * eigenvectors[j,l+L].conj()
+#             cj_cj_dag_tmp[k,l] += -1*eigenvectors[j,l] * eigenvectors[j,k].conj()
+#             if k == l:
+#                 for n in range(L):
+#                     cj_cj_dag_tmp[k,l] += eigenvectors[j,n] * eigenvectors[j,n].conj()
+#     cj_cj_dag_list.append(cj_cj_dag_tmp)
+#     print("cj cj†作成中:" + str(int(j/L*100))+"%")
 
 # for j in range(L):
 #     print("確認中:" + str(j))
