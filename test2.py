@@ -121,10 +121,10 @@ eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 
 #     eigenvectors[:,L+i] = -1*eigenvectors[:,L+i+1].copy()
 #     eigenvectors[:,L+i+1] = -1*tmp
 
-# print("0番目と"+str(L)+"番目を入れ替え")
-# tmp = eigenvectors[:,0].copy()
-# eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
-# eigenvectors[:,L] = -1*tmp
+print("0番目と"+str(L)+"番目を入れ替え")
+tmp = eigenvectors[:,0].copy()
+eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
+eigenvectors[:,L] = -1*tmp
 
 #粒子-反粒子対称性を満たすように固有ベクトルを調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
 V = np.zeros((2*L, 2*L), dtype=complex)
@@ -139,9 +139,9 @@ print(eigenvalues)
 print("ゼロモード固有ベクトル")
 print(eigenvectors[:,0])
 print(eigenvectors[:,L])
-print("ゼロモード固有ベクトル確認")
-print([(H_BdG @ eigenvectors[:,0])[i] / eigenvectors[:,0][i] for i in range(2*L)])
-print([(H_BdG @ eigenvectors[:,L])[i] / eigenvectors[:,L][i] for i in range(2*L)]) 
+# print("ゼロモード固有ベクトル確認")
+# print([(H_BdG @ eigenvectors[:,0])[i] / eigenvectors[:,0][i] for i in range(2*L)])
+# print([(H_BdG @ eigenvectors[:,L])[i] / eigenvectors[:,L][i] for i in range(2*L)]) 
 # print("入れ替え前")
 # print(eigenvectors)
 # eigenvectors[:,1] = -1*eigenvectors[:,1]

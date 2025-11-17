@@ -10,7 +10,7 @@ L = 50
 l = 2*np.pi
 epsilon = l / L
 p = 1
-m = 0
+m = 0.0001
 pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
@@ -144,18 +144,18 @@ eigenvectors = V
 # print("入れ替え後")
 # print(eigenvalues)
 # print(eigenvectors)
-# print("固有値")
-# print(eigenvalues)
-# print("ゼロモード固有ベクトル")
-# c1 = eigenvectors[:,0]
-# c2 = eigenvectors[:,L]
-# print(np.where(np.abs(c1) < 1e-14, 0, c1))
-# print(np.where(np.abs(c2) < 1e-14, 0, c2))
-# print("ゼロモード固有ベクトル確認")
-# c1 = [(H_BdG @ eigenvectors[:,0])[i] / eigenvectors[:,0][i] for i in range(2*L)]
-# c2 = [(H_BdG @ eigenvectors[:,L])[i] / eigenvectors[:,L][i] for i in range(2*L)]
-# print(np.where(np.abs(eigenvectors[:,0]) < 1e-14, 0, c1))
-# print(np.where(np.abs(eigenvectors[:,L]) < 1e-14, 0, c2))
+print("固有値")
+print(eigenvalues)
+print("ゼロモード固有ベクトル")
+c1 = eigenvectors[:,0]
+c2 = eigenvectors[:,L]
+print(np.where(np.abs(c1) < 1e-14, 0, c1))
+print(np.where(np.abs(c2) < 1e-14, 0, c2))
+print("ゼロモード固有ベクトル確認")
+c1 = [(H_BdG @ eigenvectors[:,0])[i] / eigenvectors[:,0][i] for i in range(2*L)]
+c2 = [(H_BdG @ eigenvectors[:,L])[i] / eigenvectors[:,L][i] for i in range(2*L)]
+print(np.where(np.abs(eigenvectors[:,0]) < 1e-14, 0, c1))
+print(np.where(np.abs(eigenvectors[:,L]) < 1e-14, 0, c2))
 #cj_dag_cj
 cj_dag_cj_list = []
 for j in range(L):
