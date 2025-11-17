@@ -6,7 +6,7 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 import random
 #パラメータ
-L = 100
+L = 50
 l = 2*np.pi
 epsilon = l / L
 p = 1
@@ -110,22 +110,22 @@ eigenvalues, eigenvectors = LA.eigh(H_BdG)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
 
-print(eigenvalues)
-for i in range(1,L-1,2):
-    if random.random() < 0.2:
-        print(str(eigenvalues[i]) + "と" + str(eigenvalues[i+1]) + "を入れ替え")
-        tmp = eigenvectors[:,i].copy()
-        eigenvectors[:,i] = -1*eigenvectors[:,i+1].copy()
-        eigenvectors[:,i+1] = -1*tmp
-        print(str(eigenvalues[L + i]) + "と" + str(eigenvalues[L + i + 1]) + "を入れ替え")
-        tmp = eigenvectors[:,L+i].copy()
-        eigenvectors[:,L+i] = -1*eigenvectors[:,L+i+1].copy()
-        eigenvectors[:,L+i+1] = -1*tmp
-if random.random() < 0.5:
-    print(str(eigenvalues[0])+"と"+str(eigenvalues[L])+"番目を入れ替え")
-    tmp = eigenvectors[:,0].copy()
-    eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
-    eigenvectors[:,L] = -1*tmp
+#print(eigenvalues)
+# for i in range(1,L-1,2):
+#     if random.random() < 0.5:
+#         print(str(eigenvalues[i]) + "と" + str(eigenvalues[i+1]) + "を入れ替え")
+#         tmp = eigenvectors[:,i].copy()
+#         eigenvectors[:,i] = -1*eigenvectors[:,i+1].copy()
+#         eigenvectors[:,i+1] = -1*tmp
+#         print(str(eigenvalues[L + i]) + "と" + str(eigenvalues[L + i + 1]) + "を入れ替え")
+#         tmp = eigenvectors[:,L+i].copy()
+#         eigenvectors[:,L+i] = -1*eigenvectors[:,L+i+1].copy()
+#         eigenvectors[:,L+i+1] = -1*tmp
+# if random.random() < 0.5:
+#     print(str(eigenvalues[0])+"と"+str(eigenvalues[L])+"番目を入れ替え")
+#     tmp = eigenvectors[:,0].copy()
+#     eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
+#     eigenvectors[:,L] = -1*tmp
 
 #粒子-反粒子対称性を満たすように固有ベクトルを調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
 V = np.zeros((2*L, 2*L), dtype=complex)
@@ -144,7 +144,18 @@ eigenvectors = V
 # print("入れ替え後")
 # print(eigenvalues)
 # print(eigenvectors)
-
+# print("固有値")
+# print(eigenvalues)
+# print("ゼロモード固有ベクトル")
+# c1 = eigenvectors[:,0]
+# c2 = eigenvectors[:,L]
+# print(np.where(np.abs(c1) < 1e-14, 0, c1))
+# print(np.where(np.abs(c2) < 1e-14, 0, c2))
+# print("ゼロモード固有ベクトル確認")
+# c1 = [(H_BdG @ eigenvectors[:,0])[i] / eigenvectors[:,0][i] for i in range(2*L)]
+# c2 = [(H_BdG @ eigenvectors[:,L])[i] / eigenvectors[:,L][i] for i in range(2*L)]
+# print(np.where(np.abs(eigenvectors[:,0]) < 1e-14, 0, c1))
+# print(np.where(np.abs(eigenvectors[:,L]) < 1e-14, 0, c2))
 #cj_dag_cj
 cj_dag_cj_list = []
 for j in range(L):
@@ -212,17 +223,17 @@ plt.show()
 for j in range(L):
     for n in range(L):
         #cを置く場合
-        #psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
-        #+
-        if pos == "ur" or pos == "lr":
-            psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
-        )
-        #-
-        else:
-            psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
-        )
+        psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
+        # #+
+        # if pos == "ur" or pos == "lr":
+        #     psi[n, 0] += weights[j] * (
+        #     1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
+        # )
+        # #-
+        # else:
+        #     psi[n, 0] += weights[j] * (
+        #     1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
+        # )
 #状態ベクトルの規格化
 psi /= np.linalg.norm(psi)
 
