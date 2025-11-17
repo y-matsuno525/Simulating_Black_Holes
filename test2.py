@@ -212,18 +212,18 @@ plt.show()
 # print(eigenvectors[4+L,:])
 for j in range(L):
     for n in range(L):
-        #cを置く場合
-        psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
-        # #+
-        # if pos == "ur" or pos == "lr":
-        #     psi[n, 0] += weights[j] * (
-        #     1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
-        # )
-        # #-
-        # else:
-        #     psi[n, 0] += weights[j] * (
-        #     1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
-        # )
+        # #cを置く場合
+        # psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
+        #+
+        if pos == "ur" or pos == "lr":
+            psi[n, 0] += weights[j] * (
+            1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
+        )
+        #-
+        else:
+            psi[n, 0] += weights[j] * (
+            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
+        )
 #状態ベクトルの規格化
 psi /= np.linalg.norm(psi)
 
