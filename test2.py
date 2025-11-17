@@ -109,7 +109,7 @@ eigenvalues, eigenvectors = LA.eigh(H_BdG)
 #固有値、固有ベクトルのソート(確認済み)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
-print(eigenvalues)
+
 # for i in range(1,L-1,2):
 #     print(str(i) + "番目と" + str(i+1) + "番目を入れ替え")
 #     tmp = eigenvectors[:,i].copy()
@@ -119,7 +119,7 @@ print(eigenvalues)
 #     tmp = eigenvectors[:,L+i].copy()
 #     eigenvectors[:,L+i] = -1*eigenvectors[:,L+i+1].copy()
 #     eigenvectors[:,L+i+1] = -1*tmp
-print("0番目と"+str(L)+"番目を入れ替え")
+# print("0番目と"+str(L)+"番目を入れ替え")
 # tmp = eigenvectors[:,0].copy()
 # eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
 # eigenvectors[:,L] = -1*tmp
@@ -131,6 +131,8 @@ for i in range(L):
     V[:L,i+L] = np.conj(eigenvectors[L:,i])
     V[L:,i+L] = np.conj(eigenvectors[:L,i])
 eigenvectors = V
+
+print(eigenvalues)
 # print("入れ替え前")
 # print(eigenvectors)
 # eigenvectors[:,1] = -1*eigenvectors[:,1]
