@@ -1,16 +1,17 @@
 #cがgaussiasnで置けてるか確認
 #import
 import numpy as np
+import random
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用
 import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 import random
 #パラメータ
-L = 100
+L = 20
 l = 2*np.pi
 epsilon = l / L
 p = 1
-m = 0
+m = 0.0001
 pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
@@ -105,27 +106,25 @@ if PBC == True:
 #BdG行列を対角化
 #print(H_BdG)
 eigenvalues, eigenvectors = LA.eigh(H_BdG)
-
+threshold = 1e-14
+eigenvectors = np.where(np.abs(eigenvectors) < threshold, 0.0, eigenvectors)
 #固有値、固有ベクトルのソート(確認済み)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
 
-print(eigenvalues)
-for i in range(1,L-1,2):
-    if random.random() < 0.2:
-        print(str(eigenvalues[i]) + "と" + str(eigenvalues[i+1]) + "を入れ替え")
-        tmp = eigenvectors[:,i].copy()
-        eigenvectors[:,i] = -1*eigenvectors[:,i+1].copy()
-        eigenvectors[:,i+1] = -1*tmp
-        print(str(eigenvalues[L + i]) + "と" + str(eigenvalues[L + i + 1]) + "を入れ替え")
-        tmp = eigenvectors[:,L+i].copy()
-        eigenvectors[:,L+i] = -1*eigenvectors[:,L+i+1].copy()
-        eigenvectors[:,L+i+1] = -1*tmp
-if random.random() < 0.5:
-    print(str(eigenvalues[0])+"と"+str(eigenvalues[L])+"番目を入れ替え")
-    tmp = eigenvectors[:,0].copy()
-    eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
-    eigenvectors[:,L] = -1*tmp
+# for i in range(1,L-1,2):
+#     tmp = eigenvectors[:,i].copy()
+#     eigenvectors[:,i] = -1*eigenvectors[:,i+1].copy()
+#     eigenvectors[:,i+1] = -1*tmp
+#     print(str(L + i) + "番目と" + str(L + i + 1) + "番目を入れ替え")
+#     tmp = eigenvectors[:,L+i].copy()
+#     eigenvectors[:,L+i] = -1*eigenvectors[:,L+i+1].copy()
+#     eigenvectors[:,L+i+1] = -1*tmp
+
+# print("0番目と"+str(L)+"番目を入れ替え")
+# tmp = eigenvectors[:,0].copy()
+# eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
+# eigenvectors[:,L] = -1*tmp
 
 #粒子-反粒子対称性を満たすように固有ベクトルを調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
 V = np.zeros((2*L, 2*L), dtype=complex)
@@ -134,6 +133,15 @@ for i in range(L):
     V[:L,i+L] = np.conj(eigenvectors[L:,i])
     V[L:,i+L] = np.conj(eigenvectors[:L,i])
 eigenvectors = V
+
+print("固有値")
+print(eigenvalues)
+print("ゼロモード固有ベクトル")
+print(eigenvectors[:,0])
+print(eigenvectors[:,L])
+print("ゼロモード固有ベクトル確認")
+print([(H_BdG @ eigenvectors[:,0])[i] / eigenvectors[:,0][i] for i in range(2*L)])
+print([(H_BdG @ eigenvectors[:,L])[i] / eigenvectors[:,L][i] for i in range(2*L)]) 
 # print("入れ替え前")
 # print(eigenvectors)
 # eigenvectors[:,1] = -1*eigenvectors[:,1]
