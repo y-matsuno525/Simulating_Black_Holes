@@ -7,11 +7,11 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 import random
 #パラメータ
-L = 100
+L = 20
 l = 2*np.pi
 epsilon = l / L
 p = 1
-m = 0
+m = 0.0001
 pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
@@ -106,7 +106,8 @@ if PBC == True:
 #BdG行列を対角化
 #print(H_BdG)
 eigenvalues, eigenvectors = LA.eigh(H_BdG)
-
+threshold = 1e-14
+eigenvectors = np.where(np.abs(eigenvectors) < threshold, 0.0, eigenvectors)
 #固有値、固有ベクトルのソート(確認済み)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
@@ -134,7 +135,14 @@ for i in range(L):
     V[L:,i+L] = np.conj(eigenvectors[:L,i])
 eigenvectors = V
 
+print("固有値")
 print(eigenvalues)
+print("ゼロモード固有ベクトル")
+print(eigenvectors[:,0])
+print(eigenvectors[:,L])
+print("ゼロモード固有ベクトル確認")
+print([(H_BdG @ eigenvectors[:,0])[i] / eigenvectors[:,0][i] for i in range(2*L)])
+print([(H_BdG @ eigenvectors[:,L])[i] / eigenvectors[:,L][i] for i in range(2*L)]) 
 # print("入れ替え前")
 # print(eigenvectors)
 # eigenvectors[:,1] = -1*eigenvectors[:,1]

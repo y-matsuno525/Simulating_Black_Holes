@@ -12,7 +12,7 @@ L = 100
 l = 2*np.pi
 epsilon = l / L
 p = 1
-m = 0
+m = 0.001
 pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 20
@@ -361,6 +361,24 @@ for j in range(L):
         total += abs(eigenvectors[j, n+L])**2
     c_dag_c_v.append(total)
 
+#真空のcj1_cjを計算
+cj1_cj_v = []
+for j in range(L-1):
+    total = 0.0
+    for n in range(L):
+        total += eigenvectors[j+1, n] * eigenvectors[j, n+L]
+    cj1_cj_v.append(total)
+cj1_cj_v.append(0.0) #PBCなしの場合
+
+#真空のcj1_dag_cjを計算
+cj1_dag_cj_v = []
+for j in range(L-1):
+    total = 0.0
+    for n in range(L):
+        total += eigenvectors[j+1, n].conj() * eigenvectors[j, n]
+    cj1_dag_cj_v.append(total)
+cj1_dag_cj_v.append(0.0) #PBCなしの場合
+
 for j in range(L):
     Hp_v_j = 0
     Hm_v_j = 0
@@ -425,17 +443,17 @@ for j, H_pm_j in enumerate(H_pm):
 #c_dag_cの期待値
 for j, cj_dag_cj in enumerate(cj_dag_cj_list):
     val = psi.T.conj() @ cj_dag_cj @ psi
-    cdc_0.append(val.item())# - c_dag_c_v[j])
+    cdc_0.append(val.item() - c_dag_c_v[j])
 
 #cj1_cjの期待値
 for j, cj1_cj in enumerate(cj1_cj_list):
     val = psi.T.conj() @ cj1_cj @ psi
-    cj1_cj_0.append(val.item())
+    cj1_cj_0.append(val.item() - cj1_cj_v[j])   
 
 #cj1_dag_cjの期待値
 for j, cj1_dag_cj in enumerate(cj1_dag_cj_list):
     val = psi.T.conj() @ cj1_dag_cj @ psi
-    cj1_dag_cj_0.append(val.item())
+    cj1_dag_cj_0.append(val.item() - cj1_dag_cj_v[j])
 
 plt.plot(H_p_0, label="H_p_0")
 plt.plot(H_m_0, label="H_m_0")
