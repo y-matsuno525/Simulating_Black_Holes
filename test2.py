@@ -4,7 +4,7 @@ import numpy as np
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用
 import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
-
+import random
 #パラメータ
 L = 100
 l = 2*np.pi
@@ -158,19 +158,19 @@ for j in range(L):
     cj_dag_cj_list.append(cj_dag_cj_tmp)
     print("cj†cj作成中:" + str(int(j/L*100))+"%")
 
-# #cj_cj_dag
-cj_cj_dag_list = []
-for j in range(L):
-    cj_cj_dag_tmp = np.zeros((L, L), dtype=complex)
-    for k in range(L):
-        for l in range(L):
-            cj_cj_dag_tmp[k,l] = eigenvectors[j,k+L] * eigenvectors[j,l+L].conj()
-            cj_cj_dag_tmp[k,l] += -1*eigenvectors[j,l] * eigenvectors[j,k].conj()
-            if k == l:
-                for n in range(L):
-                    cj_cj_dag_tmp[k,l] += eigenvectors[j,n] * eigenvectors[j,n].conj()
-    cj_cj_dag_list.append(cj_cj_dag_tmp)
-    print("cj cj†作成中:" + str(int(j/L*100))+"%")
+# # #cj_cj_dag
+# cj_cj_dag_list = []
+# for j in range(L):
+#     cj_cj_dag_tmp = np.zeros((L, L), dtype=complex)
+#     for k in range(L):
+#         for l in range(L):
+#             cj_cj_dag_tmp[k,l] = eigenvectors[j,k+L] * eigenvectors[j,l+L].conj()
+#             cj_cj_dag_tmp[k,l] += -1*eigenvectors[j,l] * eigenvectors[j,k].conj()
+#             if k == l:
+#                 for n in range(L):
+#                     cj_cj_dag_tmp[k,l] += eigenvectors[j,n] * eigenvectors[j,n].conj()
+#     cj_cj_dag_list.append(cj_cj_dag_tmp)
+#     print("cj cj†作成中:" + str(int(j/L*100))+"%")
 
 # for j in range(L):
 #     print("確認中:" + str(j))
