@@ -1,6 +1,7 @@
 #cがgaussiasnで置けてるか確認
 #import
 import numpy as np
+import random
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用
 import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
@@ -110,15 +111,16 @@ eigenvalues, eigenvectors = LA.eigh(H_BdG)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
 
-# for i in range(1,L-1,2):
-#     print(str(i) + "番目と" + str(i+1) + "番目を入れ替え")
-#     tmp = eigenvectors[:,i].copy()
-#     eigenvectors[:,i] = -1*eigenvectors[:,i+1].copy()
-#     eigenvectors[:,i+1] = -1*tmp
-#     print(str(L + i) + "番目と" + str(L + i + 1) + "番目を入れ替え")
-#     tmp = eigenvectors[:,L+i].copy()
-#     eigenvectors[:,L+i] = -1*eigenvectors[:,L+i+1].copy()
-#     eigenvectors[:,L+i+1] = -1*tmp
+for i in range(1,L-1,2):
+    if random.random() < 0.5:
+        print(str(i) + "番目と" + str(i+1) + "番目を入れ替え")
+        tmp = eigenvectors[:,i].copy()
+        eigenvectors[:,i] = -1*eigenvectors[:,i+1].copy()
+        eigenvectors[:,i+1] = -1*tmp
+        print(str(L + i) + "番目と" + str(L + i + 1) + "番目を入れ替え")
+        tmp = eigenvectors[:,L+i].copy()
+        eigenvectors[:,L+i] = -1*eigenvectors[:,L+i+1].copy()
+        eigenvectors[:,L+i+1] = -1*tmp
 # print("0番目と"+str(L)+"番目を入れ替え")
 # tmp = eigenvectors[:,0].copy()
 # eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
