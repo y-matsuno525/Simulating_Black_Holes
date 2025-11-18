@@ -7,16 +7,16 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 import random
 #パラメータ
-L = 100
+L = 10
 l = 2*np.pi
 epsilon = l / L
 p = 1
-m = 0
+m = 0.0001
 pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
 dt = 0.01*(300/L) #この値は後で検討
-PBC = True
+PBC = False
 
 times = np.arange(t_i + dt, t_f, dt)
 
@@ -95,13 +95,6 @@ if PBC == True:
     H_BdG[2*L-1,0] = -1/(2*epsilon) * (-1)
     H_BdG[L,L-1] = -1/(2*epsilon) * (1)
 
-# bs = []
-# for j in range(L):
-#     bs.append(float(beta(j,L,pos,epsilon)))
-# plt.plot(bs)
-# plt.grid()
-# plt.show()
-
 #bogoliubov変換行列の作成##########################################################################################################################
 
 #BdG行列を対角化
@@ -110,38 +103,85 @@ eigenvalues, eigenvectors = LA.eigh(H_BdG)
 #固有値、固有ベクトルのソート(確認済み)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
-
-#ゼロモード(0とL)入れ替え
-tmp = eigenvectors[:,0].copy()
-eigenvectors[:,0] = eigenvectors[:,L].copy()
-eigenvectors[:,L] = tmp
+# print("固有ベクトル（旧）")
+# for i in range(L):
+#     print(eigenvalues[i])
+#     print(eigenvectors[:,i])
+#     print(eigenvalues[L+i])
+#     print(eigenvectors[:,L+i])
+# #ゼロモード(0とL)入れ替え
+# tmp = eigenvectors[:,0].copy()
+# eigenvectors[:,0] = eigenvectors[:,L].copy()
+# eigenvectors[:,L] = tmp
 
 #粒子-反粒子対称性を満たすように固有ベクトルを調整(0~L-1成分でL~2L-1成分を作る)
+# cnt = []
+# for i in range(L):
+#     threshold = 1e-10
+#     ans = eigenvectors[:,i+L] + np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
+#     if np.all(np.abs(ans) < threshold):
+#         #continue
+#         print(str(i))
+#         cnt.append(1)
+#         #print(np.where(np.abs(ans) < threshold, 0.0, ans))
+#     else:
+#         print(str(i)+"'")
+#         ans = eigenvectors[:,i+L] - np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
+#         if np.all(np.abs(ans) < threshold):
+#             cnt.append(-1)
+#             continue
+#             print(np.where(np.abs(ans) < threshold, 0.0, ans))
+#         else:
+#             cnt.append(0)
+#             print(str(i)+"''")
+#             ans = eigenvectors[:,i+L].T.conj() @ np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
+#             print(np.where(np.abs(ans) < threshold, 0.0, ans))
+# plt.plot(cnt)
+# plt.show()
+# bad_idx = []
+# for i in range(L-1):
+#     # i と i+1 が 1,-1 または -1,1 のペアならOK
+#     if cnt[i] in (1, -1) and cnt[i+1] in (1, -1) and cnt[i+1] == -cnt[i]:
+#         continue
+#     # それ以外は「交互じゃない」とみなして記録
+#     bad_idx.append(i)
+
+# print("1,-1 が交互になっていない位置 i (ペア: i, i+1):", bad_idx)
+# d_cnt = []
+# for i in range(L-1):
+#     if abs(cnt[i+1] - cnt[i]) -2 < 1e-5:
+#         d_cnt.append(1)
+#     else:
+#         d_cnt.append(0)
+# plt.plot(d_cnt)
+# plt.show()
 V = np.zeros((2*L, 2*L), dtype=complex)
 for i in range(L):
     V[:,i] = eigenvectors[:,i]
     V[:L,i+L] = np.conj(eigenvectors[L:,i])
     V[L:,i+L] = np.conj(eigenvectors[:L,i])
 eigenvectors = V
-
-print("固有値")
-print(eigenvalues)
-print("ゼロモード固有ベクトル")
-print(eigenvectors[:,0])
-print(eigenvectors[:,L])
-# print("ゼロモード固有ベクトル確認")
-# print([(H_BdG @ eigenvectors[:,0])[i] / eigenvectors[:,0][i] for i in range(2*L)])
-# print([(H_BdG @ eigenvectors[:,L])[i] / eigenvectors[:,L][i] for i in range(2*L)]) 
-# print("入れ替え前")
-# print(eigenvectors)
-# eigenvectors[:,1] = -1*eigenvectors[:,1]
-# eigenvectors[:,2] = -1*eigenvectors[:,2]
-# eigenvectors[:,6] = -1*eigenvectors[:,6]
-# eigenvectors[:,7] = -1*eigenvectors[:,7]
-
-# print("入れ替え後")
-# print(eigenvalues)
-# print(eigenvectors)
+for i in range(2*L):
+    print(eigenvalues[i])
+    print(eigenvectors[:,i])
+# print()
+# print("固有ベクトル（新）")
+# for i in range(L):
+#     print(eigenvalues[i])
+#     print(eigenvectors[:,i])
+#     print(eigenvalues[L+i])
+#     print(eigenvectors[:,L+i])
+# import sys
+# sys.exit()
+# for i in range(L):
+#     print("固有値")
+#     print(eigenvalues[i])
+#     print("固有ベクトル")
+#     print(eigenvectors[:,i])
+#     print("固有値")
+#     print(eigenvalues[i+L])
+#     print("固有ベクトル")
+#     print(eigenvectors[:,i+L])
 
 #cj_dag_cj
 cj_dag_cj_list = []
@@ -157,32 +197,13 @@ for j in range(L):
     cj_dag_cj_list.append(cj_dag_cj_tmp)
     print("cj†cj作成中:" + str(int(j/L*100))+"%")
 
-# # #cj_cj_dag
-# cj_cj_dag_list = []
-# for j in range(L):
-#     cj_cj_dag_tmp = np.zeros((L, L), dtype=complex)
-#     for k in range(L):
-#         for l in range(L):
-#             cj_cj_dag_tmp[k,l] = eigenvectors[j,k+L] * eigenvectors[j,l+L].conj()
-#             cj_cj_dag_tmp[k,l] += -1*eigenvectors[j,l] * eigenvectors[j,k].conj()
-#             if k == l:
-#                 for n in range(L):
-#                     cj_cj_dag_tmp[k,l] += eigenvectors[j,n] * eigenvectors[j,n].conj()
-#     cj_cj_dag_list.append(cj_cj_dag_tmp)
-#     print("cj cj†作成中:" + str(int(j/L*100))+"%")
-
-# for j in range(L):
-#     print("確認中:" + str(j))
-#     print(cj_dag_cj_list[j] + cj_cj_dag_list[j])
-#     print()
-
 #初期状態作成
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
     j0 = int(0.5*L)
 else:
     j0 = int(0.5*L)
-sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
+sigma = 0.05*L
 
 if PBC == True:
     idx = np.arange(L)
@@ -197,16 +218,13 @@ else:
 weights[~mask] = 0
 
 weights /= np.linalg.norm(weights)
-#plt.plot(weights)
-plt.plot(np.r_[weights, weights[0]])
-plt.title("weights")
-plt.grid()
-plt.show()
-# print("左右非対称箇所")
-# print(eigenvectors[2,:])
-# print(eigenvectors[2+L,:])
-# print(eigenvectors[4,:])
-# print(eigenvectors[4+L,:])
+
+
+# plt.plot(np.r_[weights, weights[0]])
+# plt.title("weights")
+# plt.grid()
+# plt.show()
+
 for j in range(L):
     for n in range(L):
         #cを置く場合
@@ -238,6 +256,9 @@ for j, cj_dag_cj in enumerate(cj_dag_cj_list):
     val = psi.T.conj() @ cj_dag_cj @ psi
     c_0.append(val.item() - c_dag_c_v[j])
 
+import statistics
+print(statistics.stdev(weights))
+print(statistics.stdev([x.real for x in c_0]))
 plt.plot(c_0)
 plt.title("<c†c>(t=0)")
 plt.grid()

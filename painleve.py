@@ -8,16 +8,16 @@ import statistics
 import math
 
 #パラメータ
-L = 100
+L = 1000
 l = 2*np.pi
 epsilon = l / L
 p = 1
 m = 0.0001
-pos = "lr" #lr, ur, ll, ul
+pos = "ul" #lr, ur, ll, ul
 t_i = 0
-t_f = 2
+t_f = 20
 dt = 0.01*(300/L) #この値は後で検討
-PBC = True
+PBC = False
 
 times = np.arange(t_i + dt, t_f, dt)
 
@@ -33,7 +33,7 @@ def is_hermitian(matrix):
         return False
 
 def beta(j,L,pos,epsilon):
-    return 0
+    #return 0
     width = 1
     A = 0.6
     jh = int(L/3)
@@ -107,12 +107,34 @@ plt.show()
 #bogoliubov変換行列の作成##########################################################################################################################
 #BdG行列を対角化
 eigenvalues, eigenvectors = LA.eigh(H_BdG)
-print(eigenvalues)
-print(eigenvectors)
 
 #固有値、固有ベクトルのソート(確認済み)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
+for i in range(L):
+    threshold = 1e-10
+    ans = eigenvectors[:,i+L] + np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
+    if np.all(np.abs(ans) < threshold):
+        continue
+        print(str(i))
+        print(np.where(np.abs(ans) < threshold, 0.0, ans))
+    else:
+        #print(str(i)+"'")
+        ans = eigenvectors[:,i+L] - np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
+        if np.all(np.abs(ans) < threshold):
+            continue
+            print(np.where(np.abs(ans) < threshold, 0.0, ans))
+        else:
+            #ans = eigenvectors[:,i+L] - np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
+            print(str(i)+"''")
+            ans = eigenvectors[:,i+L].T.conj() @ np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
+            print(np.linalg.norm(np.where(np.abs(ans) < threshold, 0.0, ans)))
+# print("固有ベクトル（旧）")
+# for i in range(L):
+#     print(eigenvalues[i])
+#     print(eigenvectors[:,i])
+#     print(eigenvalues[L+i])
+#     print(eigenvectors[:,L+i])
 
 #粒子-反粒子対称性を満たすように固有ベクトルを調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
 V = np.zeros((2*L, 2*L), dtype=complex)
@@ -121,35 +143,15 @@ for i in range(L):
     V[:L,i+L] = np.conj(eigenvectors[L:,i])
     V[L:,i+L] = np.conj(eigenvectors[:L,i])
 eigenvectors = V
-print(eigenvalues)
-print(eigenvectors)
-
-# for i in range(1,L-1,2):
-#     print(str(i) + "番目と" + str(i+1) + "番目を入れ替え")
-#     tmp = eigenvectors[:,i].copy()
-#     eigenvectors[:,i] = eigenvectors[:,i+1].copy()
-#     eigenvectors[:,i+1] = tmp
-#     print(str(L + i) + "番目と" + str(L + i + 1) + "番目を入れ替え")
-#     tmp = eigenvectors[:,L+i].copy()
-#     eigenvectors[:,L+i] = eigenvectors[:,L+i+1].copy()
-#     eigenvectors[:,L+i+1] = tmp
-
-# tmp = eigenvectors[:,0].copy()
-# eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
-# eigenvectors[:,L] = -1*tmp
-
-# #粒子-反粒子対称性の確認(確認済み)
-# #c = sum gamma
-# for j in range(L):
-#     print(eigenvectors[j,:L] - eigenvectors[j+L,L:].conj())
-#     print(eigenvectors[j,L:] - eigenvectors[j+L,:L].conj())
 # print()
-# #gamma = sum c
-# for j in range(L):
-#     print(eigenvectors[j,:L].T.conj() - eigenvectors[j+L,L:].T.conj().conj())
-#     print(eigenvectors[j,L:].T.conj() - eigenvectors[j+L,:L].T.conj().conj())
-# import sys
-# sys.exit()
+# print("固有ベクトル（新）")
+# for i in range(L):
+#     print(eigenvalues[i])
+#     print(eigenvectors[:,i])
+#     print(eigenvalues[L+i])
+#     print(eigenvectors[:,L+i])
+import sys
+sys.exit()
 #演算子の作成########################################################################################################################################
 #cj_dag_cj(作り方は以前と変わらない)
 cj_dag_cj_list = []
@@ -162,6 +164,8 @@ for j in range(L):
             if k == l:
                 for n in range(L):
                     cj_dag_cj_tmp[k,l] += eigenvectors[j,n+L].conj() * eigenvectors[j,n+L]
+    isHermitian = is_hermitian(cj_dag_cj_tmp)
+    assert isHermitian, "cj_dag_cj(j=" + str(j) + ") is not Hermitian!"
     cj_dag_cj_list.append(cj_dag_cj_tmp)
     print("cj†cj作成中:" + str(int(j/L*100))+"%")
 
@@ -233,9 +237,9 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = int(0.5*L)
+    j0 = int(0.2*L)
 else:
-    j0 = int(0.5*L)
+    j0 = int(0.8*L)
 sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
 
 if PBC == True:
@@ -260,17 +264,17 @@ plt.show()
 for j in range(L):
     for n in range(L):
         #cを置く場合
-        psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
+        #psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
         #+
-        # if pos == "ur" or pos == "lr":
-        #     psi[n, 0] += weights[j] * (
-        #     1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
-        # )
-        # #-
-        # else:
-        #     psi[n, 0] += weights[j] * (
-        #     1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
-        # )
+        if pos == "ur" or pos == "lr":
+            psi[n, 0] += weights[j] * (
+            1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
+        )
+        #-
+        else:
+            psi[n, 0] += weights[j] * (
+            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
+        )
 #状態ベクトルの規格化
 psi /= np.linalg.norm(psi)
 
@@ -375,7 +379,7 @@ cj1_dag_cj_v = []
 for j in range(L-1):
     total = 0.0
     for n in range(L):
-        total += eigenvectors[j+1, n].conj() * eigenvectors[j, n]
+        total += eigenvectors[j+1, n+L].conj() * eigenvectors[j, n+L]
     cj1_dag_cj_v.append(total)
 cj1_dag_cj_v.append(0.0) #PBCなしの場合
 
@@ -429,11 +433,17 @@ cj1_dag_cj_0 = []
 for j, H_p_j in enumerate(H_p):
     val = psi.T.conj() @ H_p_j @ psi
     H_p_0.append(val.item() - Hp_v[j])
-
+#H_pの標準偏差
+print(H_p_0)
+std_Hp_0 = statistics.stdev(H_p_0.items())
+print("H_pの標準偏差:", std_Hp_0)
 #H_mの期待値
 for j, H_m_j in enumerate(H_m):
     val = psi.T.conj() @ H_m_j @ psi
     H_m_0.append(val.item() - Hm_v[j])
+#H_mの標準偏差
+std_Hm_0 = statistics.stdev(H_m_0.items())
+print("H_mの標準偏差:", std_Hm_0)
 
 #H_pmの期待値
 for j, H_pm_j in enumerate(H_pm):
@@ -448,7 +458,7 @@ for j, cj_dag_cj in enumerate(cj_dag_cj_list):
 #cj1_cjの期待値
 for j, cj1_cj in enumerate(cj1_cj_list):
     val = psi.T.conj() @ cj1_cj @ psi
-    cj1_cj_0.append(val.item() - cj1_cj_v[j])   
+    cj1_cj_0.append(val.item() - cj1_cj_v[j])
 
 #cj1_dag_cjの期待値
 for j, cj1_dag_cj in enumerate(cj1_dag_cj_list):
