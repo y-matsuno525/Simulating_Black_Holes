@@ -7,11 +7,11 @@ import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
 import random
 #パラメータ
-L = 20
+L = 100
 l = 2*np.pi
 epsilon = l / L
 p = 1
-m = 0.0001
+m = 0
 pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
@@ -103,30 +103,20 @@ if PBC == True:
 # plt.show()
 
 #bogoliubov変換行列の作成##########################################################################################################################
+
 #BdG行列を対角化
-#print(H_BdG)
 eigenvalues, eigenvectors = LA.eigh(H_BdG)
-threshold = 1e-14
-eigenvectors = np.where(np.abs(eigenvectors) < threshold, 0.0, eigenvectors)
+
 #固有値、固有ベクトルのソート(確認済み)
 eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
 eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
 
-# for i in range(1,L-1,2):
-#     tmp = eigenvectors[:,i].copy()
-#     eigenvectors[:,i] = -1*eigenvectors[:,i+1].copy()
-#     eigenvectors[:,i+1] = -1*tmp
-#     print(str(L + i) + "番目と" + str(L + i + 1) + "番目を入れ替え")
-#     tmp = eigenvectors[:,L+i].copy()
-#     eigenvectors[:,L+i] = -1*eigenvectors[:,L+i+1].copy()
-#     eigenvectors[:,L+i+1] = -1*tmp
-
-print("0番目と"+str(L)+"番目を入れ替え")
+#ゼロモード(0とL)入れ替え
 tmp = eigenvectors[:,0].copy()
-eigenvectors[:,0] = -1*eigenvectors[:,L].copy()
-eigenvectors[:,L] = -1*tmp
+eigenvectors[:,0] = eigenvectors[:,L].copy()
+eigenvectors[:,L] = tmp
 
-#粒子-反粒子対称性を満たすように固有ベクトルを調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
+#粒子-反粒子対称性を満たすように固有ベクトルを調整(0~L-1成分でL~2L-1成分を作る)
 V = np.zeros((2*L, 2*L), dtype=complex)
 for i in range(L):
     V[:,i] = eigenvectors[:,i]
@@ -220,17 +210,17 @@ plt.show()
 for j in range(L):
     for n in range(L):
         #cを置く場合
-        #psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
+        psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
         #+
-        if pos == "ur" or pos == "lr":
-            psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
-        )
-        #-
-        else:
-            psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
-        )
+        # if pos == "ur" or pos == "lr":
+        #     psi[n, 0] += weights[j] * (
+        #     1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
+        # )
+        # #-
+        # else:
+        #     psi[n, 0] += weights[j] * (
+        #     1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
+        # )
 #状態ベクトルの規格化
 psi /= np.linalg.norm(psi)
 

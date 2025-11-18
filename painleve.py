@@ -12,10 +12,10 @@ L = 100
 l = 2*np.pi
 epsilon = l / L
 p = 1
-m = 0.001
+m = 0.0001
 pos = "lr" #lr, ur, ll, ul
 t_i = 0
-t_f = 20
+t_f = 2
 dt = 0.01*(300/L) #この値は後で検討
 PBC = True
 
@@ -233,9 +233,9 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = int(0.2*L)
+    j0 = int(0.5*L)
 else:
-    j0 = int(0.8*L)
+    j0 = int(0.5*L)
 sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
 
 if PBC == True:
@@ -260,17 +260,17 @@ plt.show()
 for j in range(L):
     for n in range(L):
         #cを置く場合
-        #psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
+        psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
         #+
-        if pos == "ur" or pos == "lr":
-            psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
-        )
-        #-
-        else:
-            psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
-        )
+        # if pos == "ur" or pos == "lr":
+        #     psi[n, 0] += weights[j] * (
+        #     1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
+        # )
+        # #-
+        # else:
+        #     psi[n, 0] += weights[j] * (
+        #     1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
+        # )
 #状態ベクトルの規格化
 psi /= np.linalg.norm(psi)
 
@@ -478,6 +478,7 @@ c_dag_c_val = []
 H_p_sigmas = []
 H_m_sigmas = []
 H_pm_sigmas = []
+c_dag_c_sigmas = []
 psi_initial = psi.copy()
 def log_imag(name, arr):
     max_im = np.max(np.abs(np.imag(arr)))
@@ -535,6 +536,8 @@ for i, _ in enumerate(times):
     H_p_sigmas.append(statistics.stdev([complex(val).real for val in H_p_t_val]))
     H_m_sigmas.append(statistics.stdev([complex(val).real for val in H_m_t_val]))
     H_pm_sigmas.append(statistics.stdev([complex(val).real for val in H_pm_t_val]))
+    c_dag_c_sigmas.append(statistics.stdev([complex(val).real for val in c_dag_c_t_val]))
+
 
     psi = psi_initial.copy()
 
@@ -546,6 +549,7 @@ for i, _ in enumerate(times):
 plt.plot(times, H_p_sigmas, label="H_p sigma")
 plt.plot(times, H_m_sigmas, label="H_m sigma")
 plt.plot(times, H_pm_sigmas, label="H_pm sigma")
+plt.plot(times, c_dag_c_sigmas, label="c_dag_c sigma")
 #plt.yscale("log")
 plt.xlabel("time")
 plt.ylabel("standard deviation")
