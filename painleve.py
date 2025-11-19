@@ -8,7 +8,7 @@ import statistics
 import math
 
 #パラメータ
-L = 800
+L = 20
 l = 2*np.pi
 epsilon = l / L
 p = 0.0001
@@ -839,7 +839,7 @@ t_p_min = times[idx_p]
 print("H_p sigma が最小になる t:", t_p_min)
 print("そのときの H_p sigma:", H_p_sigmas[idx_p])
 weights = np.abs(np.array([x.real for x in H_p_val[idx_p]]))
-print("その時のweights:", weights/weights.sum())
+# print("その時のweights:", weights/weights.sum())
 plt.plot(H_p_val[idx_p])
 plt.title("H_p at t = {:.3f}".format(t_p_min))
 plt.grid()
