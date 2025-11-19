@@ -406,32 +406,32 @@ H_pm_0 = []
 cdc_0 = []
 cj1_cj_0 = []
 cj1_dag_cj_0 = []
-# def compute_std(weights):
-#     threshold = 1e-14
-#     weights = np.where(np.abs(weights) < threshold, 0.0, weights)
-#     x_ = np.arange(L)
-#     p_ = weights/weights.sum()
-#     mean_pos = np.sum(p_ * x_)
-#     var_pos = np.sum(p_ * (x_ - mean_pos)**2)
-#     std_pos = np.sqrt(var_pos)
-#     return std_pos
+def compute_std(weights):
+    threshold = 1e-14
+    weights = np.where(np.abs(weights) < threshold, 0.0, weights)
+    x_ = np.arange(L)
+    p_ = weights/weights.sum()
+    mean_pos = np.sum(p_ * x_)
+    var_pos = np.sum(p_ * (x_ - mean_pos)**2)
+    std_pos = np.sqrt(var_pos)
+    return std_pos
 #H_pの期待値
 for j, H_p_j in enumerate(H_p):
     val = psi.T.conj() @ H_p_j @ psi
     H_p_0.append(val.item() - Hp_v[j])
-# #H_pの標準偏差
-# weights = np.array([x.real for x in H_p_0])
-# std_pos_p = compute_std(weights)
-# print("H_pの標準偏差:", std_pos_p)
+#H_pの標準偏差
+weights = np.array([x.real for x in H_p_0])
+std_pos_p = compute_std(weights)
+print("H_pの標準偏差:", std_pos_p)
 #H_mの期待値
 for j, H_m_j in enumerate(H_m):
     val = psi.T.conj() @ H_m_j @ psi
     H_m_0.append(val.item() - Hm_v[j])
-# #H_mの標準偏差
-# x_ = np.arange(L)
-# weights = np.array([x.real for x in H_m_0])
-# std_pos_m = compute_std(weights)
-# print("H_mの標準偏差:", std_pos_m)
+#H_mの標準偏差
+x_ = np.arange(L)
+weights = np.array([x.real for x in H_m_0])
+std_pos_m = compute_std(weights)
+print("H_mの標準偏差:", std_pos_m)
 
 #H_pmの期待値
 for j, H_pm_j in enumerate(H_pm):
@@ -530,17 +530,17 @@ for i, _ in enumerate(times):
     # log_imag("H_m", H_m_test)
     # log_imag("H_pm", H_pm_test)
     # log_imag("c_dag_c", c_dag_c_test)
-    # weights = np.array([x.real for x in H_p_t_val])
-    # std_pos = compute_std(weights)
-    # if not std_pos_p is None:
-    #     H_p_sigmas.append(std_pos - std_pos_p)
-    # weights = np.array([x.real for x in H_m_t_val])
-    # std_pos = compute_std(weights)
-    # if not std_pos_m is None:
-    #     H_m_sigmas.append(std_pos - std_pos_m)
-    # weights = np.array([x.real for x in H_pm_t_val])
-    # std_pos = compute_std(weights)
-    # H_pm_sigmas.append(std_pos)
+    weights = np.array([x.real for x in H_p_t_val])
+    std_pos = compute_std(weights)
+    if not std_pos_p is None:
+        H_p_sigmas.append(std_pos - std_pos_p)
+    weights = np.array([x.real for x in H_m_t_val])
+    std_pos = compute_std(weights)
+    if not std_pos_m is None:
+        H_m_sigmas.append(std_pos - std_pos_m)
+    weights = np.array([x.real for x in H_pm_t_val])
+    std_pos = compute_std(weights)
+    H_pm_sigmas.append(std_pos)
 
     psi = psi_initial.copy()
 
@@ -549,18 +549,18 @@ for i, _ in enumerate(times):
 #################################################################################################################################
 #プロット
 #標準偏差のプロット
-# plt.plot(times, H_p_sigmas, label="H_p sigma")
-# plt.plot(times, H_m_sigmas, label="H_m sigma")
-# print("H_p sigma min:")
-# print(min(H_p_sigmas))
-# #plt.plot(times, H_pm_sigmas, label="H_pm sigma")
+plt.plot(times, H_p_sigmas, label="H_p sigma")
+plt.plot(times, H_m_sigmas, label="H_m sigma")
+print("H_p sigma min:")
+print(min(H_p_sigmas))
+#plt.plot(times, H_pm_sigmas, label="H_pm sigma")
 # #plt.plot(times, c_dag_c_sigmas, label="c_dag_c sigma")
 # #plt.yscale("log")
-# plt.xlabel("time")
-# plt.ylabel("standard deviation")
-# plt.legend()
-# plt.grid()
-# plt.show()
+plt.xlabel("time")
+plt.ylabel("standard deviation")
+plt.legend()
+plt.grid()
+plt.show()
 
 #+
 H_p_arr = np.array(H_p_val, dtype=complex)
