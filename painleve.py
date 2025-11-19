@@ -8,7 +8,7 @@ import statistics
 import math
 
 #パラメータ
-L = 400
+L = 800
 l = 2*np.pi
 epsilon = l / L
 p = 0.0001
@@ -441,7 +441,7 @@ def compute_std(weights):
     p = weights/weights.sum()
     mean = np.sum(p * x)
     var = np.sum(p * (x - mean)**2)
-    #var = max(var, 0.0)
+    var = max(var, 0.0)
     std = np.sqrt(var)
     return std
 #H_pの期待値
@@ -579,7 +579,7 @@ for i, _ in enumerate(times):
 #プロット
 #標準偏差のプロット
 plt.plot(times, H_p_sigmas, label="H_p sigma")
-plt.plot(times, H_m_sigmas, label="H_m sigma")
+#plt.plot(times, H_m_sigmas, label="H_m sigma")
 print("L = " + str(L))
 print("H_p sigma min:")
 print(min(H_p_sigmas))
