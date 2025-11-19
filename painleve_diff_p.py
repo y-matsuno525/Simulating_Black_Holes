@@ -3,15 +3,19 @@ import numpy as np
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用
 import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
+#標準偏差の計算に使う
+import statistics
+import math
 
 #パラメータ
-L = 30
+L = 100
 l = 2*np.pi
 epsilon = l / L
-m = 0
+#p = 0.0001
+m = 0.0001
 pos = "lr" #lr, ur, ll, ul
 t_i = 0
-t_f = 100
+t_f = 20
 dt = 0.01*(300/L) #この値は後で検討
 PBC = False
 
@@ -27,15 +31,23 @@ def is_hermitian(matrix):
         return True
     else:
         return False
-
+    
 def p(j,L,pos,epsilon):
     if pos == "lr":
-        return -1 - beta(j,L,pos,epsilon)
+        if (-1 - beta(j,L,pos,epsilon)) > 0:
+            return 0
+        return (-1 - beta(j,L,pos,epsilon))*1
     elif pos == "ur":
+        if (1 - beta(j,L,pos,epsilon)) < 0:
+            return 0
         return 1 - beta(j,L,pos,epsilon)
     elif pos == "ll":
+        if (1 - beta(j,L,pos,epsilon)) > 0:
+            return 0
         return -1 - beta(j,L,pos,epsilon)
     elif pos == "ul":
+        if (1 - beta(j,L,pos,epsilon)) < 0:
+            return 0
         return 1 - beta(j,L,pos,epsilon)
 
 def diff_p(j,L,pos,epsilon):
@@ -54,18 +66,18 @@ def beta(j,L,pos,epsilon):
     c1=0.730833344
     if pos == "lr":
         # β = -1 を j = 71 で踏むように調整
-        return -A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) - 0.6
+        return -A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) - A
     elif pos == "ur":
         # β = +1 を j = 70 で踏むように調整
-        return  A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) + 0.6
+        return  A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) + A
         # （注）式は (j - center - c) なので c = -0.269... は “+0.269...” と等価
     elif pos == "ll":
         # β = -1 を j = 29 で踏むように調整
-        return  A*np.tanh(3/width*(j - jh + c1)*epsilon) - 0.6
+        return  A*np.tanh(3/width*(j - jh + c1)*epsilon) - A
     elif pos == "ul":
         # β = +1 を j = 29 で踏むように調整
-        return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + 0.6
-print(beta(69,L,pos,epsilon))
+        return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + A
+
 for i in range(2*L):
     for j in range(2*L):
         #左上
@@ -114,7 +126,7 @@ if PBC == True:
 bs = []
 for j in range(L):
     bs.append(float(beta(j,L,pos,epsilon)))
-plt.plot(bs,label="beta")
+plt.plot(bs)
 
 ps = []
 for j in range(L):
@@ -129,8 +141,6 @@ plt.plot(dps,label="dp")
 plt.grid()
 plt.legend()
 plt.show()
-
-
 
 #bogoliubov変換行列の作成##########################################################################################################################
 #BdG行列を対角化
@@ -160,6 +170,8 @@ for j in range(L):
             if k == l:
                 for n in range(L):
                     cj_dag_cj_tmp[k,l] += eigenvectors[j,n+L].conj() * eigenvectors[j,n+L]
+    isHermitian = is_hermitian(cj_dag_cj_tmp)
+    assert isHermitian, "cj_dag_cj(j=" + str(j) + ") is not Hermitian!"
     cj_dag_cj_list.append(cj_dag_cj_tmp)
     print("cj†cj作成中:" + str(int(j/L*100))+"%")
 
@@ -248,13 +260,6 @@ else:
 
 weights[~mask] = 0
 
-weights /= np.linalg.norm(weights)
-#plt.plot(weights)
-plt.plot(np.r_[weights, weights[0]])
-plt.title("weights")
-plt.grid()
-plt.show()
-
 for j in range(L):
     for n in range(L):
         #cを置く場合
@@ -271,28 +276,6 @@ for j in range(L):
         )
 #状態ベクトルの規格化
 psi /= np.linalg.norm(psi)
-
-# psi = np.zeros((L, 1), dtype=complex)
-# if pos == "ur" or pos == "lr":
-#     j0 = int(0.2*L)
-# else:
-#     j0 = int(0.8*L)
-
-# for n in range(L):
-#     #cを置く場合
-#     #psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
-#     #+
-#     if pos == "ur" or pos == "lr":
-#         psi[n, 0] += (
-#         1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j0,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j0,n].conj())
-#     )
-#     #-
-#     else:
-#         psi[n, 0] += (
-#         1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j0,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j0,n].conj())
-#     )
-# #状態ベクトルの規格化
-# psi /= np.linalg.norm(psi)
 
 #ハミルトニアン密度作成###############################################################################################################
 H_p = []
@@ -359,6 +342,24 @@ for j in range(L):
         total += abs(eigenvectors[j, n+L])**2
     c_dag_c_v.append(total)
 
+#真空のcj1_cjを計算
+cj1_cj_v = []
+for j in range(L-1):
+    total = 0.0
+    for n in range(L):
+        total += eigenvectors[j+1, n] * eigenvectors[j, n+L]
+    cj1_cj_v.append(total)
+cj1_cj_v.append(0.0) #PBCなしの場合
+
+#真空のcj1_dag_cjを計算
+cj1_dag_cj_v = []
+for j in range(L-1):
+    total = 0.0
+    for n in range(L):
+        total += eigenvectors[j+1, n+L].conj() * eigenvectors[j, n+L]
+    cj1_dag_cj_v.append(total)
+cj1_dag_cj_v.append(0.0) #PBCなしの場合
+
 for j in range(L):
     Hp_v_j = 0
     Hm_v_j = 0
@@ -402,16 +403,35 @@ plt.show()
 H_p_0 = []
 H_m_0 = []
 H_pm_0 = []
-c_0 = []
+cdc_0 = []
+cj1_cj_0 = []
+cj1_dag_cj_0 = []
+# def compute_std(weights):
+#     threshold = 1e-14
+#     weights = np.where(np.abs(weights) < threshold, 0.0, weights)
+#     x_ = np.arange(L)
+#     p_ = weights/weights.sum()
+#     mean_pos = np.sum(p_ * x_)
+#     var_pos = np.sum(p_ * (x_ - mean_pos)**2)
+#     std_pos = np.sqrt(var_pos)
+#     return std_pos
 #H_pの期待値
 for j, H_p_j in enumerate(H_p):
     val = psi.T.conj() @ H_p_j @ psi
     H_p_0.append(val.item() - Hp_v[j])
-
+# #H_pの標準偏差
+# weights = np.array([x.real for x in H_p_0])
+# std_pos_p = compute_std(weights)
+# print("H_pの標準偏差:", std_pos_p)
 #H_mの期待値
 for j, H_m_j in enumerate(H_m):
     val = psi.T.conj() @ H_m_j @ psi
     H_m_0.append(val.item() - Hm_v[j])
+# #H_mの標準偏差
+# x_ = np.arange(L)
+# weights = np.array([x.real for x in H_m_0])
+# std_pos_m = compute_std(weights)
+# print("H_mの標準偏差:", std_pos_m)
 
 #H_pmの期待値
 for j, H_pm_j in enumerate(H_pm):
@@ -421,15 +441,28 @@ for j, H_pm_j in enumerate(H_pm):
 #c_dag_cの期待値
 for j, cj_dag_cj in enumerate(cj_dag_cj_list):
     val = psi.T.conj() @ cj_dag_cj @ psi
-    c_0.append(val.item() - c_dag_c_v[j])
+    cdc_0.append(val.item() - c_dag_c_v[j])
+
+#cj1_cjの期待値
+for j, cj1_cj in enumerate(cj1_cj_list):
+    val = psi.T.conj() @ cj1_cj @ psi
+    cj1_cj_0.append(val.item() - cj1_cj_v[j])
+
+#cj1_dag_cjの期待値
+for j, cj1_dag_cj in enumerate(cj1_dag_cj_list):
+    val = psi.T.conj() @ cj1_dag_cj @ psi
+    cj1_dag_cj_0.append(val.item() - cj1_dag_cj_v[j])
 
 plt.plot(H_p_0, label="H_p_0")
 plt.plot(H_m_0, label="H_m_0")
 plt.plot(H_pm_0, label="H_pm_0")
+#plt.ylim(-0.03, 0.14)
 plt.legend()
 plt.grid()
 plt.show()
-plt.plot(c_0, label="c_0")
+plt.plot(cdc_0, label="cdc_0")
+plt.plot(cj1_cj_0, label="cj1_cj_0")
+plt.plot(cj1_dag_cj_0, label="cj1_dag_cj_0")
 plt.legend()
 plt.grid()
 plt.show()
@@ -440,6 +473,10 @@ H_p_val = []
 H_m_val = []
 H_pm_val = []
 c_dag_c_val = []
+H_p_sigmas = []
+H_m_sigmas = []
+H_pm_sigmas = []
+c_dag_c_sigmas = []
 psi_initial = psi.copy()
 def log_imag(name, arr):
     max_im = np.max(np.abs(np.imag(arr)))
@@ -489,10 +526,21 @@ for i, _ in enumerate(times):
         c_dag_c_test.append(val)
     c_dag_c_val.append(c_dag_c_t_val)
 
-    log_imag("H_p", H_p_test)
-    log_imag("H_m", H_m_test)
-    log_imag("H_pm", H_pm_test)
-    log_imag("c_dag_c", c_dag_c_test)
+    # log_imag("H_p", H_p_test)
+    # log_imag("H_m", H_m_test)
+    # log_imag("H_pm", H_pm_test)
+    # log_imag("c_dag_c", c_dag_c_test)
+    # weights = np.array([x.real for x in H_p_t_val])
+    # std_pos = compute_std(weights)
+    # if not std_pos_p is None:
+    #     H_p_sigmas.append(std_pos - std_pos_p)
+    # weights = np.array([x.real for x in H_m_t_val])
+    # std_pos = compute_std(weights)
+    # if not std_pos_m is None:
+    #     H_m_sigmas.append(std_pos - std_pos_m)
+    # weights = np.array([x.real for x in H_pm_t_val])
+    # std_pos = compute_std(weights)
+    # H_pm_sigmas.append(std_pos)
 
     psi = psi_initial.copy()
 
@@ -500,6 +548,20 @@ for i, _ in enumerate(times):
 
 #################################################################################################################################
 #プロット
+#標準偏差のプロット
+# plt.plot(times, H_p_sigmas, label="H_p sigma")
+# plt.plot(times, H_m_sigmas, label="H_m sigma")
+# print("H_p sigma min:")
+# print(min(H_p_sigmas))
+# #plt.plot(times, H_pm_sigmas, label="H_pm sigma")
+# #plt.plot(times, c_dag_c_sigmas, label="c_dag_c sigma")
+# #plt.yscale("log")
+# plt.xlabel("time")
+# plt.ylabel("standard deviation")
+# plt.legend()
+# plt.grid()
+# plt.show()
+
 #+
 H_p_arr = np.array(H_p_val, dtype=complex)
 H_p_array = np.real(H_p_arr).astype(float) #ここで実数にしていることに注意
@@ -609,7 +671,7 @@ try:
         # 左右反転
         x_scaled = L - x_scaled
 
-    plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
+    #plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
     plt.legend(loc='upper right', fontsize=12)
 except Exception as e:
     print(f"Warning: geodesic.dat の重ね描画に失敗しました: {e}")
