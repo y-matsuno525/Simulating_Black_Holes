@@ -51,7 +51,6 @@ def beta(j,L,pos,epsilon):
     elif pos == "ul":
         # β = +1 を j = 29 で踏むように調整
         return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + 0.6
-
 for i in range(2*L):
     for j in range(2*L):
         #左上
@@ -240,7 +239,7 @@ if pos == "ur" or pos == "lr":
     j0 = int(0.7*L)
 else:
     j0 = int(0.8*L)
-sigma = 0.01*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
+sigma = 0.003*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
 
 if PBC == True:
     idx = np.arange(L)
@@ -828,3 +827,115 @@ plt.ylabel('t', fontweight='bold')
 plt.tight_layout()
 plt.savefig('figure/H_pm.png',
             dpi=300, bbox_inches='tight', transparent=True)
+
+from matplotlib.animation import FuncAnimation, PillowWriter
+def save_density_animation(
+    density,
+    times,
+    gif_path,
+    *,
+    horizon_positions=None,
+    fps: int = 20,
+
+    xlabel: str = "Lattice Site Index",
+    ylabel: str = "Density",
+    line_label: str = 'δ' + r'$\langle c_j^\dagger c_j\rangle$',
+
+    cmap_line: str = "blue",
+    PBC
+):
+    """
+    density           : 2 次元配列 (N, L) あるいは同形状の list。行＝時刻，列＝格子サイト
+    times             : 1 次元配列 (N,)   ─ 対応する時間点
+    gif_path          : 生成した GIF を保存するファイルパス
+    horizon_positions : 破線を引く x 座標のシーケンス（既定 None → [L/4, 3L/4]）
+    fps               : GIF のフレーム毎秒数（既定 20）
+    xlabel, ylabel    : 軸ラベル
+    line_label        : 凡例ラベル
+    cmap_line         : 折れ線の色（matplotlib が解釈できる任意指定）
+    """
+    # ---------- 前処理 ------------------------------------------------------
+    # 1. ndarray 化
+    density_arr = np.asarray(density)
+    #print("density_arr.shape =", density_arr.shape)
+    # 2. 実部のみを使用（十分小さい虚部は無視）
+    density_arr = np.real_if_close(density_arr, tol=1000)  # tol は 10^(-tol) 判定
+    density_arr = density_arr.astype(float)                # 明示的に float32/64 へ
+    N, L = density_arr.shape
+    if len(times) != N:
+        raise ValueError("times の長さと density の行数が一致していません。")
+    if horizon_positions is None:
+        if PBC:
+            horizon_positions = [L / 4, 3 * L / 4, L*(146/300), L*(154/300)]
+        else:
+            horizon_positions = [L / 4]
+
+    # ---------- 図オブジェクトの初期化 --------------------------------------
+    fig, ax = plt.subplots(figsize=(6.4, 4.8))
+    line, = ax.plot([], [], lw=1.8, color=cmap_line)#, label=line_label)
+    ax.set_xlim(1, L)
+    ax.set_ylim(density_arr.min(), density_arr.max())
+    ax.set_xlabel(xlabel, fontsize=16)#ax.set_ylim(-0.01*(300/L),0.01*(300/L))
+    #ax.set_ylabel(ylabel, fontsize=16)
+    #ax.set_title("Time Evolution of " + r'δ$\langle c_j^\dagger c_j \rangle$')
+    ax.legend(loc="upper right")
+    ax.grid(True, which="both", linestyle=":")
+
+    #for pos in horizon_positions:
+    #    ax.axvline(x=pos, color="red", ls="--", lw=1)
+
+    # ---------- アニメーション用コールバック -------------------------------
+    def init():
+        line.set_data([], [])
+        return (line,)
+
+    def update(frame):
+        line.set_data(np.arange(1, L + 1), density_arr[frame])
+        #ax.set_title(
+        #    f"Time Evolution of "+r'δ$\langle c_j^\dagger c_j \rangle$'+"  (t = {times[frame]:.3f})"
+        #)
+        return (line,)
+
+    # ---------- アニメーション生成と保存 -----------------------------------
+    ani = FuncAnimation(
+        fig,
+        update,
+        frames=N,
+        init_func=init,
+        blit=True,
+        interval=1000 / fps,     # ミリ秒
+    )
+    ani.save(gif_path, writer=PillowWriter(fps=fps))
+    print("保存しました")
+    plt.close(fig)  # 余分なウインドウを閉じる
+
+save_density_animation(
+    density=H_p_val,
+    times=times,
+    gif_path="figure/H_p.gif",
+    xlabel="Lattice Site Index j",
+    ylabel=r'δ$\langle c_j^\dagger c_j \rangle$',
+    line_label=r'δ$\langle c_j^\dagger c_j \rangle$',
+    cmap_line="blue",
+    PBC=PBC,
+)
+save_density_animation(
+    density=H_m_val,
+    times=times,
+    gif_path="figure/H_m.gif",
+    xlabel="Lattice Site Index j",
+    ylabel=r'δ$\langle c_j^\dagger c_j \rangle$',
+    line_label=r'δ$\langle c_j^\dagger c_j \rangle$',
+    cmap_line="orange",
+    PBC=PBC,
+)
+save_density_animation(
+    density=H_pm_val,
+    times=times,
+    gif_path="figure/H_pm.gif",
+    xlabel="Lattice Site Index j",
+    ylabel=r'δ$\langle c_j^\dagger c_j \rangle$',
+    line_label=r'δ$\langle c_j^\dagger c_j \rangle$',
+    cmap_line="green",
+    PBC=PBC,
+)
