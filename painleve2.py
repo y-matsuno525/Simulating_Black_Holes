@@ -12,7 +12,7 @@ p = 0.01#0**(-5)
 m = 0
 pos = "ll" #lr, ur, ll, ul
 t_i = 0
-t_f = 10
+t_f = 3
 dt = 0.01*(300/L) #この値は後で検討
 PBC = True
 

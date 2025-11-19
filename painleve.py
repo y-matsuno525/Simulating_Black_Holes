@@ -8,14 +8,14 @@ import statistics
 import math
 
 #パラメータ
-L = 300
+L = 500
 l = 2*np.pi
 epsilon = l / L
 p = 0.0001
 m = 0.0001
 pos = "ur" #lr, ur, ll, ul
 t_i = 0
-t_f = 5
+t_f = 3
 dt = 0.01*(300/L) #この値は後で検討
 PBC = False
 
@@ -237,7 +237,7 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = int(0.69*L)
+    j0 = int(0.7*L)
 else:
     j0 = int(0.8*L)
 sigma = 0.01*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
