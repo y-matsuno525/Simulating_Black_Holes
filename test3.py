@@ -9,13 +9,13 @@ import random
 L = 50
 l = 2*np.pi
 epsilon = l / L
-p = 1
+p = -1
 m = 0.0001
 pos = "lr" #lr, ur, ll, ul
 t_i = 0
 t_f = 10
 dt = 0.01*(300/L) #この値は後で検討
-PBC = True
+PBC = False
 
 times = np.arange(t_i + dt, t_f, dt)
 

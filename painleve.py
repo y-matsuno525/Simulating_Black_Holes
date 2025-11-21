@@ -8,10 +8,10 @@ import statistics
 import math
 
 #パラメータ
-L = 20
+L = 300
 l = 2*np.pi
 epsilon = l / L
-p = 0.0001
+p = 1
 m = 0.0001
 pos = "lr" #lr, ur, ll, ul
 t_i = 0
@@ -33,7 +33,7 @@ def is_hermitian(matrix):
         return False
 
 def beta(j,L,pos,epsilon):
-    #return 0
+    return 0
     width = 1
     A = 0.6
     jh = int(L/3)
@@ -471,30 +471,50 @@ for j, H_pm_j in enumerate(H_pm):
 for j, cj_dag_cj in enumerate(cj_dag_cj_list):
     val = psi.T.conj() @ cj_dag_cj @ psi
     cdc_0.append(val.item() - c_dag_c_v[j])
-
+print("c_dag_c_0:")
+print(cdc_0)
 #cj1_cjの期待値
 for j, cj1_cj in enumerate(cj1_cj_list):
     val = psi.T.conj() @ cj1_cj @ psi
+    print(val)
     cj1_cj_0.append(val.item() - cj1_cj_v[j])
-
+print("cj1_cj_0:")
+print(cj1_cj_0)
 #cj1_dag_cjの期待値
 for j, cj1_dag_cj in enumerate(cj1_dag_cj_list):
     val = psi.T.conj() @ cj1_dag_cj @ psi
     cj1_dag_cj_0.append(val.item() - cj1_dag_cj_v[j])
+print("cj1_dag_cj_0:")
+print(cj1_dag_cj_0)
 
-# plt.plot(H_p_0, label="H_p_0")
-# plt.plot(H_m_0, label="H_m_0")
-# plt.plot(H_pm_0, label="H_pm_0")
-# plt.ylim(-0.03, 0.14)
-# plt.legend()
-# plt.grid()
-# plt.show()
-# plt.plot(cdc_0, label="cdc_0")
-# plt.plot(cj1_cj_0, label="cj1_cj_0")
-# plt.plot(cj1_dag_cj_0, label="cj1_dag_cj_0")
-# plt.legend()
-# plt.grid()
-# plt.show()
+plt.plot(H_p_0, label="H_p_0")
+plt.plot(H_m_0, label="H_m_0")
+plt.plot(H_pm_0, label="H_pm_0")
+plt.legend()
+plt.grid()
+plt.show()
+plt.plot(cdc_0, label="cdc_0")
+plt.legend()
+plt.grid()
+plt.show()
+#実部のみプロット
+plt.plot([x.real for x in cj1_cj_0], label="Re(cj1_cj_0)")
+#虚部のみプロット
+plt.plot([x.imag for x in cj1_cj_0], label="Im(cj1_cj_0)")
+#絶対値のみプロット
+plt.plot([abs(x) for x in cj1_cj_0], label="|cj1_cj_0|")
+plt.legend()
+plt.grid()
+plt.show()
+#実部のみプロット
+plt.plot([x.real for x in cj1_dag_cj_0], label="Re(cj1_dag_cj_0)")
+#虚部のみプロット
+plt.plot([x.imag for x in cj1_dag_cj_0], label="Im(cj1_dag_cj_0)")
+#絶対値のみプロット
+plt.plot([abs(x) for x in cj1_dag_cj_0], label="|cj1_dag_cj_0|")
+plt.legend()
+plt.grid()
+plt.show()
 
 
 #時間発展###########################################################################################################################
