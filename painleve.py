@@ -8,7 +8,7 @@ import statistics
 import math
 
 #パラメータ
-L = 300
+L = 500
 l = 2*np.pi
 epsilon = l / L
 p = 0.0001
@@ -237,10 +237,10 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = int(0.65*L)
+    j0 = int(0.7*L)
 else:
     j0 = int(0.8*L)
-sigma = 0.005*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
+sigma = 0.003*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
 
 if PBC == True:
     idx = np.arange(L)
