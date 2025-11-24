@@ -15,7 +15,7 @@ p = 0.0001
 m = 0.0001
 pos = "ur" #lr, ur, ll, ul
 t_i = 0
-t_f = 10
+t_f = 3
 dt = 0.01*(300/L) #この値は後で検討
 PBC = False
 
@@ -52,6 +52,9 @@ def beta(j,L,pos,epsilon):
         # β = +1 を j = 29 で踏むように調整
         return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + 0.6
 
+print("slope at horizon:", (beta(int(2*L/3)+ 0.7308333441,L,pos,epsilon) - beta(int(2*L/3)+ 0.730833344-1,L,pos,epsilon)) / (2*epsilon) * 1/2)
+import sys
+sys.exit()
 for i in range(2*L):
     for j in range(2*L):
         #左上
@@ -578,8 +581,9 @@ for i, _ in enumerate(times):
 #################################################################################################################################
 #プロット
 #標準偏差のプロット
-plt.plot(times, H_p_sigmas, label="H_p sigma")
-#plt.plot(times, H_m_sigmas, label="H_m sigma")
+#plt.plot(times, H_p_sigmas, label="H_p sigma")
+plt.plot(times, H_m_sigmas, label="H_m sigma")
+np.savetxt("H_m_sigmas.txt", np.column_stack([times, H_m_sigmas]), fmt="%.10e")
 print("L = " + str(L))
 print("H_p sigma min:")
 print(min(H_p_sigmas))
