@@ -8,16 +8,16 @@ import statistics
 import math
 
 #パラメータ
-L = 250
+L = 300
 l = 2*np.pi
 epsilon = l / L
-p = 0.0001
-m = 0.0001
+p = 0
+m = 0
 pos = "ur" #lr, ur, ll, ul
 t_i = 0
-width = 5
+width = 1
 A = 1
-t_f = 10*(0.1/(width*A))
+t_f = 1.21#10*(0.1/(width*A))
 dt = 0.01*(300/L) #この値は後で検討
 PBC = False
 
@@ -266,10 +266,10 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = 121#int(0.7*L)
+    j0 = int(0.75*L)
 else:
     j0 = int(0.8*L)
-sigma = 0.003*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
+sigma = 0.025*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
 
 if PBC == True:
     idx = np.arange(L)
@@ -758,7 +758,7 @@ try:
 
     # スケーリング変換
     x_scaled = (x / (2 * np.pi)) * L
-    t_scaled = (t / 20.0) * (times[-1] - times[0]) + times[0]
+    t_scaled = (t / 1.21) * (times[-1] - times[0]) + times[0]
 
     if pos == "ul" or pos == "ll":
         # 左右反転
