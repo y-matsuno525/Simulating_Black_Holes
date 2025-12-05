@@ -11,13 +11,13 @@ import math
 L = 300
 l = 2*np.pi
 epsilon = l / L
-p = 0
-m = 0
+p = 0.0001
+m = 0.0001
 pos = "ur" #lr, ur, ll, ul
 t_i = 0
-width = 1
+width = 5
 A = 1
-t_f = 1.21#10*(0.1/(width*A))
+t_f = 10*(0.1/(width*A))
 dt = 0.01*(300/L) #この値は後で検討
 PBC = False
 
@@ -266,10 +266,10 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = int(0.75*L)
+    j0 = 146#int(0.75*L)
 else:
     j0 = int(0.8*L)
-sigma = 0.025*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
+sigma = 0.003*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
 
 if PBC == True:
     idx = np.arange(L)
