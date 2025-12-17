@@ -8,14 +8,14 @@ import statistics
 import math
 
 #パラメータ
-L = 300
+L = 500
 l = 2*np.pi
 epsilon = l / L
 p = 0.0001
 m = 0.0001
 pos = "ur" #lr, ur, ll, ul
 t_i = 0
-width = 5
+width = 1
 A = 1
 t_f = 10*(0.1/(width*A))
 dt = 0.01*(300/L) #この値は後で検討
@@ -36,27 +36,27 @@ def is_hermitian(matrix):
 
 def beta(j,L,pos,epsilon):
     #width = 0.1
-    #A = 2
+    A = 1
     jh = int(L/2)
     return  A*np.tanh(width*(j - jh)*epsilon) + A# - (A-1)
     # #return 0
     # width = 12
-    # A = 0.5
-    # jh = int(L/3)
-    # c1=0#.730833344
-    # if pos == "lr":
-    #     # β = -1 を j = 71 で踏むように調整
-    #     return -A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) - 0.6
-    # elif pos == "ur":
-    #     # β = +1 を j = 70 で踏むように調整
-    #     return  A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) + 2*A
-    #     # （注）式は (j - center - c) なので c = -0.269... は “+0.269...” と等価
-    # elif pos == "ll":
-    #     # β = -1 を j = 29 で踏むように調整
-    #     return  A*np.tanh(3/width*(j - jh + c1)*epsilon) - 0.6
-    # elif pos == "ul":
-    #     # β = +1 を j = 29 で踏むように調整
-    #     return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + 0.6
+    A = 0.6
+    jh = int(L/3)
+    c1=0#.730833344
+    if pos == "lr":
+        # β = -1 を j = 71 で踏むように調整
+        return -A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) - 0.6
+    elif pos == "ur":
+        # β = +1 を j = 70 で踏むように調整
+        return  A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) + 2*A
+        # （注）式は (j - center - c) なので c = -0.269... は “+0.269...” と等価
+    elif pos == "ll":
+        # β = -1 を j = 29 で踏むように調整
+        return  A*np.tanh(3/width*(j - jh + c1)*epsilon) - 0.6
+    elif pos == "ul":
+        # β = +1 を j = 29 で踏むように調整
+        return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + 0.6
 
 #print("surface gravity:", (beta(int(2*),L,pos,epsilon) - beta(int(2*L/3)+ 0.730833344-1,L,pos,epsilon)) / (2*epsilon) * 1/2)
 # import sys
@@ -266,7 +266,7 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = 146#int(0.75*L)
+    j0 = 245#0.2*L#245#int(0.75*L)
 else:
     j0 = int(0.8*L)
 sigma = 0.003*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
@@ -696,13 +696,13 @@ try:
     
     # スケーリング変換
     x_scaled = (x / (2 * np.pi)) * L
-    t_scaled = (t / 20.0) * (times[-1] - times[0]) + times[0]
+    t_scaled = (t / t_f) * (times[-1] - times[0]) + times[0]
 
     if pos == "ul" or pos == "ll":
         # 左右反転
         x_scaled = L - x_scaled
 
-    plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
+    plt.plot(x_scaled, t_scaled,"--", color='red', linewidth=1, label='geodesic')
     plt.legend(loc='upper right', fontsize=12)
 except Exception as e:
     print(f"Warning: geodesic.dat の重ね描画に失敗しました: {e}")

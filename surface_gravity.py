@@ -39,16 +39,26 @@ print("B =", B_fit)
 t_fine = np.linspace(times.min(), times.max(), 2000)
 fit_curve = exp_func(t_fine, A_fit, B_fit)
 
+# ===== 理想曲線（例）=====
+A_ideal = A_fit          # 好きに設定
+B_ideal = 1               # 好きに設定
+
 # ===============================
 #  プロット
 # ===============================
 plt.figure(figsize=(8, 5))
-plt.plot(times, H_m_sigmas, "b.", label="data")
-plt.plot(t_fine, fit_curve, "r-", label=f"fit: {A_fit:.3e} exp({B_fit:.3e} t)")
+plt.plot(times, H_m_sigmas,"o", label="Numerical simulation",color="blue",lw=1)
+#plt.plot(t_fine, fit_curve, "r-", label=f"fit: {A_fit:.3e} exp({B_fit:.3e} t)")
+
+ideal_curve = exp_func(t_fine, A_ideal, B_ideal)  # ★ t_fine 上で計算
+plt.plot(t_fine, ideal_curve, label=f"exp(κt)", color="red",lw=3)
+
 ideal = A_fit*13 * np.exp(0.165 * times)
 #plt.plot(times, ideal, "g--", label="ideal: 0.1 * exp(0.165 t)")
-plt.xlabel("time")
-plt.ylabel("H_m sigma")
+plt.xlabel("t", fontsize=25,fontweight='bold')
+plt.ylabel("δσ(t)", fontsize=25,fontweight='bold')
+plt.xticks(fontsize=18)
+plt.yticks(fontsize=18)
 plt.grid()
-plt.legend()
+plt.legend(fontsize=30)
 plt.show()
