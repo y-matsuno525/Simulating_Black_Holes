@@ -8,16 +8,16 @@ import statistics
 import math
 
 #パラメータ
-L = 500
+L = 600
 l = 2*np.pi
 epsilon = l / L
 p = 0.0001
 m = 0.0001
-pos = "ur" #lr, ur, ll, ul
+pos = "lr" #lr, ur, ll, ul
 t_i = 0
 width = 1
 A = 1
-t_f = 10*(0.1/(width*A))
+t_f = 20#10*(0.1/(width*A))
 dt = 0.01*(300/L) #この値は後で検討
 PBC = False
 
@@ -35,10 +35,10 @@ def is_hermitian(matrix):
         return False
 
 def beta(j,L,pos,epsilon):
-    #width = 0.1
-    A = 1
-    jh = int(L/2)
-    return  A*np.tanh(width*(j - jh)*epsilon) + A# - (A-1)
+    width = 0.75
+    A = -1
+    jh = int(L*0.9)
+    return  A*np.tanh(width*(j - jh)*epsilon) + A
     # #return 0
     # width = 12
     A = 0.6
@@ -266,10 +266,10 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = 245#0.2*L#245#int(0.75*L)
+    j0 = int(0.2*L)
 else:
     j0 = int(0.8*L)
-sigma = 0.003*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
+sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
 
 if PBC == True:
     idx = np.arange(L)
@@ -303,7 +303,7 @@ for j in range(L):
         #+
         if pos == "ur" or pos == "lr":
             psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
+            1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
         )
         #-
         else:
@@ -538,6 +538,8 @@ c_dag_c_sigmas = []
 x_ave_list = []
 teitai=0
 hidari=0
+t_line_0 = 0
+idx_0 = 0
 psi_initial = psi.copy()
 def log_imag(name, arr):
     max_im = np.max(np.abs(np.imag(arr)))
@@ -585,16 +587,10 @@ for i, _ in enumerate(times):
     x = np.arange(L)
     mean = np.sum(H_m_t_val * x)
     x_ave_list.append(mean)
-    if mean*epsilon > 5.4789375878605995: #ここをちょっと変える
-        if mean[-1] < mean[-2]:
-            hidari+=1
-        else:
-            hidari=0
-    if hidari > 3:
-        print("停滞時間")
-        print(teitai*dt)
-        break
-    teitai+=1
+    if mean*epsilon > 5.4789375878605995 and teitai == 0: #ここをちょっと変える
+        t_line_0 = times[i]
+        teitai += 1
+        idx_0 = i
 
     weights = np.abs(weights)
     x = np.arange(L)
@@ -638,7 +634,11 @@ for i, _ in enumerate(times):
     psi = psi_initial.copy()
 
     print("時間発展中:"+str(int(i/len(times)*100)) + "%")
-
+print("平均位置")
+print(np.array(x_ave_list)*epsilon)
+plt.plot(np.array(x_ave_list)*epsilon)
+plt.grid()
+plt.show()
 #################################################################################################################################
 #プロット
 #位置平均
@@ -900,18 +900,23 @@ plt.tight_layout()
 plt.savefig('figure/H_pm.png',
             dpi=300, bbox_inches='tight', transparent=True)
 
-# plt.close('all')
-# # H_p の標準偏差が最小になるときの t
-# idx_p = np.argmin(H_p_sigmas)   # 最小値を取るインデックス
-# t_p_min = times[idx_p]
-# print("H_p sigma が最小になる t:", t_p_min)
-# print("そのときの H_p sigma:", H_p_sigmas[idx_p])
-# weights = np.abs(np.array([x.real for x in H_p_val[idx_p]]))
-# # print("その時のweights:", weights/weights.sum())
-# plt.plot(H_p_val[idx_p])
-# plt.title("H_p at t = {:.3f}".format(t_p_min))
-# plt.grid()
-# plt.show()
+plt.close('all')
+# H_p の標準偏差が最小になるときの t
+idx_p = np.argmin(H_p_sigmas)   # 最小値を取るインデックス
+t_p_min = times[idx_p]
+t_0 = times[idx_0]
+print("線形部分通過時間 t_line_0:", t_line_0)
+print("H_p sigma が最小になる t:", t_p_min)
+print("停滞時間:", t_p_min - t_line_0)
+print("そのときの H_p sigma:", H_p_sigmas[idx_p])
+weights = np.abs(np.array([x.real for x in H_p_val[idx_p]]))
+weights2 = np.abs(np.array([x.real for x in H_p_val[idx_0]]))
+# print("その時のweights:", weights/weights.sum())
+plt.plot(H_p_val[idx_p])
+plt.plot(H_p_val[idx_0], linestyle="--")
+plt.title("H_p from t={:.3f} to t={:.3f}".format(t_0, t_p_min))
+plt.grid()
+plt.show()
 
 # # H_m の標準偏差が最小になるときの t
 # idx_m = np.argmin(H_m_sigmas)
