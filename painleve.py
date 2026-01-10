@@ -253,7 +253,7 @@ else:
     cj1_dag_cj_list.append(np.zeros((L, L), dtype=complex))
 
 
-#時間発展演算子作成
+#時間発展演算子作成2
 def generate_time_evolution_operator(eigenvalues, n):
     H = np.zeros((L, L), dtype=complex)
     for i in range(L):
