@@ -304,7 +304,7 @@ for j in range(L):
         #+
         if pos == "ur" or pos == "lr":
             psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
+            1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
         )
         #-
         else:
