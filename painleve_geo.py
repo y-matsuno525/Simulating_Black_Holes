@@ -13,7 +13,7 @@ l = 2*np.pi
 epsilon = l / L
 p = 0.0001
 m = 0.0001
-pos = "lr" #lr, ur, ll, ul
+pos = "ur" #lr, ur, ll, ul
 t_i = 0
 width = 1
 A = 1
@@ -42,14 +42,14 @@ def beta(j,L,pos,epsilon):
     # #return 0
     width = 1
     A = 0.6
-    jh = int(L/3)
+    jh = int(L/4)
     c1=0#.730833344
     if pos == "lr":
         # β = -1 を j = 71 で踏むように調整
         return -A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) - A
     elif pos == "ur":
         # β = +1 を j = 70 で踏むように調整
-        return  A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) + A
+        return  A*np.tanh(3/width*(j - jh - c1)*epsilon) + A
         # （注）式は (j - center - c) なので c = -0.269... は “+0.269...” と等価
     elif pos == "ll":
         # β = -1 を j = 29 で踏むように調整
@@ -267,7 +267,7 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = 0.2*L#245#int(0.75*L)
+    j0 = 0.6*L#245#int(0.75*L)
 else:
     j0 = int(0.8*L)
 sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
@@ -304,7 +304,7 @@ for j in range(L):
         #+
         if pos == "ur" or pos == "lr":
             psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-1j*np.pi/4) * eigenvectors[j,n].conj())
+            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
         )
         #-
         else:
