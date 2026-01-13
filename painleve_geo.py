@@ -41,7 +41,7 @@ def beta(j,L,pos,epsilon):
     # return  A*np.tanh(width*(j - jh)*epsilon) + A# - (A-1)
     # #return 0
     width = 1
-    A = 1
+    A = 0.6
     jh = int(L/4)
     c1=0#.730833344
     if pos == "lr":
