@@ -8,7 +8,7 @@ import statistics
 import math
 
 #パラメータ
-L = 500
+L = 100
 l = 2*np.pi
 epsilon = l / L
 p = 0.0001
@@ -41,22 +41,22 @@ def beta(j,L,pos,epsilon):
     # return  A*np.tanh(width*(j - jh)*epsilon) + A# - (A-1)
     # #return 0
     width = 1
-    A = 0.6
-    jh = int(L/3)
+    A = 1
+    jh = int(L/4)
     c1=0#.730833344
     if pos == "lr":
         # β = -1 を j = 71 で踏むように調整
-        return -A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) - 0.6
+        return -A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) - A
     elif pos == "ur":
         # β = +1 を j = 70 で踏むように調整
-        return  A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) + 0.6
+        return  A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) + A
         # （注）式は (j - center - c) なので c = -0.269... は “+0.269...” と等価
     elif pos == "ll":
         # β = -1 を j = 29 で踏むように調整
-        return  A*np.tanh(3/width*(j - jh + c1)*epsilon) - 0.6
+        return  A*np.tanh(3/width*(j - jh + c1)*epsilon) - A
     elif pos == "ul":
         # β = +1 を j = 29 で踏むように調整
-        return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + 0.6
+        return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + A
 
 #print("surface gravity:", (beta(int(2*),L,pos,epsilon) - beta(int(2*L/3)+ 0.730833344-1,L,pos,epsilon)) / (2*epsilon) * 1/2)
 # import sys
