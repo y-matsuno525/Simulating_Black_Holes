@@ -13,7 +13,7 @@ l = 2*np.pi
 epsilon = l / L
 p = 0.0001
 m = 0.0001
-pos = "ur" #lr, ur, ll, ul
+pos = "lr" #lr, ur, ll, ul
 t_i = 0
 width = 1
 A = 1
@@ -42,7 +42,7 @@ def beta(j,L,pos,epsilon):
     # #return 0
     width = 1
     A = 0.6
-    jh = int(L/4)
+    jh = int(L/3)
     c1=0#.730833344
     if pos == "lr":
         # β = -1 を j = 71 で踏むように調整
