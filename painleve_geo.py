@@ -8,7 +8,7 @@ import statistics
 import math
 
 #パラメータ
-L = 100
+L = 500
 l = 2*np.pi
 epsilon = l / L
 p = 0.0001
