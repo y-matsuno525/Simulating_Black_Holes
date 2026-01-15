@@ -8,12 +8,12 @@ import statistics
 import math
 
 #パラメータ
-L = 500
+L = 100
 l = 2*np.pi
 epsilon = l / L
-p = 0.0001
+p = 1
 m = 0.0001
-pos = "ur" #lr, ur, ll, ul
+pos = "lr" #lr, ur, ll, ul
 t_i = 0
 width = 1
 A = 1
@@ -42,14 +42,14 @@ def beta(j,L,pos,epsilon):
     # #return 0
     width = 1
     A = 0.6
-    jh = int(L/4)
+    jh = int(L/3)
     c1=0#.730833344
     if pos == "lr":
         # β = -1 を j = 71 で踏むように調整
-        return -A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) - A
+        return -A*np.tanh(3/width*(j - 1*jh - c1)*epsilon) - A
     elif pos == "ur":
         # β = +1 を j = 70 で踏むように調整
-        return  A*np.tanh(3/width*(j - jh - c1)*epsilon) + A
+        return  A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) + A
         # （注）式は (j - center - c) なので c = -0.269... は “+0.269...” と等価
     elif pos == "ll":
         # β = -1 を j = 29 で踏むように調整
@@ -123,7 +123,7 @@ for j in range(L):
 # b_diff_diff_list.append(0)
 plt.plot(bs)
 plt.grid()
-print(float(beta(71,L,pos,epsilon)))
+print(float(beta(L*0.55,L,pos,epsilon)))
 plt.show()
 # plt.plot(np.arange(1,L), b_diff_list, label="d beta / dx")
 # b_diff_diff_list was built with: for j in range(2, L-2)
@@ -267,7 +267,7 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = 0.6*L#245#int(0.75*L)
+    j0 = 0.8*L#245#int(0.75*L)
 else:
     j0 = int(0.8*L)
 sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
