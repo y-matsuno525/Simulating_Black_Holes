@@ -8,16 +8,16 @@ import statistics
 import math
 
 #パラメータ
-L = 300
+L = 500
 l = 2*np.pi
 epsilon = l / L
 p = 0.0001
 m = 0.0001
-pos = "lr" #lr, ur, ll, ul
+pos = "ur" #lr, ur, ll, ul
 t_i = 0
 width = 1
 A = 1
-t_f = 10
+t_f = 10*(0.1/(width*A))
 dt = 0.01*(300/L) #この値は後で検討
 PBC = False
 
@@ -35,28 +35,29 @@ def is_hermitian(matrix):
         return False
 
 def beta(j,L,pos,epsilon):
+    #width = 0.1
     width = 1
     A = 1
     jh = int(L/2)
     return  A*np.tanh(width*(j - jh)*epsilon) + A# - (A-1)
     # #return 0
-    width = 1
+    # width = 12
     A = 0.6
     jh = int(L/3)
     c1=0#.730833344
     if pos == "lr":
         # β = -1 を j = 71 で踏むように調整
-        return -A*np.tanh(3/width*(j - 1*jh - c1)*epsilon) - A
+        return -A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) - 0.6
     elif pos == "ur":
         # β = +1 を j = 70 で踏むように調整
-        return  A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) + A
+        return  A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) + 2*A
         # （注）式は (j - center - c) なので c = -0.269... は “+0.269...” と等価
     elif pos == "ll":
         # β = -1 を j = 29 で踏むように調整
-        return  A*np.tanh(3/width*(j - jh + c1)*epsilon) - A
+        return  A*np.tanh(3/width*(j - jh + c1)*epsilon) - 0.6
     elif pos == "ul":
         # β = +1 を j = 29 で踏むように調整
-        return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + A
+        return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + 0.6
 
 #print("surface gravity:", (beta(int(2*),L,pos,epsilon) - beta(int(2*L/3)+ 0.730833344-1,L,pos,epsilon)) / (2*epsilon) * 1/2)
 # import sys
@@ -123,7 +124,6 @@ for j in range(L):
 # b_diff_diff_list.append(0)
 plt.plot(bs)
 plt.grid()
-print(float(beta(L*0.55,L,pos,epsilon)))
 plt.show()
 # plt.plot(np.arange(1,L), b_diff_list, label="d beta / dx")
 # b_diff_diff_list was built with: for j in range(2, L-2)
@@ -254,7 +254,7 @@ else:
     cj1_dag_cj_list.append(np.zeros((L, L), dtype=complex))
 
 
-#時間発展演算子作成
+#時間発展演算子作成2
 def generate_time_evolution_operator(eigenvalues, n):
     H = np.zeros((L, L), dtype=complex)
     for i in range(L):
@@ -267,7 +267,7 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = 146
+    j0 = 245#0.2*L#245#int(0.75*L)
 else:
     j0 = int(0.8*L)
 sigma = 0.003*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
@@ -446,11 +446,11 @@ for j in range(L):
             Hm_v[-1] = 0
             Hpm_v[-1] = 0
 
-plt.plot(Hp_v, label="Hp_v")
-plt.plot(Hm_v, label="Hm_v")
-plt.plot(Hpm_v, label="Hpm_v")
-plt.legend()
-plt.show()
+# plt.plot(Hp_v, label="Hp_v")
+# plt.plot(Hm_v, label="Hm_v")
+# plt.plot(Hpm_v, label="Hpm_v")
+# plt.legend()
+# plt.show()
 
 # plt.plot(c_dag_c_v)
 # plt.title("c_dag_c_v")
@@ -477,7 +477,7 @@ def compute_std(weights):
 #H_pの期待値
 for j, H_p_j in enumerate(H_p):
     val = psi.T.conj() @ H_p_j @ psi
-    H_p_0.append(val.item()- Hp_v[j])
+    H_p_0.append(val.item() - Hp_v[j])
 #H_pの標準偏差
 weights = np.array([x.real for x in H_p_0])
 std_pos_p = compute_std(weights)
@@ -525,17 +525,6 @@ for j, cj1_dag_cj in enumerate(cj1_dag_cj_list):
 # plt.legend()
 # plt.grid()
 # plt.show()
-
-def save_list_as_csv(list, filename):
-    np.savetxt(filename, list, delimiter=",")
-    print(f"List saved to {filename}")
-#np.real(H_p_arr).astype(float)
-save_list_as_csv(np.real(H_p_0).astype(float), "data/H_p_0.csv")
-save_list_as_csv(np.real(H_m_0).astype(float), "data/H_m_0.csv")
-save_list_as_csv(np.real(H_pm_0).astype(float), "data/H_pm_0.csv")
-save_list_as_csv(np.real(cdc_0).astype(float), "data/cdc_0.csv")
-save_list_as_csv(cj1_cj_0, "data/cj1_cj_0.csv")
-save_list_as_csv(cj1_dag_cj_0, "data/cj1_dag_cj_0.csv")
 
 
 #時間発展###########################################################################################################################
@@ -639,18 +628,33 @@ for i, _ in enumerate(times):
 
     print("時間発展中:"+str(int(i/len(times)*100)) + "%")
 
-def save_matrix_as_csv(matrix, filename):
-    np.savetxt(filename, matrix, delimiter=",")
-    print(f"Matrix saved to {filename}")
-
-save_matrix_as_csv(np.real(H_p_val).astype(float), "data/H_p_val.csv")
-save_matrix_as_csv(np.real(H_m_val).astype(float), "data/H_m_val.csv")
-save_matrix_as_csv(np.real(H_pm_val).astype(float), "data/H_pm_val.csv")
-save_matrix_as_csv(np.real(c_dag_c_val).astype(float), "data/c_dag_c_val.csv")
-
 #################################################################################################################################
 #プロット
-
+#位置平均
+plt.plot(times, x_ave_list, label="x average")
+plt.xlabel("time")
+plt.ylabel("x average")
+plt.legend()
+plt.grid()
+plt.show()
+np.savetxt("x_ave.txt", np.column_stack([times, x_ave_list]), fmt="%.10e")
+#標準偏差のプロット
+#plt.plot(times, H_p_sigmas, label="H_p sigma")
+# plt.plot(times, H_m_sigmas, label="H_m sigma")
+np.savetxt("H_m_sigmas.txt", np.column_stack([times, H_m_sigmas]), fmt="%.10e")
+# print("L = " + str(L))
+# print("H_p sigma min:")
+# print(min(H_p_sigmas))
+#plt.plot(times, H_pm_sigmas, label="H_pm sigma")
+#plt.plot(times, c_dag_c_sigmas, label="c_dag_c sigma")
+#plt.yscale("log")
+# plt.xlabel("time")
+# plt.ylabel("standard deviation")
+# plt.legend()
+# plt.grid()
+# plt.show()
+# plt.plot(H_p_val[-1])
+# plt.show()
 
 #+
 H_p_arr = np.array(H_p_val, dtype=complex)
@@ -889,3 +893,138 @@ plt.ylabel('t', fontweight='bold')
 plt.tight_layout()
 plt.savefig('figure/H_pm.png',
             dpi=300, bbox_inches='tight', transparent=True)
+
+plt.close('all')
+# H_p の標準偏差が最小になるときの t
+idx_p = np.argmin(H_p_sigmas)   # 最小値を取るインデックス
+t_p_min = times[idx_p]
+print("H_p sigma が最小になる t:", t_p_min)
+print("そのときの H_p sigma:", H_p_sigmas[idx_p])
+weights = np.abs(np.array([x.real for x in H_p_val[idx_p]]))
+# print("その時のweights:", weights/weights.sum())
+plt.plot(H_p_val[idx_p])
+plt.title("H_p at t = {:.3f}".format(t_p_min))
+plt.grid()
+plt.show()
+
+# H_m の標準偏差が最小になるときの t
+idx_m = np.argmin(H_m_sigmas)
+t_m_min = times[idx_m]
+print("H_m sigma が最小になる t:", t_m_min)
+print("そのときの H_m sigma:", H_m_sigmas[idx_m])
+plt.plot(H_m_val[idx_m])
+plt.title("H_m at t = {:.3f}".format(t_m_min))
+plt.grid()
+plt.show()
+
+from matplotlib.animation import FuncAnimation, PillowWriter
+def save_density_animation(
+    density,
+    times,
+    gif_path,
+    *,
+    horizon_positions=None,
+    fps: int = 20,
+
+    xlabel: str = "Lattice Site Index",
+    ylabel: str = "Density",
+    line_label: str = 'δ' + r'$\langle c_j^\dagger c_j\rangle$',
+
+    cmap_line: str = "blue",
+    PBC
+):
+    """
+    density           : 2 次元配列 (N, L) あるいは同形状の list。行＝時刻，列＝格子サイト
+    times             : 1 次元配列 (N,)   ─ 対応する時間点
+    gif_path          : 生成した GIF を保存するファイルパス
+    horizon_positions : 破線を引く x 座標のシーケンス（既定 None → [L/4, 3L/4]）
+    fps               : GIF のフレーム毎秒数（既定 20）
+    xlabel, ylabel    : 軸ラベル
+    line_label        : 凡例ラベル
+    cmap_line         : 折れ線の色（matplotlib が解釈できる任意指定）
+    """
+    # ---------- 前処理 ------------------------------------------------------
+    # 1. ndarray 化
+    density_arr = np.asarray(density)
+    #print("density_arr.shape =", density_arr.shape)
+    # 2. 実部のみを使用（十分小さい虚部は無視）
+    density_arr = np.real_if_close(density_arr, tol=1000)  # tol は 10^(-tol) 判定
+    density_arr = density_arr.astype(float)                # 明示的に float32/64 へ
+    N, L = density_arr.shape
+    if len(times) != N:
+        raise ValueError("times の長さと density の行数が一致していません。")
+    if horizon_positions is None:
+        if PBC:
+            horizon_positions = [L / 4, 3 * L / 4, L*(146/300), L*(154/300)]
+        else:
+            horizon_positions = [L / 4]
+
+    # ---------- 図オブジェクトの初期化 --------------------------------------
+    fig, ax = plt.subplots(figsize=(6.4, 4.8))
+    line, = ax.plot([], [], lw=1.8, color=cmap_line)#, label=line_label)
+    ax.set_xlim(1, L)
+    ax.set_ylim(density_arr.min(), density_arr.max())
+    ax.set_xlabel(xlabel, fontsize=16)#ax.set_ylim(-0.01*(300/L),0.01*(300/L))
+    #ax.set_ylabel(ylabel, fontsize=16)
+    #ax.set_title("Time Evolution of " + r'δ$\langle c_j^\dagger c_j \rangle$')
+    ax.legend(loc="upper right")
+    ax.grid(True, which="both", linestyle=":")
+
+    #for pos in horizon_positions:
+    #    ax.axvline(x=pos, color="red", ls="--", lw=1)
+
+    # ---------- アニメーション用コールバック -------------------------------
+    def init():
+        line.set_data([], [])
+        return (line,)
+
+    def update(frame):
+        line.set_data(np.arange(1, L + 1), density_arr[frame])
+        #ax.set_title(
+        #    f"Time Evolution of "+r'δ$\langle c_j^\dagger c_j \rangle$'+"  (t = {times[frame]:.3f})"
+        #)
+        return (line,)
+
+    # ---------- アニメーション生成と保存 -----------------------------------
+    ani = FuncAnimation(
+        fig,
+        update,
+        frames=N,
+        init_func=init,
+        blit=True,
+        interval=1000 / fps,     # ミリ秒
+    )
+    ani.save(gif_path, writer=PillowWriter(fps=fps))
+    print("保存しました")
+    plt.close(fig)  # 余分なウインドウを閉じる
+
+save_density_animation(
+    density=H_p_val,
+    times=times,
+    gif_path="figure/H_p.gif",
+    xlabel="Lattice Site Index j",
+    ylabel=r'δ$\langle c_j^\dagger c_j \rangle$',
+    line_label=r'δ$\langle c_j^\dagger c_j \rangle$',
+    cmap_line="blue",
+    PBC=PBC,
+)
+save_density_animation(
+    density=H_m_val,
+    times=times,
+    gif_path="figure/H_m.gif",
+    xlabel="Lattice Site Index j",
+    ylabel=r'δ$\langle c_j^\dagger c_j \rangle$',
+    line_label=r'δ$\langle c_j^\dagger c_j \rangle$',
+    cmap_line="orange",
+    PBC=PBC,
+)
+save_density_animation(
+    density=H_pm_val,
+    times=times,
+    gif_path="figure/H_pm.gif",
+    xlabel="Lattice Site Index j",
+    ylabel=r'δ$\langle c_j^\dagger c_j \rangle$',
+    line_label=r'δ$\langle c_j^\dagger c_j \rangle$',
+    cmap_line="green",
+    PBC=PBC,
+)
