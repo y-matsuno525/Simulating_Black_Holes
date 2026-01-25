@@ -11,7 +11,7 @@ import math
 L = 100
 l = 2*np.pi
 epsilon = l / L
-p = 1
+p = 0.0001
 m = 0.0001
 pos = "lr" #lr, ur, ll, ul
 t_i = 0
@@ -35,7 +35,8 @@ def is_hermitian(matrix):
         return False
 
 def beta(j,L,pos,epsilon):
-    return  np.tanh(3*(j - int(L/2) )*epsilon) + 1
+    return 0.6*np.tanh(10*(j - int(3*L/4) )*epsilon) + 0.6*np.tanh(10*(-j + int(L/4) )*epsilon) + 1.2
+    return  np.tanh(3*(j - int(2*L/3) )*epsilon) + 1
     #width = 0.1
     # A = 1
     # jh = int(L/2)
@@ -62,6 +63,8 @@ def beta(j,L,pos,epsilon):
 #print("surface gravity:", (beta(int(2*),L,pos,epsilon) - beta(int(2*L/3)+ 0.730833344-1,L,pos,epsilon)) / (2*epsilon) * 1/2)
 # import sys
 # sys.exit()
+print(beta(int(L*0.235),L,pos,epsilon))
+print(beta(int(L*0.767),L,pos,epsilon))
 for i in range(2*L):
     for j in range(2*L):
         #左上
@@ -141,14 +144,16 @@ def plot_mode_function(U):
     x = np.linspace(0, l, L)
     plt.figure()
     for i in range(L):
-        if i < 5:
+        if i < 10:
             plt.plot(x, f[:, i]/np.sqrt(epsilon))
             plt.xlabel(r'$x_j$',fontsize=25)
             index = "j"+str(i+1)
             plt.xticks([0,0.5*l,l],["0","$\pi$","2$\pi$"],fontsize=15)
             plt.yticks(fontsize=15)
             plt.ylabel(rf"$f_{{j{i+1}}}$", rotation=0, fontsize=25, labelpad=15)
-            plt.axvline(x=0.5*l, color="red", linewidth=1, linestyle="--")
+            plt.axvline(x=0.235*l, color="red", linewidth=1, linestyle="--")
+            plt.axvline(x=0.767*l, color="red", linewidth=1, linestyle="--")
+            plt.title(rf"E={eigenvalues[i]:.3f}", fontsize=20)
             plt.grid(True)
             plt.savefig('figure/mode_function_' + 'p='+str(p) + '_k=' + str(i+1) + '.png',dpi=300,bbox_inches='tight',transparent=False)
             plt.close()
