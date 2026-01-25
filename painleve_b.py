@@ -8,12 +8,12 @@ import statistics
 import math
 
 #パラメータ
-L = 100
+L = 300
 l = 2*np.pi
 epsilon = l / L
-p = 1
+p = 0.0001
 m = 0.0001
-pos = "ll" #lr, ur, ll, ul
+pos = "lr" #lr, ur, ll, ul
 t_i = 0
 width = 1
 A = 1
@@ -35,7 +35,8 @@ def is_hermitian(matrix):
         return False
 
 def beta(j,L,pos,epsilon):
-    return 0.6*np.tanh(10*(j - int(3*L/4) )*epsilon) + 0.6*np.tanh(10*(-j + int(L/4) )*epsilon) + 1.2
+    return (0.6 + 0.6*np.tanh(5*(-j + int(3*L/4) )*epsilon))-1.2
+    return (0.6*np.tanh(5*(j - int(3*L/4) )*epsilon) + 0.6*np.tanh(5*(-j + int(L/4) )*epsilon) + 1.2)*-1
 
 #print("surface gravity:", (beta(int(2*),L,pos,epsilon) - beta(int(2*L/3)+ 0.730833344-1,L,pos,epsilon)) / (2*epsilon) * 1/2)
 # import sys
