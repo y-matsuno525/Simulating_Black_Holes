@@ -367,9 +367,9 @@ for j in range(L):
     H_pm_j = np.zeros((L, L), dtype=complex)
 
     #ハミルトニアン密度作成
-    H_p_j = -1j/(4*epsilon) * (1+beta(j,L,pos,epsilon))  * (1j*cj_cj1_list[j] + cj_cj1_dag_list[j] + cj_dag_cj1_list[j] - 1j*cj_dag_cj1_dag_list[j])
-    H_m_j = -1j/(4*epsilon) * (-1+beta(j,L,pos,epsilon))  * (-1j*cj_cj1_list[j] + cj_cj1_dag_list[j] + cj_dag_cj1_list[j] + 1j*cj_dag_cj1_dag_list[j])
-    H_pm_j = -1j/(2*epsilon) * (p*(1j*cj_cj1_dag_list[j] - 1j*cj_dag_cj1_list[j]) - (p - epsilon*m)*(-2*1j*cj_dag_cj_list[j]))
+    H_p_j = -1j/(4*epsilon) * (1+beta(j+1/2,L,pos,epsilon))  * (1j*(cj_cj1_list[j-1] + cj_cj1_list[j])/2 + (cj_cj1_dag_list[j-1]+cj_cj1_dag_list[j])/2 + (cj_dag_cj1_list[j-1]+cj_dag_cj1_list[j])/2 - 1j*(cj_dag_cj1_dag_list[j-1]+cj_dag_cj1_dag_list[j])/2)
+    H_m_j = -1j/(4*epsilon) * (-1+beta(j+1/2,L,pos,epsilon))  * (-1j*(cj_cj1_list[j-1] + cj_cj1_list[j])/2 + (cj_cj1_dag_list[j-1]+cj_cj1_dag_list[j])/2 + (cj_dag_cj1_list[j-1]+cj_dag_cj1_list[j])/2 + 1j*(cj_dag_cj1_dag_list[j-1]+cj_dag_cj1_dag_list[j])/2)
+    H_pm_j = -1j/(2*epsilon) * (p*(1j*(cj_cj1_dag_list[j-1]+cj_cj1_dag_list[j])/2 - 1j*(cj_dag_cj1_list[j-1]+cj_dag_cj1_list[j])/2) - (p - epsilon*m)*(-2*1j*cj_dag_cj_list[j]))
 
     #エルミートか確認
     isHermitian = is_hermitian(H_p_j)
@@ -383,7 +383,7 @@ for j in range(L):
     H_m.append(H_m_j)
     H_pm.append(H_pm_j)
     if not PBC:
-        if j == L-1:
+        if j == L-1 or j == 0:
             H_p[-1] = np.zeros((L, L), dtype=complex)
             H_m[-1] = np.zeros((L, L), dtype=complex)
             H_pm[-1] = np.zeros((L, L), dtype=complex)
@@ -419,6 +419,9 @@ for j in range(L-1):
     cj1_dag_cj_v.append(total)
 cj1_dag_cj_v.append(0.0) #PBCなしの場合
 
+F1_list = []
+F2_list = []
+
 for j in range(L):
     Hp_v_j = 0
     Hm_v_j = 0
@@ -432,19 +435,27 @@ for j in range(L):
         else:
             F1 += eigenvectors[j+1,n] * eigenvectors[j,n+L]
             F2 += eigenvectors[j+1,n+L].conj() * eigenvectors[j,n+L]
-    Hp_v_j = -1/(2*epsilon) * 1j * (1+beta(j,L,pos,epsilon)) * 1/2 * (1j * (-1*F1) + (-1*F2) + (F2.conj()) - 1j * (F1.conj()))
-    Hm_v_j = -1/(2*epsilon) * 1j * (-1+beta(j,L,pos,epsilon)) * 1/2 * (-1j * (-1*F1) + (-1*F2) + (F2.conj()) + 1j * (F1.conj()))
-    H_pm_v_j = -1j/(2*epsilon) * (1j * p * (-1*F2 - F2.conj()) - (p - epsilon*m) * (-2j * c_dag_c_v[j]))
-    assert abs(Hp_v_j - Hp_v_j.conj()) < 10**-5, "Hp_v_j(j=" + str(j) + ") is not Hermitian!"
-    assert abs(Hm_v_j - Hm_v_j.conj()) < 10**-5, "Hm_v_j(j=" + str(j) + ") is not Hermitian!"
+    F1_list.append(F1)
+    F2_list.append(F2)
+    if j == 0:
+        # Ensure complex type so .conj() exists for the Hermiticity check below
+        Hp_v_j = 0+0j
+        Hm_v_j = 0+0j
+        H_pm_v_j = 0+0j
+    else:
+        Hp_v_j = -1/(2*epsilon) * 1j * (1+beta(j+1/2,L,pos,epsilon)) * 1/2 * (1j * (-1*(F1_list[-1]+F1_list[-2])/2) + (-1*(F2_list[-1]+F2_list[-2])/2) + ((F2_list[-1]+F2_list[-2])/2).conj() - 1j * (F1_list[-1]+F1_list[-2]).conj()/2)
+        Hm_v_j = -1/(2*epsilon) * 1j * (-1+beta(j+1/2,L,pos,epsilon)) * 1/2 * (-1j * (-1*(F1_list[-1]+F1_list[-2])/2) + (-1*(F2_list[-1]+F2_list[-2])/2) + ((F2_list[-1]+F2_list[-2])/2).conj() + 1j * (F1_list[-1]+F1_list[-2]).conj()/2)
+        H_pm_v_j = -1j/(2*epsilon) * (1j * p * (-1*(F2_list[-1]+F2_list[-2])/2 - (F2_list[-1]+F2_list[-2]).conj()) - (p - epsilon*m) * (-2j * c_dag_c_v[j]))
+    assert abs(Hp_v_j - np.conj(Hp_v_j)) < 10**-5, "Hp_v_j(j=" + str(j) + ") is not Hermitian!"
+    assert abs(Hm_v_j - np.conj(Hm_v_j)) < 10**-5, "Hm_v_j(j=" + str(j) + ") is not Hermitian!"
     Hp_v.append(Hp_v_j)
     Hm_v.append(Hm_v_j)
     Hpm_v.append(H_pm_v_j)
     if not PBC:
         if j == L-1:
-            Hp_v[-1] = 0
-            Hm_v[-1] = 0
-            Hpm_v[-1] = 0
+            Hp_v[-1] = 0+0j
+            Hm_v[-1] = 0+0j
+            Hpm_v[-1] = 0+0j
 
 # plt.plot(Hp_v, label="Hp_v")
 # plt.plot(Hm_v, label="Hm_v")
