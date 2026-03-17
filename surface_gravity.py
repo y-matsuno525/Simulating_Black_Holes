@@ -3,12 +3,12 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 l = 2*np.pi
-L = 250
+L = 300
 epsilon = l / L
 dt = 0.01*(300/L)
 
 # データ読み込み
-data = np.loadtxt("H_m_sigmas.txt")
+data = np.loadtxt("p=0_H_m_sigmas.txt")
 
 times = data[:,0]
 H_m_sigmas = data[:,1] * epsilon
@@ -41,12 +41,12 @@ fit_curve = exp_func(t_fine, A_fit, B_fit)
 
 # ===== 理想曲線（例）=====
 A_ideal = A_fit          # 好きに設定
-B_ideal = 1               # 好きに設定
+B_ideal = 1       # 好きに設定
 
 # ===============================
 #  プロット
 # ===============================
-plt.figure(figsize=(8, 5))
+plt.figure(figsize=(12, 8))
 plt.plot(times, np.array(H_m_sigmas)*l,"o", label="Numerical simulation",color="blue",lw=1)
 #plt.plot(t_fine, fit_curve, "r-", label=f"fit: {A_fit:.3e} exp({B_fit:.3e} t)")
 
@@ -56,7 +56,7 @@ plt.plot(t_fine, np.array(ideal_curve)*l, label=f"Analytical prediction", color=
 ideal = A_fit*13 * np.exp(0.165 * times)
 #plt.plot(times, ideal, "g--", label="ideal: 0.1 * exp(0.165 t)")
 plt.xlabel(r"$t$", fontsize=25,fontweight='bold')
-plt.ylabel(r"$\delta \sigma$", fontsize=25,fontweight='bold')
+plt.ylabel(r"$\delta \sigma$", fontsize=25,fontweight='bold',rotation=0,labelpad=30)
 plt.xticks(fontsize=18)
 plt.yticks(fontsize=18)
 plt.grid()

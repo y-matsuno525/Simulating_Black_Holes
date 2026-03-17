@@ -11,7 +11,7 @@ import math
 L = 500
 l = 2*np.pi
 epsilon = l / L
-p = 0.0001
+p = 1
 m = 0.0001
 pos = "ur" #lr, ur, ll, ul
 t_i = 0

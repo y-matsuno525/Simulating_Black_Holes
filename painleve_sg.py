@@ -8,7 +8,7 @@ import statistics
 import math
 
 #パラメータ
-L = 300
+L = 100
 l = 2*np.pi
 epsilon = l / L
 p = 0.0001
@@ -17,7 +17,7 @@ pos = "lr" #lr, ur, ll, ul
 t_i = 0
 width = 1
 A = 1
-t_f = 10
+t_f = 1
 dt = 0.01*(300/L) #この値は後で検討
 PBC = False
 
@@ -58,7 +58,7 @@ def beta(j,L,pos,epsilon):
         # β = +1 を j = 29 で踏むように調整
         return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + A
 
-#print("surface gravity:", (beta(int(2*),L,pos,epsilon) - beta(int(2*L/3)+ 0.730833344-1,L,pos,epsilon)) / (2*epsilon) * 1/2)
+# print("surface gravity:", (beta(int(2*),L,pos,epsilon) - beta(int(2*L/3)+ 0.730833344-1,L,pos,epsilon)) / (2*epsilon) * 1/2)
 # import sys
 # sys.exit()
 for i in range(2*L):
@@ -889,3 +889,4 @@ plt.ylabel('t', fontweight='bold')
 plt.tight_layout()
 plt.savefig('figure/H_pm.png',
             dpi=300, bbox_inches='tight', transparent=True)
+np.savetxt("H_m_sigmas.txt", np.column_stack([times, H_m_sigmas]), fmt="%.10e")
