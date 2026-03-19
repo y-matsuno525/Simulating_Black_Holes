@@ -69,9 +69,9 @@ for i in range(2*L):
             if i == j:
                 H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))*(-1)
             elif i-j == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (p - 1j*beta(j,L,pos,epsilon))
+                H_BdG[i, j] = -1/(2*epsilon) * (p - 1j*(beta(j+1/2,L,pos,epsilon)+beta(i+1/2,L,pos,epsilon))/2)
             elif j-i == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (p + 1j*beta(i,L,pos,epsilon))
+               H_BdG[i, j] = -1/(2*epsilon) * (p + 1j*(beta(i+1/2,L,pos,epsilon)+beta(j+1/2,L,pos,epsilon))/2)
         #右上
         elif i < L and j >= L:
             if j-i == L-1:
@@ -89,9 +89,9 @@ for i in range(2*L):
             if i == j:
                 H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))
             elif i-j == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*beta(j-L,L,pos,epsilon))
+                H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*(beta(j+1/2-L,L,pos,epsilon)+beta(i+1/2-L,L,pos,epsilon))/2)
             elif j-i == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*beta(i-L,L,pos,epsilon))
+                H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*(beta(i+1/2-L,L,pos,epsilon)+beta(j+1/2-L,L,pos,epsilon))/2)
 
 if PBC == True:
     #red
