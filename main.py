@@ -3,7 +3,8 @@ from numpy import linalg as LA #BdGハミルトニアンの作成で利用
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
 
-# Normalize user-facing option names into canonical internal values.
+# CONFIG では短い別名も使えるようにしておき、計算本体では canonical な名前だけを扱う。
+# 例: "pos" と "pos_horizon" は同じ beta profile として扱われる。
 BETA_PROFILE_ALIASES = {
     "pos": "pos_horizon",
     "pos_horizon": "pos_horizon",
@@ -12,6 +13,8 @@ BETA_PROFILE_ALIASES = {
     "flat": "flat",
 }
 
+# horizon_case は物理的な呼び方、pos は既存コードで使ってきた幾何配置の短縮名。
+# lr: left-to-right 側の chi_+ / white-hole case, ur: upper/right 側の chi_- / black-hole case。
 HORIZON_CASE_ALIASES = {
     "chi_plus_wh": "lr",
     "p_wh": "lr",
@@ -22,33 +25,59 @@ HORIZON_CASE_ALIASES = {
 }
 
 CONFIG = {
-    # Lattice and physical parameters for the simulation run.
+    # --- lattice / physical parameters ---
+    # L: 格子点数。BdG 行列は粒子・正孔成分を持つのでサイズは 2L x 2L になる。
     "L": 100,
+    # l: 物理空間の全長。epsilon = l/L が格子間隔として使われる。
     "l": 2*np.pi,
+    # p: 運動量/ホッピング項の係数。BdG 行列と H_pm の係数に入る。
     "p": 1,
+    # m: 質量項。BdG 行列の対角項と H_pm の (p - epsilon*m) に入る。
     "m": 0.0001,
+    # horizon_case: どの chirality / horizon 配置を走らせるか。
+    # prepare_config() で pos="lr" または "ur" に変換される。
     "horizon_case": "chi_plus_wh",
+    # t_i, t_f: 時間発展を記録する開始・終了時刻。times は (t_i+dt, t_f) の範囲で作る。
     "t_i": 0,
     "t_f": 5,
+    # dt_scale: L=300 を基準にした時間刻み。実際の dt は dt_scale*(300/L)。
     "dt_scale": 0.01,
+    # PBC: True なら周期境界条件、False なら開境界条件。端点の演算子処理が変わる。
     "PBC": False,
+
+    # --- beta profile parameters ---
+    # beta_profile:
+    #   "pos"    : horizon_case に対応した位置に tanh 型の horizon を置く。
+    #   "center" : 中央に tanh 型の horizon を置く。
+    #   "flat"   : beta=0 の比較用。
     "beta_profile": "pos",
+    # beta_width: tanh の幅。小さいほど horizon 近傍で beta が急峻に変化する。
     "beta_width": 1,
+    # beta_amplitude: positioned horizon profile の振幅。|beta| の大きさを決める。
     "beta_amplitude": 0.6,
+    # beta_center_fraction: positioned profile の中心位置を L に対する割合で指定する。
     "beta_center_fraction": 2/3,
+    # centered_* は beta_profile="center" のときだけ使う中央配置 profile 用パラメータ。
     "centered_beta_width": 1,
     "centered_beta_amplitude": 1,
     "centered_beta_center_fraction": 1/2,
+
+    # --- initial wave-packet parameters ---
+    # j0_by_case: horizon_case ごとの初期波束中心。必要なら case ごとに別の初期位置を与える。
     "j0_by_case": {
         "chi_plus_wh": 25,
         "chi_minus_bh": 25,
     },
+    # sigma_fraction: Gaussian packet の標準偏差を L に対する割合で指定する。
+    # prepare_config() で sigma = sigma_fraction*L に変換される。
     "sigma_fraction": 0.05,
+    # initial_direction: 初期状態の相対位相 +/- pi/4 の符号を選び、進行方向を決める。
     "initial_direction": "right",
 }
 
 DENSITY_PLOT_CONFIGS = {
-    # Plot-specific geodesic scaling and output destinations.
+    # 各 observable の heatmap 保存先と geodesic.dat の時間スケール補正。
+    # geodesic_time_scale は geodesic.dat の t 座標を heatmap の時間軸へ写すために使う。
     "H_p": {
         "output_path": "figure/H_p.png",
         "geodesic_time_scale": "t_f",
@@ -71,6 +100,7 @@ DENSITY_PLOT_CONFIGS = {
 }
 
 ANIMATION_CONFIGS = {
+    # 線グラフ GIF の保存先と色。heatmap とは別に時間ごとの profile を確認するための出力。
     "H_p": {
         "gif_path": "figure/H_p.gif",
         "cmap_line": "blue",
@@ -86,12 +116,19 @@ ANIMATION_CONFIGS = {
 }
 
 def prepare_config(config):
-    """Validate config values and derive simulation constants."""
+    """Validate config values and derive constants used by the numerical pipeline.
+
+    The top-level CONFIG is intentionally written with user-facing names.  This
+    function converts those names into the older internal variables (pos, dt,
+    epsilon, sigma, etc.) so the numerical functions stay simple.
+    """
     prepared = dict(config)
 
+    # horizon_case は読みやすさのための外部名。既存の式では pos="lr"/"ur" を使う。
     if prepared["horizon_case"] not in HORIZON_CASE_ALIASES:
         raise ValueError("horizon_case must be 'chi_plus_wh' or 'chi_minus_bh'")
     prepared["pos"] = HORIZON_CASE_ALIASES[prepared["horizon_case"]]
+    # j0_by_case に別名 ("lr" など) が直接指定されていない場合は、pos から標準 case を選ぶ。
     if prepared["horizon_case"] in prepared["j0_by_case"]:
         j0_case = prepared["horizon_case"]
     elif prepared["pos"] == "lr":
@@ -99,10 +136,12 @@ def prepare_config(config):
     else:
         j0_case = "chi_minus_bh"
 
+    # beta_profile も外部名を canonical name にそろえる。
     if prepared["beta_profile"] not in BETA_PROFILE_ALIASES:
         raise ValueError("beta_profile must be 'pos', 'center', or 'flat'")
     prepared["beta_profile"] = BETA_PROFILE_ALIASES[prepared["beta_profile"]]
 
+    # 初期状態の exp(+- i*pi/4) の符号へ変換する。
     direction_sign_by_name = {
         "right": 1,
         "left": -1,
@@ -112,15 +151,22 @@ def prepare_config(config):
     prepared["initial_direction_sign"] = direction_sign_by_name[prepared["initial_direction"]]
 
     L = prepared["L"]
+    # 格子間隔。すべての有限差分係数はこの epsilon で割られる。
     prepared["epsilon"] = prepared["l"] / L
+    # L を変えてもおおよそ同じ時間分解能になるよう、L=300 を基準に dt を補正する。
     prepared["dt"] = prepared["dt_scale"]*(300/L)
+    # t=0 の初期値は別途 compute_initial_observables() で評価するため、時間発展は t_i+dt から。
     prepared["times"] = np.arange(prepared["t_i"] + prepared["dt"], prepared["t_f"], prepared["dt"])
+    # Gaussian packet の幅を格子点数に換算する。
     prepared["sigma"] = prepared["sigma_fraction"]*L
+    # case ごとの初期中心を最終的な j0 として固定する。
     prepared["j0"] = prepared["j0_by_case"][j0_case]
     return prepared
 
 CONFIG = prepare_config(CONFIG)
 
+# 以降の数値関数は古いスクリプト由来のグローバル変数名をそのまま参照する。
+# CONFIG から展開しておくことで、式を大きく書き換えずに設定だけを集約している。
 L = CONFIG["L"]
 l = CONFIG["l"]
 epsilon = CONFIG["epsilon"]
@@ -158,6 +204,7 @@ def beta_flat(j, L, pos, epsilon):
 
 def beta_centered_horizon(j, L, pos, epsilon):
     """Centered smooth tanh beta profile."""
+    # j は格子 index だが、tanh の引数では epsilon を掛けて物理座標スケールへ戻す。
     jh = int(centered_beta_center_fraction*L)
     return centered_beta_amplitude*np.tanh(centered_beta_width*(j - jh)*epsilon) + centered_beta_amplitude
 
@@ -165,8 +212,10 @@ def beta_pos_horizon(j, L, pos, epsilon):
     """Positioned beta profile whose sign depends on the horizon case."""
     jh = int(beta_center_fraction*L)
     if pos == "lr":
+        # chi_+ / white-hole 側。beta が負側へ流れる符号を使う。
         return -beta_amplitude*np.tanh(3/beta_width*(j - jh)*epsilon) - beta_amplitude
     elif pos == "ur":
+        # chi_- / black-hole 側。lr と反対の符号で beta を立ち上げる。
         return  beta_amplitude*np.tanh(3/beta_width*(j - jh)*epsilon) + beta_amplitude
     raise ValueError("pos must be 'ur' or 'lr'")
 
@@ -186,28 +235,36 @@ def build_bdg_matrix(L, p, m, pos, epsilon, PBC):
 
     for i in range(2*L):
         for j in range(2*L):
+            # i,j < L は粒子ブロック、i,j >= L は正孔ブロック。
+            # 片方だけ L をまたぐ成分は pairing / off-diagonal ブロックに対応する。
             #左上
             if i < L and j < L:
                 if i == j:
+                    # 粒子ブロックの onsite 項。m は質量項として対角成分に入る。
                     H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))*(-1)
                 elif i-j == 1:
+                    # 左隣との有限差分。beta はリンク中央の値として両端平均を使う。
                     H_BdG[i, j] = -1/(2*epsilon) * (p - 1j*(beta(j+1/2,L,pos,epsilon)+beta(i+1/2,L,pos,epsilon))/2)
                 elif j-i == 1:
+                   # 右隣との有限差分。Hermiticity が保たれるよう複素共役側の符号になる。
                    H_BdG[i, j] = -1/(2*epsilon) * (p + 1j*(beta(i+1/2,L,pos,epsilon)+beta(j+1/2,L,pos,epsilon))/2)
             #右上
             elif i < L and j >= L:
+                # 粒子 -> 正孔の pairing ブロック。最近接だけが非ゼロ。
                 if j-i == L-1:
                     H_BdG[i, j] = -1/(2*epsilon) * (-1)
                 elif j-i == L+1:
                     H_BdG[i, j] = -1/(2*epsilon) * (1)
             #左下
             elif i >= L and j < L:
+                # 正孔 -> 粒子の pairing ブロック。上のブロックと対応する位置を埋める。
                 if i-j == L-1:
                     H_BdG[i, j] = -1/(2*epsilon) * (-1)
                 elif i-j == L+1:
                     H_BdG[i, j] = -1/(2*epsilon) * (1)
             #右下
             else:
+                # 正孔ブロック。粒子ブロックと p, beta の符号が反転した形になる。
                 if i == j:
                     H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))
                 elif i-j == 1:
@@ -216,6 +273,8 @@ def build_bdg_matrix(L, p, m, pos, epsilon, PBC):
                     H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*(beta(i+1/2-L,L,pos,epsilon)+beta(j+1/2-L,L,pos,epsilon))/2)
 
     if PBC == True:
+        # 周期境界条件では j=L-1 と j=0 の間の BdG 行列要素を追加する。
+        # 色名は元ノート/図の対応を残した目印で、各行は境界をまたぐ成分。
         #red
         H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * (1)
         H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * (-1)
@@ -236,6 +295,8 @@ def diagonalize_bdg_matrix(H_BdG, L):
     #BdG行列を対角化
     eigenvalues, eigenvectors = LA.eigh(H_BdG)
 
+    # LA.eigh は昇順で返す。ここでは先に正エネルギー側 L 本を並べ、
+    # 後半に負エネルギー側を反転して置き、粒子-正孔ペアを扱いやすくする。
     #固有値、固有ベクトルのソート(確認済み)
     eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
     eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
@@ -246,6 +307,8 @@ def enforce_particle_hole_symmetry(eigenvectors, L):
     #粒子-反粒子対称性を満たすように固有ベクトルを調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
     V = np.zeros((2*L, 2*L), dtype=complex)
     for i in range(L):
+        # 前半 L 本は対角化で得た正エネルギー側を採用し、
+        # 後半 L 本は粒子成分と正孔成分を入れ替えた複素共役として作り直す。
         V[:,i] = eigenvectors[:,i]
         V[:L,i+L] = np.conj(eigenvectors[L:,i])
         V[L:,i+L] = np.conj(eigenvectors[:L,i])
@@ -253,9 +316,12 @@ def enforce_particle_hole_symmetry(eigenvectors, L):
 
 def build_operator_lists(eigenvectors, L, PBC):
     """Construct local bilinear operators in the quasiparticle basis."""
+    # ここで作る operator はすべて L x L 行列で、psi.T.conj() @ O_j @ psi により
+    # site j の期待値を評価できる形にしておく。
     #cj_dag_cj(作り方は以前と変わらない)
     cj_dag_cj_list = []
     for j in range(L):
+        # c_j^\dagger c_j: local number density.  対角の真空項もここで含める。
         cj_dag_cj_tmp = np.zeros((L, L), dtype=complex)
         for k in range(L):
             for l in range(L):
@@ -272,6 +338,7 @@ def build_operator_lists(eigenvectors, L, PBC):
     #cj1_cj
     cj1_cj_list = []
     for j in range(L-1):
+        # c_{j+1} c_j: energy density の最近接 pairing 成分に使う。
         cj1_cj_tmp = np.zeros((L, L), dtype=complex)
         for k in range(L):
             for l in range(L):
@@ -284,6 +351,8 @@ def build_operator_lists(eigenvectors, L, PBC):
         print("cj1_cj作成中:" + str(int(j/L*100))+"%")
     #PBCの場合、右端は非ゼロ
     if PBC == True:
+        # 周期境界条件では最後の bond (L-1 -> 0) も最近接として追加する。
+        # 開境界の場合はこの bond が存在しないので、下の else でゼロ行列を入れる。
         cj1_cj_tmp = np.zeros((L, L), dtype=complex)
         for k in range(L):
             for l in range(L):
@@ -299,6 +368,7 @@ def build_operator_lists(eigenvectors, L, PBC):
     #cj1_dag_cj
     cj1_dag_cj_list = []
     for j in range(L-1):
+        # c_{j+1}^\dagger c_j: energy density の hopping 成分に使う。
         cj1_dag_cj_tmp = np.zeros((L, L), dtype=complex)
         for k in range(L):
             for l in range(L):
@@ -311,6 +381,7 @@ def build_operator_lists(eigenvectors, L, PBC):
         print("cj1†_cj作成中:" + str(int(j/L*100))+"%")
     #PBCの場合、右端は非ゼロ
     if PBC == True:
+        # hopping 成分でも最後の bond (L-1 -> 0) を追加する。
         cj1_dag_cj_tmp = np.zeros((L, L), dtype=complex)
         for k in range(L):
             for l in range(L):
@@ -330,15 +401,18 @@ def build_initial_state(L, eigenvectors, j0, sigma, PBC, direction_sign):
     psi = np.zeros((L, 1), dtype=complex)
 
     if PBC == True:
+        # 周期境界では j=0 と j=L-1 が隣接するので、距離も ring 上の最短距離で測る。
         idx = np.arange(L)
         delta = np.abs(idx - j0)
         periodic_delta = np.minimum(delta, L - delta)
         weights = np.exp(-(periodic_delta**2) / (2 * sigma**2))
         mask = periodic_delta <= 0.5*L
     else:
+        # 開境界では通常の直線距離で Gaussian packet を作る。
         weights = np.exp(-((np.arange(L) - j0) ** 2) / (2 * sigma ** 2))
         mask = np.abs(np.arange(L) - j0) <= 0.5*L
 
+    # 反対側の境界から回り込む tail を避けるため、半周より遠い成分は切る。
     weights[~mask] = 0
 
     x_ = np.arange(L)
@@ -350,6 +424,8 @@ def build_initial_state(L, eigenvectors, j0, sigma, PBC, direction_sign):
 
     for j in range(L):
         for n in range(L):
+            # site basis の Gaussian weight を BdG 固有ベクトルへ射影する。
+            # exp(+- i*pi/4) の相対位相が右向き/左向きの初期 packet を選ぶ。
             psi[n, 0] += weights[j] * (
             1/np.sqrt(2) * (np.exp(direction_sign*1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-direction_sign*1j*np.pi/4) * eigenvectors[j,n].conj())
             )
@@ -364,6 +440,8 @@ def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsi
     H_m = []
     H_pm = []
 
+    # 以降の式では c_j c_{j+1}, c_j c_{j+1}^\dagger なども必要になる。
+    # 直接作った c_{j+1} c_j 系から、反交換関係と Hermitian conjugate で向きをそろえる。
     #cj_cj1
     cj_cj1_list = []
     for cj1_cj in cj1_cj_list:
@@ -385,6 +463,8 @@ def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsi
         cj_dag_cj1_dag_list.append(cj1_cj.T.conj())
 
     for j in range(L):
+        # 各 site j に局所 energy density operator を作る。
+        # j-1 と j の bond を平均することで、site 中心の密度として扱う。
         H_p_j = np.zeros((L, L), dtype=complex)
         H_m_j = np.zeros((L, L), dtype=complex)
         H_pm_j = np.zeros((L, L), dtype=complex)
@@ -407,6 +487,7 @@ def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsi
         H_pm.append(H_pm_j)
         if not PBC:
             if j == L-1 or j == 0:
+                # 開境界では端点の両側に bond がそろわないため、端の密度はゼロにして除外する。
                 H_p[-1] = np.zeros((L, L), dtype=complex)
                 H_m[-1] = np.zeros((L, L), dtype=complex)
                 H_pm[-1] = np.zeros((L, L), dtype=complex)
@@ -424,6 +505,8 @@ def compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC):
     Hm_v = []
     Hpm_v = []
 
+    # Excited packet の寄与だけを見るため、各 observable の vacuum expectation を先に計算する。
+    # 後段の compute_expectation_profile() で <psi|O_j|psi> からこの値を引く。
     #真空のc_dag_cを計算
     c_dag_c_v = []
     for j in range(L):
@@ -454,12 +537,15 @@ def compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC):
     F2_list = []
 
     for j in range(L):
+        # F1, F2 は隣接 site 間の vacuum contraction。
+        # local energy density は j-1, j の bond 平均を使うため、履歴として list に保存する。
         Hp_v_j = 0
         Hm_v_j = 0
         H_pm_v_j = 0
         F1 = 0
         F2 = 0
         for n in range(L):
+            # PBC では最後の bond が site 0 に戻る。開境界では最後の bond は存在しない。
             if PBC == True and j == L-1:
                 F1 += eigenvectors[0,n] * eigenvectors[L-1,n+L]
                 F2 += eigenvectors[0,n+L].conj() * eigenvectors[L-1,n+L]
@@ -467,12 +553,14 @@ def compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC):
                 F1 += 0
                 F2 += 0
             else:
+                # 通常の内部 bond では site j と j+1 の contraction を足す。
                 F1 += eigenvectors[j+1,n] * eigenvectors[j,n+L]
                 F2 += eigenvectors[j+1,n+L].conj() * eigenvectors[j,n+L]
         F1_list.append(F1)
         F2_list.append(F2)
         if j == 0:
             # Ensure complex type so .conj() exists for the Hermiticity check below
+            # j=0 は左側 bond がないため、まずゼロの complex 値として扱う。
             Hp_v_j = 0+0j
             Hm_v_j = 0+0j
             H_pm_v_j = 0+0j
@@ -504,6 +592,7 @@ def compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC):
 def compute_std(weights):
     """Return the position standard deviation of a one-dimensional profile."""
     weights = np.abs(weights)
+    # profile を確率分布として扱うため、絶対値を正規化してから平均と分散を取る。
     x = np.arange(len(weights))
     p = weights/weights.sum()
     mean = np.sum(p * x)
@@ -517,6 +606,7 @@ def compute_expectation_profile(psi, operators, vacuum_values):
     profile = []
     raw_values = []
     for j, operator in enumerate(operators):
+        # raw_values は虚部の大きさを後で診断するため、vacuum subtraction 前の値も残す。
         val = psi.T.conj() @ operator @ psi
         profile.append(val.item() - vacuum_values[j])
         raw_values.append(val)
@@ -526,6 +616,7 @@ def compute_initial_observables(psi, energy_densities, vacuum_values, operator_l
     """Measure all observables at t=0 and record initial packet widths."""
     initial_values = {}
 
+    # H_p, H_m は packet の幅 sigma を追跡する対象なので、初期幅を基準値として保存する。
     H_p_0, _ = compute_expectation_profile(psi, energy_densities["H_p"], vacuum_values["H_p"])
     weights = np.array([x.real for x in H_p_0])
     std_pos_p = compute_std(weights)
@@ -541,6 +632,7 @@ def compute_initial_observables(psi, energy_densities, vacuum_values, operator_l
     H_pm_0, _ = compute_expectation_profile(psi, energy_densities["H_pm"], vacuum_values["H_pm"])
     initial_values["H_pm"] = H_pm_0
 
+    # 以下の bilinear observables は density や相関の確認用として初期値を保存する。
     cdc_0, _ = compute_expectation_profile(psi, operator_lists["cj_dag_cj"], vacuum_values["c_dag_c"])
     initial_values["c_dag_c"] = cdc_0
 
@@ -591,6 +683,7 @@ def run_time_evolution(
         for n,E in enumerate(eigenvalues[:L]):
             psi[n] = np.exp(-1j*E*(dt*(i+1))) * psi_initial[n]
 
+        # 各時刻で local density profile を評価し、heatmap 用に時系列として積む。
         #H_pの期待値
         H_p_t_val, H_p_test = compute_expectation_profile(psi, energy_densities["H_p"], vacuum_values["H_p"])
         values["H_p"].append(H_p_t_val)
@@ -606,6 +699,7 @@ def run_time_evolution(
         H_m_t_val = np.array([x.real for x in H_m_t_val], dtype=float)
         total = H_m_t_val.sum()
         if total != 0:
+            # H_m profile を重み分布として正規化し、packet 中心の平均位置を計算する。
             H_m_t_val = H_m_t_val / total
         x = np.arange(L)
         mean = np.sum(H_m_t_val * x)
@@ -623,6 +717,7 @@ def run_time_evolution(
         log_imag("H_m", H_m_test)
         log_imag("H_pm", H_pm_test)
         log_imag("c_dag_c", c_dag_c_test)
+        # 初期幅との差分を記録する。絶対幅ではなく広がりの変化量を見るため。
         weights = np.array([x.real for x in H_p_t_val])
         std_pos = compute_std(weights)
         if not std_pos_p is None:
@@ -632,6 +727,8 @@ def run_time_evolution(
         if not std_pos_m is None:
             sigmas["H_m"].append(std_pos - std_pos_m)
 
+        # 次の時刻は必ず初期状態から exp(-iEt) を掛け直す。
+        # これにより累積丸め誤差を避ける。
         psi = psi_initial.copy()
 
         print("時間発展中:"+str(int(i/len(times)*100)) + "%")
@@ -651,6 +748,7 @@ def plot_density_map(
 ):
     """Save a time-site density heatmap and overlay geodesic.dat if present."""
     value_arr = np.array(values, dtype=complex)
+    # Hermitian observable の期待値なので本来は実数。小さな数値誤差の虚部はここで落とす。
     value_array = np.real(value_arr).astype(float) #ここで実数にしていることに注意
 
     data_min = np.nanmin(value_array)
@@ -688,6 +786,7 @@ def plot_density_map(
         x = geodesic_data[:, 0]  # 物理空間座標（0〜2π）
         t = geodesic_data[:, 1]  # 物理時間（0〜20）
 
+        # geodesic.dat は物理座標 x,t。heatmap は lattice index j と simulation time なので変換する。
         # スケーリング変換
         x_scaled = (x / (2 * np.pi)) * num_sites
         t_scaled = (t / geodesic_time_scale) * (times[-1] - times[0]) + times[0]
@@ -751,6 +850,7 @@ def save_density_animation(
     if len(times) != N:
         raise ValueError("times の長さと density の行数が一致していません。")
     if horizon_positions is None:
+        # 現在は horizon_positions を描画していないが、将来 axvline を戻すときの既定値として残す。
         if PBC:
             horizon_positions = [L / 4, 3 * L / 4, L*(146/300), L*(154/300)]
         else:
@@ -771,6 +871,7 @@ def save_density_animation(
         return (line,)
 
     def update(frame):
+        # FuncAnimation から渡される frame 番号に対応する profile だけを線へ反映する。
         line.set_data(np.arange(1, L + 1), density_arr[frame])
         return (line,)
 
@@ -823,6 +924,7 @@ def resolve_geodesic_time_scale(value):
 
 def save_outputs(time_values, sigmas, x_ave_list, times):
     """Write numerical outputs, heatmaps, and animations produced by the run."""
+    # run_time_evolution() の辞書から、保存・描画に使う observable を取り出す。
     H_p_val = time_values["H_p"]
     H_m_val = time_values["H_m"]
     H_pm_val = time_values["H_pm"]
@@ -836,6 +938,7 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
     plt.legend()
     plt.grid()
     plt.show()
+    # 後で解析しやすいよう、時間と対応する量を2列のテキストとして保存する。
     np.savetxt("x_ave.txt", np.column_stack([times, x_ave_list]), fmt="%.10e")
     np.savetxt("H_m_sigmas.txt", np.column_stack([times, H_m_sigmas]), fmt="%.10e")
 
@@ -847,6 +950,7 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
     }
 
     for name, plot_config in DENSITY_PLOT_CONFIGS.items():
+        # DENSITY_PLOT_CONFIGS に追加すれば、新しい observable も同じ heatmap 関数で保存できる。
         plot_density_map(
             density_values[name],
             times,
@@ -860,6 +964,7 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
 
     plt.close('all')
     idx_p = np.argmin(H_p_sigmas)
+    # sigma が最小になる時刻の profile を個別に表示して、packet の収束/拡散を確認する。
     t_p_min = times[idx_p]
     print("H_p sigma が最小になる t:", t_p_min)
     print("そのときの H_p sigma:", H_p_sigmas[idx_p])
@@ -878,6 +983,7 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
     plt.show()
 
     for name, animation_config in ANIMATION_CONFIGS.items():
+        # GIF は heatmap では見えにくい profile の形状変化を確認するために出力する。
         save_density_animation(
             density=density_values[name],
             times=times,
@@ -891,13 +997,16 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
 
 def main():
     """Run the full black-hole lattice simulation pipeline."""
+    # 1. 背景 beta profile を確認する。
     plot_beta_profile()
 
+    # 2. BdG 行列を作り、固有モードを粒子-正孔対称な形へ整える。
     H_BdG = build_bdg_matrix(L, p, m, pos, epsilon, PBC)
     eigenvalues, eigenvectors = diagonalize_bdg_matrix(H_BdG, L)
     check_particle_hole_pairs(eigenvectors, L)
     eigenvectors = enforce_particle_hole_symmetry(eigenvectors, L)
 
+    # 3. 観測量を quasiparticle basis の L x L operator として準備する。
     cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list = build_operator_lists(eigenvectors, L, PBC)
     operator_lists = {
         "cj_dag_cj": cj_dag_cj_list,
@@ -905,11 +1014,13 @@ def main():
         "cj1_dag_cj": cj1_dag_cj_list,
     }
 
+    # 4. 初期波束、局所エネルギー密度、真空 subtraction 用の値を準備する。
     psi, _ = build_initial_state(L, eigenvectors, j0, sigma, PBC, initial_direction_sign)
     energy_densities = build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsilon, p, m, pos, PBC)
     vacuum_values = compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC)
     _, std_pos_p, std_pos_m = compute_initial_observables(psi, energy_densities, vacuum_values, operator_lists)
 
+    # 5. 時間発展を回して、最後にテキスト・画像・GIF を保存する。
     time_values, sigmas, x_ave_list = run_time_evolution(
         psi,
         eigenvalues,
