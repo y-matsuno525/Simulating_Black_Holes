@@ -3,6 +3,7 @@ import numpy as np
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用
 import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation, PillowWriter
 #標準偏差の計算に使う
 import statistics
 import math
@@ -22,9 +23,6 @@ dt = 0.01*(300/L) #この値は後で検討
 PBC = False
 
 times = np.arange(t_i + dt, t_f, dt)
-
-#BdGハミルトニアンの作成(符号関係は確認済み)
-H_BdG = np.zeros((2*L, 2*L), dtype=complex)
 
 def is_hermitian(matrix):
     is_hermitian = np.allclose(matrix, np.conj(matrix.T), atol=1e-10)
@@ -59,53 +57,79 @@ def beta(j,L,pos,epsilon):
         # β = +1 を j = 29 で踏むように調整
         return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + 0.6
 
+def build_bdg_matrix(L, p, m, pos, epsilon, PBC):
+    #BdGハミルトニアンの作成(符号関係は確認済み)
+    H_BdG = np.zeros((2*L, 2*L), dtype=complex)
+
+    for i in range(2*L):
+        for j in range(2*L):
+            #左上
+            if i < L and j < L:
+                if i == j:
+                    H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))*(-1)
+                elif i-j == 1:
+                    H_BdG[i, j] = -1/(2*epsilon) * (p - 1j*(beta(j+1/2,L,pos,epsilon)+beta(i+1/2,L,pos,epsilon))/2)
+                elif j-i == 1:
+                   H_BdG[i, j] = -1/(2*epsilon) * (p + 1j*(beta(i+1/2,L,pos,epsilon)+beta(j+1/2,L,pos,epsilon))/2)
+            #右上
+            elif i < L and j >= L:
+                if j-i == L-1:
+                    H_BdG[i, j] = -1/(2*epsilon) * (-1)
+                elif j-i == L+1:
+                    H_BdG[i, j] = -1/(2*epsilon) * (1)
+            #左下
+            elif i >= L and j < L:
+                if i-j == L-1:
+                    H_BdG[i, j] = -1/(2*epsilon) * (-1)
+                elif i-j == L+1:
+                    H_BdG[i, j] = -1/(2*epsilon) * (1)
+            #右下
+            else:
+                if i == j:
+                    H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))
+                elif i-j == 1:
+                    H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*(beta(j+1/2-L,L,pos,epsilon)+beta(i+1/2-L,L,pos,epsilon))/2)
+                elif j-i == 1:
+                    H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*(beta(i+1/2-L,L,pos,epsilon)+beta(j+1/2-L,L,pos,epsilon))/2)
+
+    if PBC == True:
+        #red
+        H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * (1)
+        H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * (-1)
+        #blue
+        H_BdG[L-1,0] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * (1)
+        H_BdG[L,2*L-1] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * (-1)
+        #orange
+        H_BdG[0,2*L-1] = -1/(2*epsilon) * (-1)
+        H_BdG[L-1,L] = -1/(2*epsilon) * (1)
+        #black
+        H_BdG[2*L-1,0] = -1/(2*epsilon) * (-1)
+        H_BdG[L,L-1] = -1/(2*epsilon) * (1)
+
+    return H_BdG
+
+def diagonalize_bdg_matrix(H_BdG, L):
+    #BdG行列を対角化
+    eigenvalues, eigenvectors = LA.eigh(H_BdG)
+
+    #固有値、固有ベクトルのソート(確認済み)
+    eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
+    eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
+    return eigenvalues, eigenvectors
+
+def enforce_particle_hole_symmetry(eigenvectors, L):
+    #粒子-反粒子対称性を満たすように固有ベクトルを調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
+    V = np.zeros((2*L, 2*L), dtype=complex)
+    for i in range(L):
+        V[:,i] = eigenvectors[:,i]
+        V[:L,i+L] = np.conj(eigenvectors[L:,i])
+        V[L:,i+L] = np.conj(eigenvectors[:L,i])
+    return V
+
 #print("surface gravity:", (beta(int(2*),L,pos,epsilon) - beta(int(2*L/3)+ 0.730833344-1,L,pos,epsilon)) / (2*epsilon) * 1/2)
 # import sys
 # sys.exit()
-for i in range(2*L):
-    for j in range(2*L):
-        #左上
-        if i < L and j < L:
-            if i == j:
-                H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))*(-1)
-            elif i-j == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (p - 1j*(beta(j+1/2,L,pos,epsilon)+beta(i+1/2,L,pos,epsilon))/2)
-            elif j-i == 1:
-               H_BdG[i, j] = -1/(2*epsilon) * (p + 1j*(beta(i+1/2,L,pos,epsilon)+beta(j+1/2,L,pos,epsilon))/2)
-        #右上
-        elif i < L and j >= L:
-            if j-i == L-1:
-                H_BdG[i, j] = -1/(2*epsilon) * (-1)
-            elif j-i == L+1:
-                H_BdG[i, j] = -1/(2*epsilon) * (1)
-        #左下
-        elif i >= L and j < L:
-            if i-j == L-1:
-                H_BdG[i, j] = -1/(2*epsilon) * (-1)
-            elif i-j == L+1:
-                H_BdG[i, j] = -1/(2*epsilon) * (1)
-        #右下
-        else:
-            if i == j:
-                H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))
-            elif i-j == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*(beta(j+1/2-L,L,pos,epsilon)+beta(i+1/2-L,L,pos,epsilon))/2)
-            elif j-i == 1:
-                H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*(beta(i+1/2-L,L,pos,epsilon)+beta(j+1/2-L,L,pos,epsilon))/2)
-
-if PBC == True:
-    #red
-    H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * (1)
-    H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * (-1)
-    #blue
-    H_BdG[L-1,0] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * (1)
-    H_BdG[L,2*L-1] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * (-1)
-    #orange
-    H_BdG[0,2*L-1] = -1/(2*epsilon) * (-1)
-    H_BdG[L-1,L] = -1/(2*epsilon) * (1)
-    #black
-    H_BdG[2*L-1,0] = -1/(2*epsilon) * (-1)
-    H_BdG[L,L-1] = -1/(2*epsilon) * (1)
+H_BdG = build_bdg_matrix(L, p, m, pos, epsilon, PBC)
 
 bs = []
 for j in range(L):
@@ -135,12 +159,7 @@ plt.show()
 # plt.grid()
 # plt.show()
 #bogoliubov変換行列の作成##########################################################################################################################
-#BdG行列を対角化
-eigenvalues, eigenvectors = LA.eigh(H_BdG)
-
-#固有値、固有ベクトルのソート(確認済み)
-eigenvalues = np.concatenate((eigenvalues[L:], eigenvalues[:L][::-1]), 0)
-eigenvectors = np.concatenate((eigenvectors[:,L:], eigenvectors[:,:L][:,::-1]), 1)
+eigenvalues, eigenvectors = diagonalize_bdg_matrix(H_BdG, L)
 for i in range(L):
     threshold = 1e-10
     ans = eigenvectors[:,i+L] + np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
@@ -166,13 +185,7 @@ for i in range(L):
 #     print(eigenvalues[L+i])
 #     print(eigenvectors[:,L+i])
 
-#粒子-反粒子対称性を満たすように固有ベクトルを調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
-V = np.zeros((2*L, 2*L), dtype=complex)
-for i in range(L):
-    V[:,i] = eigenvectors[:,i]
-    V[:L,i+L] = np.conj(eigenvectors[L:,i])
-    V[L:,i+L] = np.conj(eigenvectors[:L,i])
-eigenvectors = V
+eigenvectors = enforce_particle_hole_symmetry(eigenvectors, L)
 # print()
 # print("固有ベクトル（新）")
 # for i in range(L):
@@ -432,6 +445,9 @@ for j in range(L):
         if PBC == True and j == L-1:
             F1 += eigenvectors[0,n] * eigenvectors[L-1,n+L]
             F2 += eigenvectors[0,n+L].conj() * eigenvectors[L-1,n+L]
+        elif not PBC and j == L-1:
+            F1 += 0
+            F2 += 0
         else:
             F1 += eigenvectors[j+1,n] * eigenvectors[j,n+L]
             F2 += eigenvectors[j+1,n+L].conj() * eigenvectors[j,n+L]
@@ -485,18 +501,24 @@ def compute_std(weights):
     var = max(var, 0.0)
     std = np.sqrt(var)
     return std
+
+def compute_expectation_profile(psi, operators, vacuum_values):
+    profile = []
+    raw_values = []
+    for j, operator in enumerate(operators):
+        val = psi.T.conj() @ operator @ psi
+        profile.append(val.item() - vacuum_values[j])
+        raw_values.append(val)
+    return profile, raw_values
+
 #H_pの期待値
-for j, H_p_j in enumerate(H_p):
-    val = psi.T.conj() @ H_p_j @ psi
-    H_p_0.append(val.item() - Hp_v[j])
+H_p_0, _ = compute_expectation_profile(psi, H_p, Hp_v)
 #H_pの標準偏差
 weights = np.array([x.real for x in H_p_0])
 std_pos_p = compute_std(weights)
 print("H_pの標準偏差:", std_pos_p)
 #H_mの期待値
-for j, H_m_j in enumerate(H_m):
-    val = psi.T.conj() @ H_m_j @ psi
-    H_m_0.append(val.item() - Hm_v[j])
+H_m_0, _ = compute_expectation_profile(psi, H_m, Hm_v)
 #H_mの標準偏差
 x_ = np.arange(L)
 weights = np.array([x.real for x in H_m_0])
@@ -504,24 +526,16 @@ std_pos_m = compute_std(weights)
 print("H_mの標準偏差:", std_pos_m)
 
 #H_pmの期待値
-for j, H_pm_j in enumerate(H_pm):
-    val = psi.T.conj() @ H_pm_j @ psi
-    H_pm_0.append(val.item() - Hpm_v[j])
+H_pm_0, _ = compute_expectation_profile(psi, H_pm, Hpm_v)
 
 #c_dag_cの期待値
-for j, cj_dag_cj in enumerate(cj_dag_cj_list):
-    val = psi.T.conj() @ cj_dag_cj @ psi
-    cdc_0.append(val.item() - c_dag_c_v[j])
+cdc_0, _ = compute_expectation_profile(psi, cj_dag_cj_list, c_dag_c_v)
 
 #cj1_cjの期待値
-for j, cj1_cj in enumerate(cj1_cj_list):
-    val = psi.T.conj() @ cj1_cj @ psi
-    cj1_cj_0.append(val.item() - cj1_cj_v[j])
+cj1_cj_0, _ = compute_expectation_profile(psi, cj1_cj_list, cj1_cj_v)
 
 #cj1_dag_cjの期待値
-for j, cj1_dag_cj in enumerate(cj1_dag_cj_list):
-    val = psi.T.conj() @ cj1_dag_cj @ psi
-    cj1_dag_cj_0.append(val.item() - cj1_dag_cj_v[j])
+cj1_dag_cj_0, _ = compute_expectation_profile(psi, cj1_dag_cj_list, cj1_dag_cj_v)
 
 # plt.plot(H_p_0, label="H_p_0")
 # plt.plot(H_m_0, label="H_m_0")
@@ -560,27 +574,12 @@ for i, _ in enumerate(times):
     for n,E in enumerate(eigenvalues[:L]):
         psi[n] = np.exp(-1j*E*(dt*(i+1))) * psi_initial[n]
 
-    H_p_t_val = []
-    H_m_t_val = []
-    H_pm_t_val = []
-    c_dag_c_t_val = []
-    H_p_test = []
-    H_m_test = []
-    H_pm_test = []
-    c_dag_c_test = []
-
     #H_pの期待値
-    for j, H_p_j in enumerate(H_p):
-        val = psi.T.conj() @ H_p_j @ psi
-        H_p_t_val.append(val.item() - Hp_v[j])
-        H_p_test.append(val)
+    H_p_t_val, H_p_test = compute_expectation_profile(psi, H_p, Hp_v)
     H_p_val.append(H_p_t_val)
 
     #H_mの期待値
-    for j, H_m_j in enumerate(H_m):
-        val = psi.T.conj() @ H_m_j @ psi
-        H_m_t_val.append(val.item() - Hm_v[j])
-        H_m_test.append(val)
+    H_m_t_val, H_m_test = compute_expectation_profile(psi, H_m, Hm_v)
     H_m_val.append(H_m_t_val)
 
     x_ave = 0
@@ -606,17 +605,11 @@ for i, _ in enumerate(times):
 
 
     #H_pmの期待値
-    for j, H_pm_j in enumerate(H_pm):
-        val = psi.T.conj() @ H_pm_j @ psi
-        H_pm_t_val.append(val.item() - Hpm_v[j])
-        H_pm_test.append(val)
+    H_pm_t_val, H_pm_test = compute_expectation_profile(psi, H_pm, Hpm_v)
     H_pm_val.append(H_pm_t_val)
 
     #c_dag_cの期待値
-    for j, cj_dag_cj in enumerate(cj_dag_cj_list):
-        val = psi.T.conj() @ cj_dag_cj @ psi
-        c_dag_c_t_val.append(val.item() - c_dag_c_v[j])
-        c_dag_c_test.append(val)
+    c_dag_c_t_val, c_dag_c_test = compute_expectation_profile(psi, cj_dag_cj_list, c_dag_c_v)
     c_dag_c_val.append(c_dag_c_t_val)
 
     log_imag("H_p", H_p_test)
@@ -638,6 +631,85 @@ for i, _ in enumerate(times):
     psi = psi_initial.copy()
 
     print("時間発展中:"+str(int(i/len(times)*100)) + "%")
+
+def plot_density_map(
+    values,
+    times,
+    output_path,
+    *,
+    pos,
+    geodesic_time_scale,
+    geodesic_color="white",
+    geodesic_linestyle="-",
+    geodesic_linewidth=2,
+):
+    value_arr = np.array(values, dtype=complex)
+    value_array = np.real(value_arr).astype(float) #ここで実数にしていることに注意
+
+    data_min = np.nanmin(value_array)
+    data_max = np.nanmax(value_array)
+
+    nt, num_sites = value_array.shape #時間ステップ数(使わない)とサイト数を取得
+
+    plt.rcParams.update({
+        'font.size': 18,
+        'axes.labelsize': 25,
+        'axes.titlesize': 22,
+        'xtick.labelsize': 13,
+        'ytick.labelsize': 13,
+    })
+
+    plt.figure(figsize=(8, 6))
+
+    # 背景の密度プロット
+    plt.imshow(
+        value_array,
+        aspect='auto',
+        origin='lower',
+        extent=[0, num_sites, times[0], times[-1]],
+        cmap='viridis',
+        vmin=float(data_min),
+        vmax=float(data_max)
+    )
+
+    # —— geodesic.dat を重ねる（物理範囲→表示範囲の対応） ——
+    try:
+        # 実行スクリプト基準で geodesic.dat を探す
+        file_path = "geodesic.dat"
+        geodesic_data = np.loadtxt(file_path, delimiter=",")
+
+        x = geodesic_data[:, 0]  # 物理空間座標（0〜2π）
+        t = geodesic_data[:, 1]  # 物理時間（0〜20）
+
+        # スケーリング変換
+        x_scaled = (x / (2 * np.pi)) * num_sites
+        t_scaled = (t / geodesic_time_scale) * (times[-1] - times[0]) + times[0]
+
+        if pos == "ul" or pos == "ll":
+            # 左右反転
+            x_scaled = num_sites - x_scaled
+
+        plt.plot(
+            x_scaled,
+            t_scaled,
+            linestyle=geodesic_linestyle,
+            color=geodesic_color,
+            linewidth=geodesic_linewidth,
+            label='geodesic'
+        )
+        plt.legend(loc='upper right', fontsize=12)
+    except Exception as e:
+        print(f"Warning: geodesic.dat の重ね描画に失敗しました: {e}")
+    # ————————————————————————————————
+
+    cbar = plt.colorbar(location='left')
+    cbar.ax.tick_params(labelsize=16)
+
+    plt.xlabel('j', fontweight='bold')
+    plt.ylabel('t', fontweight='bold')
+    plt.tight_layout()
+    plt.savefig(output_path,
+                dpi=300, bbox_inches='tight', transparent=True)
 
 #################################################################################################################################
 #プロット
@@ -668,242 +740,43 @@ np.savetxt("H_m_sigmas.txt", np.column_stack([times, H_m_sigmas]), fmt="%.10e")
 # plt.show()
 
 #+
-H_p_arr = np.array(H_p_val, dtype=complex)
-H_p_array = np.real(H_p_arr).astype(float) #ここで実数にしていることに注意
-
-data_min = np.nanmin(H_p_array)
-data_max = np.nanmax(H_p_array)
-
-nt, L = H_p_array.shape #時間ステップ数(使わない)とサイト数を取得
-
-plt.rcParams.update({
-    'font.size': 18,
-    'axes.labelsize': 25,
-    'axes.titlesize': 22,
-    'xtick.labelsize': 13,
-    'ytick.labelsize': 13,
-})
-
-plt.figure(figsize=(8, 6))
-
-# 背景の密度プロット
-plt.imshow(
-    H_p_array,
-    aspect='auto',
-    origin='lower',
-    extent=[0, L, times[0], times[-1]],
-    cmap='viridis',
-    vmin=float(data_min),
-    vmax=float(data_max)
+plot_density_map(
+    H_p_val,
+    times,
+    'figure/H_p.png',
+    pos=pos,
+    geodesic_time_scale=t_f,
+    geodesic_color="red",
+    geodesic_linestyle="--",
+    geodesic_linewidth=1,
 )
-
-# —— geodesic.dat を重ねる（物理範囲→表示範囲の対応） ——
-try:
-    # 実行スクリプト基準で geodesic.dat を探す
-    file_path = "geodesic.dat"
-    geodesic_data = np.loadtxt(file_path, delimiter=",")
-
-    x = geodesic_data[:, 0]  # 物理空間座標（0〜2π）
-    t = geodesic_data[:, 1]  # 物理時間（0〜20）
-    
-    # スケーリング変換
-    x_scaled = (x / (2 * np.pi)) * L
-    t_scaled = (t / t_f) * (times[-1] - times[0]) + times[0]
-
-    if pos == "ul" or pos == "ll":
-        # 左右反転
-        x_scaled = L - x_scaled
-
-    plt.plot(x_scaled, t_scaled,"--", color='red', linewidth=1, label='geodesic')
-    plt.legend(loc='upper right', fontsize=12)
-except Exception as e:
-    print(f"Warning: geodesic.dat の重ね描画に失敗しました: {e}")
-# ————————————————————————————————
-
-cbar = plt.colorbar(location='left')
-cbar.ax.tick_params(labelsize=16)
-
-plt.xlabel('j', fontweight='bold')
-plt.ylabel('t', fontweight='bold')
-plt.tight_layout()
-plt.savefig('figure/H_p.png',
-            dpi=300, bbox_inches='tight', transparent=True)
 
 #-
-H_m_arr = np.array(H_m_val, dtype=complex)
-H_m_array = np.real(H_m_arr).astype(float) #ここで実数にしていることに注意
-
-data_min = np.nanmin(H_m_array)
-data_max = np.nanmax(H_m_array)
-
-nt, L = H_m_array.shape #時間ステップ数(使わない)とサイト数を取得
-
-plt.rcParams.update({
-    'font.size': 18,
-    'axes.labelsize': 25,
-    'axes.titlesize': 22,
-    'xtick.labelsize': 13,
-    'ytick.labelsize': 13,
-})
-
-plt.figure(figsize=(8, 6))
-
-# 背景の密度プロット
-plt.imshow(
-    H_m_array,
-    aspect='auto',
-    origin='lower',
-    extent=[0, L, times[0], times[-1]],
-    cmap='viridis',
-    vmin=float(data_min),
-    vmax=float(data_max)
+plot_density_map(
+    H_m_val,
+    times,
+    'figure/H_m.png',
+    pos=pos,
+    geodesic_time_scale=1.21,
 )
-
-# —— geodesic.dat を重ねる（物理範囲→表示範囲の対応） ——
-try:
-    # 実行スクリプト基準で geodesic.dat を探す
-    file_path = "geodesic.dat"
-    geodesic_data = np.loadtxt(file_path, delimiter=",")
-
-    x = geodesic_data[:, 0]  # 物理空間座標（0〜2π）
-    t = geodesic_data[:, 1]  # 物理時間（0〜20）
-
-    # スケーリング変換
-    x_scaled = (x / (2 * np.pi)) * L
-    t_scaled = (t / 1.21) * (times[-1] - times[0]) + times[0]
-
-    if pos == "ul" or pos == "ll":
-        # 左右反転
-        x_scaled = L - x_scaled
-
-    plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
-    plt.legend(loc='upper right', fontsize=12)
-except Exception as e:
-    print(f"Warning: geodesic.dat の重ね描画に失敗しました: {e}")
-# ————————————————————————————————
-
-cbar = plt.colorbar(location='left')
-cbar.ax.tick_params(labelsize=16)
-
-plt.xlabel('j', fontweight='bold')
-plt.ylabel('t', fontweight='bold')
-plt.tight_layout()
-plt.savefig('figure/H_m.png',
-            dpi=300, bbox_inches='tight', transparent=True)
 
 #c_dag_c
-c_dag_c_arr = np.array(c_dag_c_val, dtype=complex)
-c_dag_c_array = np.real(c_dag_c_arr).astype(float) #ここで実数にしていることに注意
-
-data_min = np.nanmin(c_dag_c_array)
-data_max = np.nanmax(c_dag_c_array)
-
-nt, L = c_dag_c_array.shape #時間ステップ数(使わない)とサイト数を取得
-
-plt.rcParams.update({
-    'font.size': 18,
-    'axes.labelsize': 25,
-    'axes.titlesize': 22,
-    'xtick.labelsize': 13,
-    'ytick.labelsize': 13,
-})
-
-plt.figure(figsize=(8, 6))
-
-# 背景の密度プロット
-plt.imshow(
-    c_dag_c_array,
-    aspect='auto',
-    origin='lower',
-    extent=[0, L, times[0], times[-1]],
-    cmap='viridis',
-    vmin=float(data_min),
-    vmax=float(data_max)
+plot_density_map(
+    c_dag_c_val,
+    times,
+    'figure/c_dag_c.png',
+    pos=pos,
+    geodesic_time_scale=20.0,
 )
-
-# —— geodesic.dat を重ねる（物理範囲→表示範囲の対応） ——
-try:
-    # 実行スクリプト基準で geodesic.dat を探す
-    file_path = "geodesic.dat"
-    geodesic_data = np.loadtxt(file_path, delimiter=",")
-
-    x = geodesic_data[:, 0]  # 物理空間座標（0〜2π）
-    t = geodesic_data[:, 1]  # 物理時間（0〜20）
-
-    # スケーリング変換
-    x_scaled = (x / (2 * np.pi)) * L
-    t_scaled = (t / 20.0) * (times[-1] - times[0]) + times[0]
-    if pos == "ul" or pos == "ll":
-        # 左右反転
-        x_scaled = L - x_scaled
-
-    plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
-    plt.legend(loc='upper right', fontsize=12)
-except Exception as e:
-    print(f"Warning: geodesic.dat の重ね描画に失敗しました: {e}")
-# ————————————————————————————————
-
-cbar = plt.colorbar(location='left')
-cbar.ax.tick_params(labelsize=16)
-
-plt.xlabel('j', fontweight='bold')
-plt.ylabel('t', fontweight='bold')
-plt.tight_layout()
-plt.savefig('figure/c_dag_c.png',
-            dpi=300, bbox_inches='tight', transparent=True)
 
 #+-
-H_pm_arr = np.array(H_pm_val, dtype=complex)
-H_pm_array = np.real(H_pm_arr).astype(float) #ここで実数にしていることに注意
-data_min = np.nanmin(H_pm_array)
-data_max = np.nanmax(H_pm_array)
-nt, L = H_pm_array.shape #時間ステップ数(使わない)とサイト数を取得
-plt.rcParams.update({
-    'font.size': 18,
-    'axes.labelsize': 25,
-    'axes.titlesize': 22,
-    'xtick.labelsize': 13,
-    'ytick.labelsize': 13,
-})
-plt.figure(figsize=(8, 6))
-# 背景の密度プロット
-plt.imshow(
-    H_pm_array,
-    aspect='auto',
-    origin='lower',
-    extent=[0, L, times[0], times[-1]],
-    cmap='viridis',
-    vmin=float(data_min),
-    vmax=float(data_max)
+plot_density_map(
+    H_pm_val,
+    times,
+    'figure/H_pm.png',
+    pos=pos,
+    geodesic_time_scale=20.0,
 )
-# —— geodesic.dat を重ねる（物理範囲→表示範囲の対応） ——
-try:
-    # 実行スクリプト基準で geodesic.dat を探す
-    file_path = "geodesic.dat"
-    geodesic_data = np.loadtxt(file_path, delimiter=",")
-
-    x = geodesic_data[:, 0]  # 物理空間座標（0〜2π）
-    t = geodesic_data[:, 1]  # 物理時間（0〜20）
-
-    # スケーリング変換
-    x_scaled = (x / (2 * np.pi)) * L
-    t_scaled = (t / 20.0) * (times[-1] - times[0]) + times[0]
-    if pos == "ul" or pos == "ll":
-        # 左右反転
-        x_scaled = L - x_scaled
-
-    plt.plot(x_scaled, t_scaled, color='white', linewidth=2, label='geodesic')
-    plt.legend(loc='upper right', fontsize=12)
-except Exception as e:
-    print(f"Warning: geodesic.dat の重ね描画に失敗しました: {e}")
-# ————————————————————————————————  
-cbar = plt.colorbar(location='left')
-cbar.ax.tick_params(labelsize=16)
-plt.xlabel('j', fontweight='bold')
-plt.ylabel('t', fontweight='bold')
-plt.tight_layout()
-plt.savefig('figure/H_pm.png',
-            dpi=300, bbox_inches='tight', transparent=True)
 
 plt.close('all')
 # H_p の標準偏差が最小になるときの t
@@ -928,7 +801,6 @@ plt.title("H_m at t = {:.3f}".format(t_m_min))
 plt.grid()
 plt.show()
 
-from matplotlib.animation import FuncAnimation, PillowWriter
 def save_density_animation(
     density,
     times,
