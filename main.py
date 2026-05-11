@@ -3,47 +3,6 @@ from numpy import linalg as LA #BdGハミルトニアンの作成で利用
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
 
-#パラメータ
-L = 100
-l = 2*np.pi
-epsilon = l / L
-p = 1
-m = 0.0001
-pos = "lr" #lr, ur
-t_i = 0
-width = 1
-A = 1
-t_f = 5
-dt = 0.01*(300/L) #この値は後で検討
-PBC = False
-
-#betaプロファイル
-beta_profile = "pos" #pos/pos_horizon, center/centered_horizon, flat
-beta_width = 1
-beta_amplitude = 0.6
-beta_center_fraction = 2/3
-centered_beta_width = 1
-centered_beta_amplitude = 1
-centered_beta_center_fraction = 1/2
-
-#初期状態パラメータ
-j0_by_pos = {
-    "ur": 25,#245,
-    "lr": 25#245,
-}
-if pos not in j0_by_pos:
-    raise ValueError("pos must be 'ur' or 'lr'")
-j0 = j0_by_pos[pos]
-sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
-initial_direction = "right" #right, left
-direction_sign_by_name = {
-    "right": 1,
-    "left": -1,
-}
-if initial_direction not in direction_sign_by_name:
-    raise ValueError("initial_direction must be 'right' or 'left'")
-initial_direction_sign = direction_sign_by_name[initial_direction]
-
 BETA_PROFILE_ALIASES = {
     "pos": "pos_horizon",
     "pos_horizon": "pos_horizon",
@@ -51,11 +10,134 @@ BETA_PROFILE_ALIASES = {
     "centered_horizon": "centered_horizon",
     "flat": "flat",
 }
-if beta_profile not in BETA_PROFILE_ALIASES:
-    raise ValueError("beta_profile must be 'pos', 'center', or 'flat'")
-beta_profile = BETA_PROFILE_ALIASES[beta_profile]
 
-times = np.arange(t_i + dt, t_f, dt)
+HORIZON_CASE_ALIASES = {
+    "chi_plus_wh": "lr",
+    "p_wh": "lr",
+    "lr": "lr",
+    "chi_minus_bh": "ur",
+    "m_bh": "ur",
+    "ur": "ur",
+}
+
+CONFIG = {
+    "L": 100,
+    "l": 2*np.pi,
+    "p": 1,
+    "m": 0.0001,
+    "horizon_case": "chi_plus_wh",
+    "t_i": 0,
+    "t_f": 5,
+    "dt_scale": 0.01,
+    "PBC": False,
+    "beta_profile": "pos",
+    "beta_width": 1,
+    "beta_amplitude": 0.6,
+    "beta_center_fraction": 2/3,
+    "centered_beta_width": 1,
+    "centered_beta_amplitude": 1,
+    "centered_beta_center_fraction": 1/2,
+    "j0_by_case": {
+        "chi_plus_wh": 25,
+        "chi_minus_bh": 25,
+    },
+    "sigma_fraction": 0.05,
+    "initial_direction": "right",
+}
+
+DENSITY_PLOT_CONFIGS = {
+    "H_p": {
+        "output_path": "figure/H_p.png",
+        "geodesic_time_scale": "t_f",
+        "geodesic_color": "red",
+        "geodesic_linestyle": "--",
+        "geodesic_linewidth": 1,
+    },
+    "H_m": {
+        "output_path": "figure/H_m.png",
+        "geodesic_time_scale": 1.21,
+    },
+    "c_dag_c": {
+        "output_path": "figure/c_dag_c.png",
+        "geodesic_time_scale": 20.0,
+    },
+    "H_pm": {
+        "output_path": "figure/H_pm.png",
+        "geodesic_time_scale": 20.0,
+    },
+}
+
+ANIMATION_CONFIGS = {
+    "H_p": {
+        "gif_path": "figure/H_p.gif",
+        "cmap_line": "blue",
+    },
+    "H_m": {
+        "gif_path": "figure/H_m.gif",
+        "cmap_line": "orange",
+    },
+    "H_pm": {
+        "gif_path": "figure/H_pm.gif",
+        "cmap_line": "green",
+    },
+}
+
+def prepare_config(config):
+    prepared = dict(config)
+
+    if prepared["horizon_case"] not in HORIZON_CASE_ALIASES:
+        raise ValueError("horizon_case must be 'chi_plus_wh' or 'chi_minus_bh'")
+    prepared["pos"] = HORIZON_CASE_ALIASES[prepared["horizon_case"]]
+    if prepared["horizon_case"] in prepared["j0_by_case"]:
+        j0_case = prepared["horizon_case"]
+    elif prepared["pos"] == "lr":
+        j0_case = "chi_plus_wh"
+    else:
+        j0_case = "chi_minus_bh"
+
+    if prepared["beta_profile"] not in BETA_PROFILE_ALIASES:
+        raise ValueError("beta_profile must be 'pos', 'center', or 'flat'")
+    prepared["beta_profile"] = BETA_PROFILE_ALIASES[prepared["beta_profile"]]
+
+    direction_sign_by_name = {
+        "right": 1,
+        "left": -1,
+    }
+    if prepared["initial_direction"] not in direction_sign_by_name:
+        raise ValueError("initial_direction must be 'right' or 'left'")
+    prepared["initial_direction_sign"] = direction_sign_by_name[prepared["initial_direction"]]
+
+    L = prepared["L"]
+    prepared["epsilon"] = prepared["l"] / L
+    prepared["dt"] = prepared["dt_scale"]*(300/L)
+    prepared["times"] = np.arange(prepared["t_i"] + prepared["dt"], prepared["t_f"], prepared["dt"])
+    prepared["sigma"] = prepared["sigma_fraction"]*L
+    prepared["j0"] = prepared["j0_by_case"][j0_case]
+    return prepared
+
+CONFIG = prepare_config(CONFIG)
+
+L = CONFIG["L"]
+l = CONFIG["l"]
+epsilon = CONFIG["epsilon"]
+p = CONFIG["p"]
+m = CONFIG["m"]
+pos = CONFIG["pos"]
+t_i = CONFIG["t_i"]
+t_f = CONFIG["t_f"]
+dt = CONFIG["dt"]
+PBC = CONFIG["PBC"]
+beta_profile = CONFIG["beta_profile"]
+beta_width = CONFIG["beta_width"]
+beta_amplitude = CONFIG["beta_amplitude"]
+beta_center_fraction = CONFIG["beta_center_fraction"]
+centered_beta_width = CONFIG["centered_beta_width"]
+centered_beta_amplitude = CONFIG["centered_beta_amplitude"]
+centered_beta_center_fraction = CONFIG["centered_beta_center_fraction"]
+j0 = CONFIG["j0"]
+sigma = CONFIG["sigma"]
+initial_direction_sign = CONFIG["initial_direction_sign"]
+times = CONFIG["times"]
 
 def is_hermitian(matrix):
     is_hermitian = np.allclose(matrix, np.conj(matrix.T), atol=1e-10)
@@ -157,36 +239,6 @@ def enforce_particle_hole_symmetry(eigenvectors, L):
         V[L:,i+L] = np.conj(eigenvectors[:L,i])
     return V
 
-H_BdG = build_bdg_matrix(L, p, m, pos, epsilon, PBC)
-
-bs = []
-for j in range(L):
-    bs.append(float(beta(j,L,pos,epsilon)))
-plt.plot(bs)
-plt.grid()
-plt.show()
-
-#bogoliubov変換行列の作成##########################################################################################################################
-eigenvalues, eigenvectors = diagonalize_bdg_matrix(H_BdG, L)
-for i in range(L):
-    threshold = 1e-10
-    ans = eigenvectors[:,i+L] + np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
-    if np.all(np.abs(ans) < threshold):
-        continue
-        print(str(i))
-        print(np.where(np.abs(ans) < threshold, 0.0, ans))
-    else:
-        ans = eigenvectors[:,i+L] - np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
-        if np.all(np.abs(ans) < threshold):
-            continue
-            print(np.where(np.abs(ans) < threshold, 0.0, ans))
-        else:
-            print(str(i)+"''")
-            ans = eigenvectors[:,i+L].T.conj() @ np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
-            print(np.linalg.norm(np.where(np.abs(ans) < threshold, 0.0, ans)))
-
-eigenvectors = enforce_particle_hole_symmetry(eigenvectors, L)
-
 def build_operator_lists(eigenvectors, L, PBC):
     #cj_dag_cj(作り方は以前と変わらない)
     cj_dag_cj_list = []
@@ -260,10 +312,6 @@ def build_operator_lists(eigenvectors, L, PBC):
 
     return cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list
 
-#演算子の作成########################################################################################################################################
-cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list = build_operator_lists(eigenvectors, L, PBC)
-
-
 def build_initial_state(L, eigenvectors, j0, sigma, PBC, direction_sign):
     psi = np.zeros((L, 1), dtype=complex)
 
@@ -294,9 +342,6 @@ def build_initial_state(L, eigenvectors, j0, sigma, PBC, direction_sign):
     #状態ベクトルの規格化
     psi /= np.linalg.norm(psi)
     return psi, weights
-
-#初期状態作成###################################################################################################################
-psi, weights = build_initial_state(L, eigenvectors, j0, sigma, PBC, initial_direction_sign)
 
 #ハミルトニアン密度作成###############################################################################################################
 def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsilon, p, m, pos, PBC):
@@ -356,11 +401,6 @@ def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsi
         "H_m": H_m,
         "H_pm": H_pm,
     }
-
-energy_densities = build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsilon, p, m, pos, PBC)
-H_p = energy_densities["H_p"]
-H_m = energy_densities["H_m"]
-H_pm = energy_densities["H_pm"]
 
 #真空の量を計算##########################################################################################
 def compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC):
@@ -444,22 +484,7 @@ def compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC):
         "cj1_dag_cj": cj1_dag_cj_v,
     }
 
-vacuum_values = compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC)
-Hp_v = vacuum_values["H_p"]
-Hm_v = vacuum_values["H_m"]
-Hpm_v = vacuum_values["H_pm"]
-c_dag_c_v = vacuum_values["c_dag_c"]
-cj1_cj_v = vacuum_values["cj1_cj"]
-cj1_dag_cj_v = vacuum_values["cj1_dag_cj"]
-
 #初期状態の量###############################################################################################################
-
-H_p_0 = []
-H_m_0 = []
-H_pm_0 = []
-cdc_0 = []
-cj1_cj_0 = []
-cj1_dag_cj_0 = []
 def compute_std(weights):
     weights = np.abs(weights)
     x = np.arange(len(weights))
@@ -479,31 +504,34 @@ def compute_expectation_profile(psi, operators, vacuum_values):
         raw_values.append(val)
     return profile, raw_values
 
-#H_pの期待値
-H_p_0, _ = compute_expectation_profile(psi, H_p, Hp_v)
-#H_pの標準偏差
-weights = np.array([x.real for x in H_p_0])
-std_pos_p = compute_std(weights)
-print("H_pの標準偏差:", std_pos_p)
-#H_mの期待値
-H_m_0, _ = compute_expectation_profile(psi, H_m, Hm_v)
-#H_mの標準偏差
-x_ = np.arange(L)
-weights = np.array([x.real for x in H_m_0])
-std_pos_m = compute_std(weights)
-print("H_mの標準偏差:", std_pos_m)
+def compute_initial_observables(psi, energy_densities, vacuum_values, operator_lists):
+    initial_values = {}
 
-#H_pmの期待値
-H_pm_0, _ = compute_expectation_profile(psi, H_pm, Hpm_v)
+    H_p_0, _ = compute_expectation_profile(psi, energy_densities["H_p"], vacuum_values["H_p"])
+    weights = np.array([x.real for x in H_p_0])
+    std_pos_p = compute_std(weights)
+    print("H_pの標準偏差:", std_pos_p)
+    initial_values["H_p"] = H_p_0
 
-#c_dag_cの期待値
-cdc_0, _ = compute_expectation_profile(psi, cj_dag_cj_list, c_dag_c_v)
+    H_m_0, _ = compute_expectation_profile(psi, energy_densities["H_m"], vacuum_values["H_m"])
+    weights = np.array([x.real for x in H_m_0])
+    std_pos_m = compute_std(weights)
+    print("H_mの標準偏差:", std_pos_m)
+    initial_values["H_m"] = H_m_0
 
-#cj1_cjの期待値
-cj1_cj_0, _ = compute_expectation_profile(psi, cj1_cj_list, cj1_cj_v)
+    H_pm_0, _ = compute_expectation_profile(psi, energy_densities["H_pm"], vacuum_values["H_pm"])
+    initial_values["H_pm"] = H_pm_0
 
-#cj1_dag_cjの期待値
-cj1_dag_cj_0, _ = compute_expectation_profile(psi, cj1_dag_cj_list, cj1_dag_cj_v)
+    cdc_0, _ = compute_expectation_profile(psi, operator_lists["cj_dag_cj"], vacuum_values["c_dag_c"])
+    initial_values["c_dag_c"] = cdc_0
+
+    cj1_cj_0, _ = compute_expectation_profile(psi, operator_lists["cj1_cj"], vacuum_values["cj1_cj"])
+    initial_values["cj1_cj"] = cj1_cj_0
+
+    cj1_dag_cj_0, _ = compute_expectation_profile(psi, operator_lists["cj1_dag_cj"], vacuum_values["cj1_dag_cj"])
+    initial_values["cj1_dag_cj"] = cj1_dag_cj_0
+
+    return initial_values, std_pos_p, std_pos_m
 
 def log_imag(name, arr):
     max_im = np.max(np.abs(np.imag(arr)))
@@ -588,28 +616,6 @@ def run_time_evolution(
 
     return values, sigmas, x_ave_list
 
-#時間発展###########################################################################################################################
-time_values, sigmas, x_ave_list = run_time_evolution(
-    psi,
-    eigenvalues,
-    times,
-    dt,
-    L,
-    energy_densities,
-    vacuum_values,
-    cj_dag_cj_list,
-    std_pos_p,
-    std_pos_m,
-)
-H_p_val = time_values["H_p"]
-H_m_val = time_values["H_m"]
-H_pm_val = time_values["H_pm"]
-c_dag_c_val = time_values["c_dag_c"]
-H_p_sigmas = sigmas["H_p"]
-H_m_sigmas = sigmas["H_m"]
-H_pm_sigmas = sigmas["H_pm"]
-c_dag_c_sigmas = sigmas["c_dag_c"]
-
 def plot_density_map(
     values,
     times,
@@ -685,79 +691,6 @@ def plot_density_map(
     plt.savefig(output_path,
                 dpi=300, bbox_inches='tight', transparent=True)
 
-#################################################################################################################################
-#プロット
-#位置平均
-plt.plot(times, x_ave_list, label="x average")
-plt.xlabel("time")
-plt.ylabel("x average")
-plt.legend()
-plt.grid()
-plt.show()
-np.savetxt("x_ave.txt", np.column_stack([times, x_ave_list]), fmt="%.10e")
-#標準偏差のプロット
-np.savetxt("H_m_sigmas.txt", np.column_stack([times, H_m_sigmas]), fmt="%.10e")
-
-density_plot_configs = {
-    "H_p": {
-        "values": H_p_val,
-        "output_path": "figure/H_p.png",
-        "geodesic_time_scale": t_f,
-        "geodesic_color": "red",
-        "geodesic_linestyle": "--",
-        "geodesic_linewidth": 1,
-    },
-    "H_m": {
-        "values": H_m_val,
-        "output_path": "figure/H_m.png",
-        "geodesic_time_scale": 1.21,
-    },
-    "c_dag_c": {
-        "values": c_dag_c_val,
-        "output_path": "figure/c_dag_c.png",
-        "geodesic_time_scale": 20.0,
-    },
-    "H_pm": {
-        "values": H_pm_val,
-        "output_path": "figure/H_pm.png",
-        "geodesic_time_scale": 20.0,
-    },
-}
-
-for plot_config in density_plot_configs.values():
-    plot_density_map(
-        plot_config["values"],
-        times,
-        plot_config["output_path"],
-        pos=pos,
-        geodesic_time_scale=plot_config["geodesic_time_scale"],
-        geodesic_color=plot_config.get("geodesic_color", "white"),
-        geodesic_linestyle=plot_config.get("geodesic_linestyle", "-"),
-        geodesic_linewidth=plot_config.get("geodesic_linewidth", 2),
-    )
-
-plt.close('all')
-# H_p の標準偏差が最小になるときの t
-idx_p = np.argmin(H_p_sigmas)   # 最小値を取るインデックス
-t_p_min = times[idx_p]
-print("H_p sigma が最小になる t:", t_p_min)
-print("そのときの H_p sigma:", H_p_sigmas[idx_p])
-weights = np.abs(np.array([x.real for x in H_p_val[idx_p]]))
-plt.plot(H_p_val[idx_p])
-plt.title("H_p at t = {:.3f}".format(t_p_min))
-plt.grid()
-plt.show()
-
-# H_m の標準偏差が最小になるときの t
-idx_m = np.argmin(H_m_sigmas)
-t_m_min = times[idx_m]
-print("H_m sigma が最小になる t:", t_m_min)
-print("そのときの H_m sigma:", H_m_sigmas[idx_m])
-plt.plot(H_m_val[idx_m])
-plt.title("H_m at t = {:.3f}".format(t_m_min))
-plt.grid()
-plt.show()
-
 def save_density_animation(
     density,
     times,
@@ -829,32 +762,137 @@ def save_density_animation(
     print("保存しました")
     plt.close(fig)  # 余分なウインドウを閉じる
 
-animation_configs = {
-    "H_p": {
-        "density": H_p_val,
-        "gif_path": "figure/H_p.gif",
-        "cmap_line": "blue",
-    },
-    "H_m": {
-        "density": H_m_val,
-        "gif_path": "figure/H_m.gif",
-        "cmap_line": "orange",
-    },
-    "H_pm": {
-        "density": H_pm_val,
-        "gif_path": "figure/H_pm.gif",
-        "cmap_line": "green",
-    },
-}
+def plot_beta_profile():
+    bs = []
+    for j in range(L):
+        bs.append(float(beta(j,L,pos,epsilon)))
+    plt.plot(bs)
+    plt.grid()
+    plt.show()
 
-for animation_config in animation_configs.values():
-    save_density_animation(
-        density=animation_config["density"],
-        times=times,
-        gif_path=animation_config["gif_path"],
-        xlabel="Lattice Site Index j",
-        ylabel=r'δ$\langle c_j^\dagger c_j \rangle$',
-        line_label=r'δ$\langle c_j^\dagger c_j \rangle$',
-        cmap_line=animation_config["cmap_line"],
-        PBC=PBC,
+def check_particle_hole_pairs(eigenvectors, L):
+    for i in range(L):
+        threshold = 1e-10
+        ans = eigenvectors[:,i+L] + np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
+        if np.all(np.abs(ans) < threshold):
+            continue
+            print(str(i))
+            print(np.where(np.abs(ans) < threshold, 0.0, ans))
+        else:
+            ans = eigenvectors[:,i+L] - np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
+            if np.all(np.abs(ans) < threshold):
+                continue
+                print(np.where(np.abs(ans) < threshold, 0.0, ans))
+            else:
+                print(str(i)+"''")
+                ans = eigenvectors[:,i+L].T.conj() @ np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
+                print(np.linalg.norm(np.where(np.abs(ans) < threshold, 0.0, ans)))
+
+def resolve_geodesic_time_scale(value):
+    if value == "t_f":
+        return t_f
+    return value
+
+def save_outputs(time_values, sigmas, x_ave_list, times):
+    H_p_val = time_values["H_p"]
+    H_m_val = time_values["H_m"]
+    H_pm_val = time_values["H_pm"]
+    c_dag_c_val = time_values["c_dag_c"]
+    H_p_sigmas = sigmas["H_p"]
+    H_m_sigmas = sigmas["H_m"]
+
+    plt.plot(times, x_ave_list, label="x average")
+    plt.xlabel("time")
+    plt.ylabel("x average")
+    plt.legend()
+    plt.grid()
+    plt.show()
+    np.savetxt("x_ave.txt", np.column_stack([times, x_ave_list]), fmt="%.10e")
+    np.savetxt("H_m_sigmas.txt", np.column_stack([times, H_m_sigmas]), fmt="%.10e")
+
+    density_values = {
+        "H_p": H_p_val,
+        "H_m": H_m_val,
+        "H_pm": H_pm_val,
+        "c_dag_c": c_dag_c_val,
+    }
+
+    for name, plot_config in DENSITY_PLOT_CONFIGS.items():
+        plot_density_map(
+            density_values[name],
+            times,
+            plot_config["output_path"],
+            pos=pos,
+            geodesic_time_scale=resolve_geodesic_time_scale(plot_config["geodesic_time_scale"]),
+            geodesic_color=plot_config.get("geodesic_color", "white"),
+            geodesic_linestyle=plot_config.get("geodesic_linestyle", "-"),
+            geodesic_linewidth=plot_config.get("geodesic_linewidth", 2),
+        )
+
+    plt.close('all')
+    idx_p = np.argmin(H_p_sigmas)
+    t_p_min = times[idx_p]
+    print("H_p sigma が最小になる t:", t_p_min)
+    print("そのときの H_p sigma:", H_p_sigmas[idx_p])
+    plt.plot(H_p_val[idx_p])
+    plt.title("H_p at t = {:.3f}".format(t_p_min))
+    plt.grid()
+    plt.show()
+
+    idx_m = np.argmin(H_m_sigmas)
+    t_m_min = times[idx_m]
+    print("H_m sigma が最小になる t:", t_m_min)
+    print("そのときの H_m sigma:", H_m_sigmas[idx_m])
+    plt.plot(H_m_val[idx_m])
+    plt.title("H_m at t = {:.3f}".format(t_m_min))
+    plt.grid()
+    plt.show()
+
+    for name, animation_config in ANIMATION_CONFIGS.items():
+        save_density_animation(
+            density=density_values[name],
+            times=times,
+            gif_path=animation_config["gif_path"],
+            xlabel="Lattice Site Index j",
+            ylabel=r'δ$\langle c_j^\dagger c_j \rangle$',
+            line_label=r'δ$\langle c_j^\dagger c_j \rangle$',
+            cmap_line=animation_config["cmap_line"],
+            PBC=PBC,
+        )
+
+def main():
+    plot_beta_profile()
+
+    H_BdG = build_bdg_matrix(L, p, m, pos, epsilon, PBC)
+    eigenvalues, eigenvectors = diagonalize_bdg_matrix(H_BdG, L)
+    check_particle_hole_pairs(eigenvectors, L)
+    eigenvectors = enforce_particle_hole_symmetry(eigenvectors, L)
+
+    cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list = build_operator_lists(eigenvectors, L, PBC)
+    operator_lists = {
+        "cj_dag_cj": cj_dag_cj_list,
+        "cj1_cj": cj1_cj_list,
+        "cj1_dag_cj": cj1_dag_cj_list,
+    }
+
+    psi, _ = build_initial_state(L, eigenvectors, j0, sigma, PBC, initial_direction_sign)
+    energy_densities = build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsilon, p, m, pos, PBC)
+    vacuum_values = compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC)
+    _, std_pos_p, std_pos_m = compute_initial_observables(psi, energy_densities, vacuum_values, operator_lists)
+
+    time_values, sigmas, x_ave_list = run_time_evolution(
+        psi,
+        eigenvalues,
+        times,
+        dt,
+        L,
+        energy_densities,
+        vacuum_values,
+        cj_dag_cj_list,
+        std_pos_p,
+        std_pos_m,
     )
+    save_outputs(time_values, sigmas, x_ave_list, times)
+
+if __name__ == "__main__":
+    main()

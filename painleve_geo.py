@@ -3,17 +3,19 @@ import numpy as np
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用
 import scipy.linalg #時間発展演算子の作成で利用
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+from matplotlib.colors import TwoSlopeNorm
 #標準偏差の計算に使う
 import statistics
 import math
 
 #パラメータ
-L = 100
+L = 300
 l = 2*np.pi
 epsilon = l / L
 p = 1
 m = 0.0001
-pos = "lr" #lr, ur, ll, ul
+pos = "ur" #lr, ur, ll, ul
 t_i = 0
 width = 1
 A = 1
@@ -42,7 +44,7 @@ def beta(j,L,pos,epsilon):
     # #return 0
     width = 1
     A = 0.6
-    jh = int(L/3)
+    jh = int(3*L/4)
     c1=0#.730833344
     if pos == "lr":
         # β = -1 を j = 71 で踏むように調整
@@ -267,7 +269,7 @@ def generate_time_evolution_operator(eigenvalues, n):
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
 if pos == "ur" or pos == "lr":
-    j0 = 0.2*L#245#int(0.75*L)
+    j0 = 0.7*L#245#int(0.75*L)
 else:
     j0 = int(0.8*L)
 sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
