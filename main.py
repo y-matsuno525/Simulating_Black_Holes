@@ -9,18 +9,43 @@ import statistics
 import math
 
 #パラメータ
-L = 500
+L = 100
 l = 2*np.pi
 epsilon = l / L
 p = 1
 m = 0.0001
-pos = "ur" #lr, ur, ll, ul
+pos = "lr" #lr, ur
 t_i = 0
 width = 1
 A = 1
-t_f = 10*(0.1/(width*A))
+t_f = 5
 dt = 0.01*(300/L) #この値は後で検討
 PBC = False
+
+#betaプロファイル
+beta_profile = "pos_horizon" #pos_horizon, centered_horizon, flat
+beta_width = 1
+beta_amplitude = 0.6
+centered_beta_width = 1
+centered_beta_amplitude = 1
+
+#初期状態パラメータ
+j0_by_pos = {
+    "ur": 25,#245,
+    "lr": 25#245,
+}
+if pos not in j0_by_pos:
+    raise ValueError("pos must be 'ur' or 'lr'")
+j0 = j0_by_pos[pos]
+sigma = 0.05*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
+initial_direction = "right" #right, left
+direction_sign_by_name = {
+    "right": 1,
+    "left": -1,
+}
+if initial_direction not in direction_sign_by_name:
+    raise ValueError("initial_direction must be 'right' or 'left'")
+initial_direction_sign = direction_sign_by_name[initial_direction]
 
 times = np.arange(t_i + dt, t_f, dt)
 
@@ -33,29 +58,21 @@ def is_hermitian(matrix):
         return False
 
 def beta(j,L,pos,epsilon):
-    #width = 0.1
-    width = 1
-    A = 1
-    jh = int(L/2)
-    return  A*np.tanh(width*(j - jh)*epsilon) + A# - (A-1)
-    # #return 0
-    # width = 12
-    A = 0.6
-    jh = int(L/3)
-    c1=0#.730833344
-    if pos == "lr":
-        # β = -1 を j = 71 で踏むように調整
-        return -A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) - 0.6
-    elif pos == "ur":
-        # β = +1 を j = 70 で踏むように調整
-        return  A*np.tanh(3/width*(j - 2*jh - c1)*epsilon) + 2*A
-        # （注）式は (j - center - c) なので c = -0.269... は “+0.269...” と等価
-    elif pos == "ll":
-        # β = -1 を j = 29 で踏むように調整
-        return  A*np.tanh(3/width*(j - jh + c1)*epsilon) - 0.6
-    elif pos == "ul":
-        # β = +1 を j = 29 で踏むように調整
-        return -A*np.tanh(3/width*(j - jh + c1)*epsilon) + 0.6
+    if beta_profile == "flat":
+        return 0
+
+    if beta_profile == "centered_horizon":
+        jh = int(L/2)
+        return centered_beta_amplitude*np.tanh(centered_beta_width*(j - jh)*epsilon) + centered_beta_amplitude
+
+    if beta_profile == "pos_horizon":
+        jh = int(L/3)
+        if pos == "lr":
+            return -beta_amplitude*np.tanh(3/beta_width*(j - 2*jh)*epsilon) - beta_amplitude
+        elif pos == "ur":
+            return  beta_amplitude*np.tanh(3/beta_width*(j - 2*jh)*epsilon) + beta_amplitude
+
+    raise ValueError("beta_profile must be 'pos_horizon', 'centered_horizon', or 'flat'")
 
 def build_bdg_matrix(L, p, m, pos, epsilon, PBC):
     #BdGハミルトニアンの作成(符号関係は確認済み)
@@ -279,11 +296,6 @@ def generate_time_evolution_operator(eigenvalues, n):
 
 #初期状態作成###################################################################################################################
 psi = np.zeros((L, 1), dtype=complex)
-if pos == "ur" or pos == "lr":
-    j0 = 245#0.2*L#245#int(0.75*L)
-else:
-    j0 = int(0.8*L)
-sigma = 0.003*L #c_0はsigmaのLの係数に反比例傾向(完全反比例ではない)
 
 if PBC == True:
     idx = np.arange(L)
@@ -315,14 +327,8 @@ for j in range(L):
         #cを置く場合
         #psi[n, 0] += weights[j] * (eigenvectors[j,n].conj())
         #+
-        if pos == "ur" or pos == "lr":
-            psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
-        )
-        #-
-        else:
-            psi[n, 0] += weights[j] * (
-            1/np.sqrt(2) * (np.exp(-1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(1j*np.pi/4) * eigenvectors[j,n].conj())
+        psi[n, 0] += weights[j] * (
+        1/np.sqrt(2) * (np.exp(initial_direction_sign*1j*np.pi/4) * eigenvectors[j,n+L] + np.exp(-initial_direction_sign*1j*np.pi/4) * eigenvectors[j,n].conj())
         )
 #状態ベクトルの規格化
 psi /= np.linalg.norm(psi)
@@ -684,10 +690,6 @@ def plot_density_map(
         # スケーリング変換
         x_scaled = (x / (2 * np.pi)) * num_sites
         t_scaled = (t / geodesic_time_scale) * (times[-1] - times[0]) + times[0]
-
-        if pos == "ul" or pos == "ll":
-            # 左右反転
-            x_scaled = num_sites - x_scaled
 
         plt.plot(
             x_scaled,
