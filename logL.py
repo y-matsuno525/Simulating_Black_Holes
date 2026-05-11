@@ -1,3 +1,4 @@
+"""Large-L Painleve run used to compare scaling with lattice size."""
 #import
 import numpy as np
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用

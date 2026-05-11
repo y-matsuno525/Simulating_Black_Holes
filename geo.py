@@ -1,3 +1,4 @@
+"""Generate a null geodesic table used as an overlay in density plots."""
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
@@ -11,6 +12,7 @@ l = 2.0 * np.pi   # x 方向の長さ l = 2π
 # 1. β(x) を定義
 #---------------------------------
 def beta(x: np.ndarray) -> np.ndarray:
+    """Continuous beta profile for the geodesic ODE."""
     A = 1.0
     width = 1.0
     return A * np.tanh(width * (x - l/2.0)) + A
@@ -21,10 +23,13 @@ def beta(x: np.ndarray) -> np.ndarray:
 #   （式に合わせて + にしておくね）
 #---------------------------------
 def dtdx_left(x, t):
+    """ODE right-hand side dt/dx for a left-moving null ray."""
     return -1.0 / (1.0 - beta(x))
 
 def geodesic_left(x_start, x_end, t_start=0.0, n_points=200):
     """
+    Integrate the left-moving null geodesic from x_start to x_end.
+
     左向きモードの測地線を (x_start, t_start) から x_end まで計算する。
     dt/dx = -1/(1+β(x))
     """

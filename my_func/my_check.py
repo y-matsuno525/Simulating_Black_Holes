@@ -1,6 +1,7 @@
 import numpy as np
 
 def is_hermitian(matrix):
+    """Return True when a matrix equals its conjugate transpose."""
     is_hermitian = np.allclose(matrix, np.conj(matrix.T), atol=1e-10)
 
     if is_hermitian:
@@ -9,6 +10,7 @@ def is_hermitian(matrix):
         return False
 
 def is_unitary(matrix):
+    """Return True when U dagger U is the identity within tolerance."""
 
     identity_matrix = np.eye(matrix.shape[0])
 

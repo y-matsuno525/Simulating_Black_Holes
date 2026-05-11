@@ -1,3 +1,4 @@
+"""Painleve K-form simulation using helper modules for operators and plots."""
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import linalg as LA
@@ -30,16 +31,19 @@ dt = 0.01*(300/L)
 times = np.arange(t_i + dt, t_f, dt)
 
 def is_hermitian(matrix):
+    """Return True when a matrix equals its conjugate transpose."""
 
     return np.allclose(matrix, np.conj(matrix.T), atol=1e-100)
 
 def is_unitary(matrix):
+    """Return True when U dagger U is the identity."""
 
     identity_matrix = np.eye(matrix.shape[0])
 
     return np.allclose(np.dot(np.conj(matrix.T), matrix), identity_matrix,atol=1e-13)
 
 def c_dag_c_vacuum(eigenvectors):
+    """Compute vacuum density <c_j dagger c_j> for each lattice site."""
     c_dag_c_v = []
     for j in range(L):
         total = 0.0
@@ -49,6 +53,7 @@ def c_dag_c_vacuum(eigenvectors):
     return c_dag_c_v
 
 def adjust_eigenvectors(eigenvactors):
+        """Fill particle-hole partner columns from the first half of eigenvectors."""
         V = np.zeros((2*L, 2*L), dtype=complex)
         for i in range(L):
             V[:,i] = eigenvactors[:,i]
@@ -57,6 +62,7 @@ def adjust_eigenvectors(eigenvactors):
         return V
 
 def initialize_state_vector_a_plus(eigenvectors):
+    """Build and normalize the initial a-plus wave packet."""
     psi_tmp = np.zeros((L, 1), dtype=complex)
     if pos == "ur" or pos == "lr":
         j0 = int(0.2*L)

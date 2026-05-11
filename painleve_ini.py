@@ -1,3 +1,4 @@
+"""Painleve simulation variant for checking initial-state construction."""
 #import
 import numpy as np
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用

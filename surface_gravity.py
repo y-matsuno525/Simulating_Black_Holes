@@ -1,3 +1,4 @@
+"""Fit the growth of H_m packet width and compare it with a reference curve."""
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
@@ -22,6 +23,7 @@ H_m_sigmas = data[:,1] * epsilon
 #  指数関数フィット: A * exp(B t)
 # ===============================
 def exp_func(t, A, B):
+    """Exponential model used for fitting the sigma growth curve."""
     return A * np.exp(B * t) - A
 
 # 初期推定値（ある程度適当でOK）

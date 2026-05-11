@@ -6,15 +6,18 @@ from .my_check import is_hermitian
 from .beta import beta
 
 def generate_BdG_matrix(L, m, p_val, PBC, p_const, pos, epsilon):
+    """Generate the BdG Hamiltonian for the configured lattice geometry."""
 
     H = np.zeros((2*L, 2*L), dtype=complex)
 
     def p(j):
+        """Return either constant p or the beta-dependent local p(j)."""
         if p_const:
             return p_val
         else:
             return 1 - beta(j,L,pos,epsilon)
     def dif_x_p(j):
+        """Central finite difference of p(j) in lattice units."""
         return (p(j+1) - p(j-1))/2
 
     # beta(j) の値
@@ -86,6 +89,7 @@ def generate_BdG_matrix(L, m, p_val, PBC, p_const, pos, epsilon):
     return H
 
 def generate_c_dag_c(eigenvectors, L):
+    """Build site-resolved c_j dagger c_j operators in the eigenbasis."""
     c_dag_c_list = []
     for j in range(L):
         c_dag_c_tmp = np.zeros((L, L), dtype=complex)
@@ -101,12 +105,14 @@ def generate_c_dag_c(eigenvectors, L):
     return c_dag_c_list
 
 def generate_time_evolution_operator(eigenvalues, dt, L):
+    """Return exp(-i H dt) for the diagonal quasiparticle Hamiltonian."""
     H = np.zeros((L, L), dtype=complex)
     for i in range(L):
         H[i,i] = eigenvalues[i]
     return scipy.linalg.expm(-1j*H*dt)
 
 def H_vacuum(eigenvectors,L, epsilon,p_val,pos):
+    """Compute vacuum contributions for the local energy densities."""
 
     Hp_v = []
     Hm_v = []
@@ -144,6 +150,7 @@ def H_vacuum(eigenvectors,L, epsilon,p_val,pos):
     return Hp_v, Hm_v, Hpm_v
 
 def generate_cj1_cj(eigenvectors, L):
+    """Build nearest-neighbor annihilation bilinear c_{j+1} c_j."""
 
     cj1_cj_list = []
     for j in range(L-1):
@@ -164,6 +171,7 @@ def generate_cj1_cj(eigenvectors, L):
     return cj1_cj_list
 
 def generate_cj1_dag_cj(eigenvectors, L):
+    """Build nearest-neighbor hopping bilinear c_{j+1} dagger c_j."""
 
     cj1_dag_cj_list = []
     for j in range(L-1):
@@ -184,6 +192,7 @@ def generate_cj1_dag_cj(eigenvectors, L):
     return cj1_dag_cj_list
 
 def H_p_m_K(cj1_cj_list, cj1_dag_cj_list, L, epsilon, pos):
+    """Assemble H_+ and H_- density operators from neighbor bilinears."""
 
     H_p = []
     H_m = []
@@ -228,6 +237,7 @@ def H_p_m_K(cj1_cj_list, cj1_dag_cj_list, L, epsilon, pos):
     return H_p, H_m
 
 def H_vacuum_k(eigenvectors,L, epsilon,p_val,pos):
+    """Compute vacuum terms for the alternate K-form density expression."""
 
     Hp_v = []
     Hm_v = []

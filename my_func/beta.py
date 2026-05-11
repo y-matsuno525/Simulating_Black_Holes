@@ -1,6 +1,7 @@
 import numpy as np
 
 def beta(j,L,pos,epsilon):
+        """Return the beta shift profile used by helper-module experiments."""
         return 0
         width = 1
         A = 0.6

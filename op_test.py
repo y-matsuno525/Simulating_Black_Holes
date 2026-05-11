@@ -1,4 +1,5 @@
 #import
+"""Operator-construction scratch script for checking BdG bilinears."""
 import numpy as np
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用
 import scipy.linalg #時間発展演算子の作成で利用

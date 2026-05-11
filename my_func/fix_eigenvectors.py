@@ -3,6 +3,7 @@ import numpy as np
 import cmath
 
 def adjust_eigenvectors(eigenvactors,L):
+        """Fill particle-hole partner columns from the first half of eigenvectors."""
         V = np.zeros((2*L, 2*L), dtype=complex)
         for i in range(L):
             V[:,i] = eigenvactors[:,i]
@@ -11,6 +12,7 @@ def adjust_eigenvectors(eigenvactors,L):
         return V
 
 def arrange_eigenvectors(eigenvalues, eigenvectors, tol=1e-8):
+    """Sort eigenmodes into zero, positive, remaining zero, then negative sectors."""
     """
     固有値を以下の順で並べ替える：
     1) “ゼロ” のうち最初の１つ
@@ -47,6 +49,7 @@ def arrange_eigenvectors(eigenvalues, eigenvectors, tol=1e-8):
     return eigenvalues_sorted, eigenvectors_sorted
 
 def fix_phase(eigenvectors,L):
+    """Rotate each eigenvector so its diagonal component has zero phase."""
     for i in range(2*L):
         phase = cmath.phase(eigenvectors[i, i])
         eigenvectors[:,i] = np.exp(-1j*phase) * eigenvectors[:,i]

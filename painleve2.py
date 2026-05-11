@@ -1,4 +1,5 @@
 #固有値テスト用
+"""Compact Painleve experiment script with periodic boundary conditions."""
 import numpy as np
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用
 import scipy.linalg #時間発展演算子の作成で利用

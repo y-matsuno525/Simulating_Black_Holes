@@ -1,5 +1,6 @@
 #cがgaussiasnで置けてるか確認
 #import
+"""Small open-chain simulation test script."""
 import numpy as np
 import random
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用

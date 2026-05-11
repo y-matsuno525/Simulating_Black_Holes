@@ -1,3 +1,4 @@
+"""Run the Painleve lattice simulation with a geodesic overlay workflow."""
 #import
 import numpy as np
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用

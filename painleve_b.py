@@ -1,3 +1,4 @@
+"""Painleve simulation variant used for beta-profile parameter experiments."""
 #import
 import numpy as np
 from numpy import linalg as LA #BdGハミルトニアンの作成で利用

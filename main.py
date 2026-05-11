@@ -3,6 +3,7 @@ from numpy import linalg as LA #BdGハミルトニアンの作成で利用
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
 
+# Normalize user-facing option names into canonical internal values.
 BETA_PROFILE_ALIASES = {
     "pos": "pos_horizon",
     "pos_horizon": "pos_horizon",
@@ -21,6 +22,7 @@ HORIZON_CASE_ALIASES = {
 }
 
 CONFIG = {
+    # Lattice and physical parameters for the simulation run.
     "L": 100,
     "l": 2*np.pi,
     "p": 1,
@@ -46,6 +48,7 @@ CONFIG = {
 }
 
 DENSITY_PLOT_CONFIGS = {
+    # Plot-specific geodesic scaling and output destinations.
     "H_p": {
         "output_path": "figure/H_p.png",
         "geodesic_time_scale": "t_f",
@@ -83,6 +86,7 @@ ANIMATION_CONFIGS = {
 }
 
 def prepare_config(config):
+    """Validate config values and derive simulation constants."""
     prepared = dict(config)
 
     if prepared["horizon_case"] not in HORIZON_CASE_ALIASES:
@@ -140,6 +144,7 @@ initial_direction_sign = CONFIG["initial_direction_sign"]
 times = CONFIG["times"]
 
 def is_hermitian(matrix):
+    """Return True when a matrix is Hermitian to numerical precision."""
     is_hermitian = np.allclose(matrix, np.conj(matrix.T), atol=1e-10)
 
     if is_hermitian:
@@ -148,13 +153,16 @@ def is_hermitian(matrix):
         return False
 
 def beta_flat(j, L, pos, epsilon):
+    """Flat beta profile used as a no-horizon baseline."""
     return 0
 
 def beta_centered_horizon(j, L, pos, epsilon):
+    """Centered smooth tanh beta profile."""
     jh = int(centered_beta_center_fraction*L)
     return centered_beta_amplitude*np.tanh(centered_beta_width*(j - jh)*epsilon) + centered_beta_amplitude
 
 def beta_pos_horizon(j, L, pos, epsilon):
+    """Positioned beta profile whose sign depends on the horizon case."""
     jh = int(beta_center_fraction*L)
     if pos == "lr":
         return -beta_amplitude*np.tanh(3/beta_width*(j - jh)*epsilon) - beta_amplitude
@@ -163,6 +171,7 @@ def beta_pos_horizon(j, L, pos, epsilon):
     raise ValueError("pos must be 'ur' or 'lr'")
 
 def beta(j,L,pos,epsilon):
+    """Dispatch to the configured beta profile."""
     beta_functions = {
         "flat": beta_flat,
         "centered_horizon": beta_centered_horizon,
@@ -171,6 +180,7 @@ def beta(j,L,pos,epsilon):
     return beta_functions[beta_profile](j, L, pos, epsilon)
 
 def build_bdg_matrix(L, p, m, pos, epsilon, PBC):
+    """Build the 2L x 2L BdG Hamiltonian in particle-hole block form."""
     #BdGハミルトニアンの作成(符号関係は確認済み)
     H_BdG = np.zeros((2*L, 2*L), dtype=complex)
 
@@ -222,6 +232,7 @@ def build_bdg_matrix(L, p, m, pos, epsilon, PBC):
     return H_BdG
 
 def diagonalize_bdg_matrix(H_BdG, L):
+    """Diagonalize the BdG Hamiltonian and reorder paired eigenmodes."""
     #BdG行列を対角化
     eigenvalues, eigenvectors = LA.eigh(H_BdG)
 
@@ -231,6 +242,7 @@ def diagonalize_bdg_matrix(H_BdG, L):
     return eigenvalues, eigenvectors
 
 def enforce_particle_hole_symmetry(eigenvectors, L):
+    """Rebuild the second half of the basis from particle-hole partners."""
     #粒子-反粒子対称性を満たすように固有ベクトルを調整(列方向に調整しないといけないらしい。行方向だとうまくいかない。固有ベクトルを横切るからか？)
     V = np.zeros((2*L, 2*L), dtype=complex)
     for i in range(L):
@@ -240,6 +252,7 @@ def enforce_particle_hole_symmetry(eigenvectors, L):
     return V
 
 def build_operator_lists(eigenvectors, L, PBC):
+    """Construct local bilinear operators in the quasiparticle basis."""
     #cj_dag_cj(作り方は以前と変わらない)
     cj_dag_cj_list = []
     for j in range(L):
@@ -313,6 +326,7 @@ def build_operator_lists(eigenvectors, L, PBC):
     return cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list
 
 def build_initial_state(L, eigenvectors, j0, sigma, PBC, direction_sign):
+    """Create a normalized Gaussian wave packet in the quasiparticle basis."""
     psi = np.zeros((L, 1), dtype=complex)
 
     if PBC == True:
@@ -345,6 +359,7 @@ def build_initial_state(L, eigenvectors, j0, sigma, PBC, direction_sign):
 
 #ハミルトニアン密度作成###############################################################################################################
 def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsilon, p, m, pos, PBC):
+    """Assemble H_+, H_-, and mixed local energy-density operators."""
     H_p = []
     H_m = []
     H_pm = []
@@ -404,6 +419,7 @@ def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsi
 
 #真空の量を計算##########################################################################################
 def compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC):
+    """Compute vacuum expectation values subtracted from excited profiles."""
     Hp_v = []
     Hm_v = []
     Hpm_v = []
@@ -486,6 +502,7 @@ def compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC):
 
 #初期状態の量###############################################################################################################
 def compute_std(weights):
+    """Return the position standard deviation of a one-dimensional profile."""
     weights = np.abs(weights)
     x = np.arange(len(weights))
     p = weights/weights.sum()
@@ -496,6 +513,7 @@ def compute_std(weights):
     return std
 
 def compute_expectation_profile(psi, operators, vacuum_values):
+    """Evaluate <psi|O_j|psi> for each site and subtract vacuum offsets."""
     profile = []
     raw_values = []
     for j, operator in enumerate(operators):
@@ -505,6 +523,7 @@ def compute_expectation_profile(psi, operators, vacuum_values):
     return profile, raw_values
 
 def compute_initial_observables(psi, energy_densities, vacuum_values, operator_lists):
+    """Measure all observables at t=0 and record initial packet widths."""
     initial_values = {}
 
     H_p_0, _ = compute_expectation_profile(psi, energy_densities["H_p"], vacuum_values["H_p"])
@@ -534,6 +553,7 @@ def compute_initial_observables(psi, energy_densities, vacuum_values, operator_l
     return initial_values, std_pos_p, std_pos_m
 
 def log_imag(name, arr):
+    """Warn when an observable that should be real has imaginary residue."""
     max_im = np.max(np.abs(np.imag(arr)))
     if max_im > 1e-8:  # 目安
         print(f"[Warn] {name} has non-negligible imaginary part: max={max_im:.2e}")
@@ -550,6 +570,7 @@ def run_time_evolution(
     std_pos_p,
     std_pos_m,
 ):
+    """Evolve quasiparticle amplitudes in time and collect observables."""
     values = {
         "H_p": [],
         "H_m": [],
@@ -566,6 +587,7 @@ def run_time_evolution(
     psi_initial = psi.copy()
 
     for i, _ in enumerate(times):
+        # In the diagonal basis, each eigenmode only receives a phase factor.
         for n,E in enumerate(eigenvalues[:L]):
             psi[n] = np.exp(-1j*E*(dt*(i+1))) * psi_initial[n]
 
@@ -627,6 +649,7 @@ def plot_density_map(
     geodesic_linestyle="-",
     geodesic_linewidth=2,
 ):
+    """Save a time-site density heatmap and overlay geodesic.dat if present."""
     value_arr = np.array(values, dtype=complex)
     value_array = np.real(value_arr).astype(float) #ここで実数にしていることに注意
 
@@ -707,6 +730,8 @@ def save_density_animation(
     PBC
 ):
     """
+    Save an animated line plot for a time-dependent lattice density.
+
     density           : 2 次元配列 (N, L) あるいは同形状の list。行＝時刻，列＝格子サイト
     times             : 1 次元配列 (N,)   ─ 対応する時間点
     gif_path          : 生成した GIF を保存するファイルパス
@@ -763,6 +788,7 @@ def save_density_animation(
     plt.close(fig)  # 余分なウインドウを閉じる
 
 def plot_beta_profile():
+    """Show the configured beta profile before the expensive simulation."""
     bs = []
     for j in range(L):
         bs.append(float(beta(j,L,pos,epsilon)))
@@ -771,6 +797,7 @@ def plot_beta_profile():
     plt.show()
 
 def check_particle_hole_pairs(eigenvectors, L):
+    """Print modes that fail the expected particle-hole pairing check."""
     for i in range(L):
         threshold = 1e-10
         ans = eigenvectors[:,i+L] + np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
@@ -789,11 +816,13 @@ def check_particle_hole_pairs(eigenvectors, L):
                 print(np.linalg.norm(np.where(np.abs(ans) < threshold, 0.0, ans)))
 
 def resolve_geodesic_time_scale(value):
+    """Allow plot config to refer to the final simulation time symbolically."""
     if value == "t_f":
         return t_f
     return value
 
 def save_outputs(time_values, sigmas, x_ave_list, times):
+    """Write numerical outputs, heatmaps, and animations produced by the run."""
     H_p_val = time_values["H_p"]
     H_m_val = time_values["H_m"]
     H_pm_val = time_values["H_pm"]
@@ -861,6 +890,7 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
         )
 
 def main():
+    """Run the full black-hole lattice simulation pipeline."""
     plot_beta_profile()
 
     H_BdG = build_bdg_matrix(L, p, m, pos, epsilon, PBC)

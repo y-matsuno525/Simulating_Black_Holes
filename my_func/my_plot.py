@@ -8,6 +8,8 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 '''
 def plot_density_evolution(density, diff, PBC, times, value_name):
     """
+    Save a heatmap of a time-dependent site density.
+
     density: shape (num_time_steps, L)
     diff:    差分表示フラグ
     PBC:     周期境界条件フラグ
@@ -167,6 +169,8 @@ def save_density_animation(
     PBC
 ):
     """
+    Save an animated line plot for a time-dependent lattice density.
+
     density           : 2 次元配列 (N, L) あるいは同形状の list。行＝時刻，列＝格子サイト
     times             : 1 次元配列 (N,)   ─ 対応する時間点
     gif_path          : 生成した GIF を保存するファイルパス

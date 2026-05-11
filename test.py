@@ -1,8 +1,10 @@
+"""Analytic momentum-space eigenvalue test for a uniform lattice model."""
 #固有値テスト用
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy import linalg as LA
 def compute_eigenvalues():
+    """Compute and order eigenvalues of the 2x2 momentum-space Hamiltonian."""
     l = np.pi
     L = 100
     epsilon = l / L
