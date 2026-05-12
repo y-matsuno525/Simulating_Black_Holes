@@ -16,12 +16,12 @@ ANIMATION_CONFIGS = {}
 def configure(config, density_plot_configs, animation_configs):
     """Install prepared configuration for the numerical pipeline."""
     global CONFIG, DENSITY_PLOT_CONFIGS, ANIMATION_CONFIGS
-    global L, l, epsilon, p, m, pos, t_i, t_f, dt, PBC, beta_profile
-    global beta_width, beta_amplitude, beta_center_fraction
+    global L, l, epsilon, p, m, chirality, beta_sign, beta_sign_value, t_i, t_f, dt, PBC, beta_profile
+    global surface_gravity_beta, beta_width, beta_amplitude, beta_center_fraction
     global centered_beta_width, centered_beta_amplitude, centered_beta_center_fraction
     global j0, sigma, initial_direction_sign, times, mode_function_count
-    global geodesic_x_start_fraction, geodesic_x_end_offset, geodesic_t_start
     global geodesic_points, surface_gravity_output_path, stagnation_position, outputs, output_dir
+    global fft_observables, fft_remove_spatial_mean
 
     CONFIG = config
     DENSITY_PLOT_CONFIGS = density_plot_configs
@@ -31,12 +31,15 @@ def configure(config, density_plot_configs, animation_configs):
     epsilon = CONFIG["epsilon"]
     p = CONFIG["p"]
     m = CONFIG["m"]
-    pos = CONFIG["pos"]
+    chirality = CONFIG["chirality"]
+    beta_sign = CONFIG["beta_sign"]
+    beta_sign_value = CONFIG["beta_sign_value"]
     t_i = CONFIG["t_i"]
     t_f = CONFIG["t_f"]
     dt = CONFIG["dt"]
     PBC = CONFIG["PBC"]
     beta_profile = CONFIG["beta_profile"]
+    surface_gravity_beta = CONFIG.get("surface_gravity_beta", False)
     beta_width = CONFIG["beta_width"]
     beta_amplitude = CONFIG["beta_amplitude"]
     beta_center_fraction = CONFIG["beta_center_fraction"]
@@ -48,12 +51,11 @@ def configure(config, density_plot_configs, animation_configs):
     initial_direction_sign = CONFIG["initial_direction_sign"]
     times = CONFIG["times"]
     mode_function_count = CONFIG["mode_function_count"]
-    geodesic_x_start_fraction = CONFIG["geodesic_x_start_fraction"]
-    geodesic_x_end_offset = CONFIG["geodesic_x_end_offset"]
-    geodesic_t_start = CONFIG["geodesic_t_start"]
     geodesic_points = CONFIG["geodesic_points"]
     surface_gravity_output_path = CONFIG["surface_gravity_output_path"]
     stagnation_position = CONFIG["stagnation_position"]
+    fft_observables = CONFIG.get("fft_observables", ["H_p"])
+    fft_remove_spatial_mean = CONFIG.get("fft_remove_spatial_mean", True)
     outputs = CONFIG["outputs"]
     output_dir = Path(CONFIG["output_dir"])
 
@@ -66,37 +68,75 @@ def is_hermitian(matrix):
     else:
         return False
 
-def beta_flat(j, L, pos, epsilon):
+def beta_flat(j, L, beta_sign, epsilon):
     """Flat beta profile used as a no-horizon baseline."""
     return 0
 
-def beta_centered_horizon(j, L, pos, epsilon):
+def beta_centered_horizon(j, L, beta_sign, epsilon):
     """Centered smooth tanh beta profile."""
     # j は格子 index だが、tanh の引数では epsilon を掛けて物理座標スケールへ戻す。
     jh = int(centered_beta_center_fraction*L)
-    return centered_beta_amplitude*np.tanh(centered_beta_width*(j - jh)*epsilon) + centered_beta_amplitude
+    return beta_sign_value*(centered_beta_amplitude*np.tanh(centered_beta_width*(j - jh)*epsilon) + centered_beta_amplitude)
 
-def beta_pos_horizon(j, L, pos, epsilon):
-    """Positioned beta profile whose sign depends on the horizon case."""
+def beta_pos_horizon(j, L, beta_sign, epsilon):
+    """Positioned beta profile whose sign is explicit in config."""
     jh = int(beta_center_fraction*L)
-    if pos == "lr":
-        # chi_+ / white-hole 側。beta が負側へ流れる符号を使う。
-        return -beta_amplitude*np.tanh(3/beta_width*(j - jh)*epsilon) - beta_amplitude
-    elif pos == "ur":
-        # chi_- / black-hole 側。lr と反対の符号で beta を立ち上げる。
-        return  beta_amplitude*np.tanh(3/beta_width*(j - jh)*epsilon) + beta_amplitude
-    raise ValueError("pos must be 'ur' or 'lr'")
+    return beta_sign_value*beta_amplitude*np.tanh(3/beta_width*(j - jh)*epsilon) + beta_sign_value*beta_amplitude
 
-def beta(j,L,pos,epsilon):
+def beta(j,L,beta_sign,epsilon):
     """Dispatch to the configured beta profile."""
+    if surface_gravity_beta:
+        width = 0.1
+        A = 1
+        jh = int(L/2)
+        return A*np.tanh(width*(j - jh)*epsilon) + A
     beta_functions = {
         "flat": beta_flat,
         "centered_horizon": beta_centered_horizon,
         "pos_horizon": beta_pos_horizon,
     }
-    return beta_functions[beta_profile](j, L, pos, epsilon)
+    return beta_functions[beta_profile](j, L, beta_sign, epsilon)
 
-def build_bdg_matrix(L, p, m, pos, epsilon, PBC):
+def compute_horizon_positions(num_samples=10000):
+    """Return lattice-index positions where abs(beta)=1 by linear interpolation."""
+    xs = np.linspace(0, L - 1, num_samples)
+    vals = np.array([abs(beta(x, L, beta_sign, epsilon)) - 1 for x in xs])
+    positions = []
+    for idx in range(len(xs) - 1):
+        v0 = vals[idx]
+        v1 = vals[idx + 1]
+        if v0 == 0:
+            positions.append(xs[idx])
+        elif v0 * v1 < 0:
+            x0 = xs[idx]
+            x1 = xs[idx + 1]
+            positions.append(x0 - v0 * (x1 - x0) / (v1 - v0))
+    if vals[-1] == 0:
+        positions.append(xs[-1])
+
+    unique_positions = []
+    for position in positions:
+        if not unique_positions or abs(position - unique_positions[-1]) > 1e-3:
+            unique_positions.append(float(position))
+    return unique_positions
+
+def save_horizon_positions():
+    """Save horizon positions in lattice and physical coordinates."""
+    positions = compute_horizon_positions()
+    if positions:
+        data = np.column_stack([positions, np.asarray(positions)*epsilon])
+    else:
+        data = np.empty((0, 2))
+    np.savetxt(
+        resolve_output_path("horizon_positions.txt"),
+        data,
+        fmt="%.10e",
+        header="j x",
+        comments="",
+    )
+    return positions
+
+def build_bdg_matrix(L, p, m, beta_sign, epsilon, PBC):
     """Build the 2L x 2L BdG Hamiltonian in particle-hole block form."""
     #BdGハミルトニアンの作成(符号関係は確認済み)
     H_BdG = np.zeros((2*L, 2*L), dtype=complex)
@@ -112,10 +152,10 @@ def build_bdg_matrix(L, p, m, pos, epsilon, PBC):
                     H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))*(-1)
                 elif i-j == 1:
                     # 左隣との有限差分。beta はリンク中央の値として両端平均を使う。
-                    H_BdG[i, j] = -1/(2*epsilon) * (p - 1j*(beta(j+1/2,L,pos,epsilon)+beta(i+1/2,L,pos,epsilon))/2)
+                    H_BdG[i, j] = -1/(2*epsilon) * (p - 1j*(beta(j+1/2,L,beta_sign,epsilon)+beta(i+1/2,L,beta_sign,epsilon))/2)
                 elif j-i == 1:
                    # 右隣との有限差分。Hermiticity が保たれるよう複素共役側の符号になる。
-                   H_BdG[i, j] = -1/(2*epsilon) * (p + 1j*(beta(i+1/2,L,pos,epsilon)+beta(j+1/2,L,pos,epsilon))/2)
+                   H_BdG[i, j] = -1/(2*epsilon) * (p + 1j*(beta(i+1/2,L,beta_sign,epsilon)+beta(j+1/2,L,beta_sign,epsilon))/2)
             #右上
             elif i < L and j >= L:
                 # 粒子 -> 正孔の pairing ブロック。最近接だけが非ゼロ。
@@ -136,19 +176,19 @@ def build_bdg_matrix(L, p, m, pos, epsilon, PBC):
                 if i == j:
                     H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))
                 elif i-j == 1:
-                    H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*(beta(j+1/2-L,L,pos,epsilon)+beta(i+1/2-L,L,pos,epsilon))/2)
+                    H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*(beta(j+1/2-L,L,beta_sign,epsilon)+beta(i+1/2-L,L,beta_sign,epsilon))/2)
                 elif j-i == 1:
-                    H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*(beta(i+1/2-L,L,pos,epsilon)+beta(j+1/2-L,L,pos,epsilon))/2)
+                    H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*(beta(i+1/2-L,L,beta_sign,epsilon)+beta(j+1/2-L,L,beta_sign,epsilon))/2)
 
     if PBC == True:
         # 周期境界条件では j=L-1 と j=0 の間の BdG 行列要素を追加する。
         # 色名は元ノート/図の対応を残した目印で、各行は境界をまたぐ成分。
         #red
-        H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * (1)
-        H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,pos,epsilon)) * (-1)
+        H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,beta_sign,epsilon)) * (1)
+        H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,beta_sign,epsilon)) * (-1)
         #blue
-        H_BdG[L-1,0] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * (1)
-        H_BdG[L,2*L-1] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,pos,epsilon)) * (-1)
+        H_BdG[L-1,0] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,beta_sign,epsilon)) * (1)
+        H_BdG[L,2*L-1] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,beta_sign,epsilon)) * (-1)
         #orange
         H_BdG[0,2*L-1] = -1/(2*epsilon) * (-1)
         H_BdG[L-1,L] = -1/(2*epsilon) * (1)
@@ -302,7 +342,7 @@ def build_initial_state(L, eigenvectors, j0, sigma, PBC, direction_sign):
     return psi, weights
 
 #ハミルトニアン密度作成###############################################################################################################
-def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsilon, p, m, pos, PBC):
+def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsilon, p, m, beta_sign, PBC):
     """Assemble H_+, H_-, and mixed local energy-density operators."""
     H_p = []
     H_m = []
@@ -338,8 +378,8 @@ def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsi
         H_pm_j = np.zeros((L, L), dtype=complex)
 
         #ハミルトニアン密度作成
-        H_p_j = -1j/(4*epsilon) * (1+beta(j+1/2,L,pos,epsilon))  * (1j*(cj_cj1_list[j-1] + cj_cj1_list[j])/2 + (cj_cj1_dag_list[j-1]+cj_cj1_dag_list[j])/2 + (cj_dag_cj1_list[j-1]+cj_dag_cj1_list[j])/2 - 1j*(cj_dag_cj1_dag_list[j-1]+cj_dag_cj1_dag_list[j])/2)
-        H_m_j = -1j/(4*epsilon) * (-1+beta(j+1/2,L,pos,epsilon))  * (-1j*(cj_cj1_list[j-1] + cj_cj1_list[j])/2 + (cj_cj1_dag_list[j-1]+cj_cj1_dag_list[j])/2 + (cj_dag_cj1_list[j-1]+cj_dag_cj1_list[j])/2 + 1j*(cj_dag_cj1_dag_list[j-1]+cj_dag_cj1_dag_list[j])/2)
+        H_p_j = -1j/(4*epsilon) * (1+beta(j+1/2,L,beta_sign,epsilon))  * (1j*(cj_cj1_list[j-1] + cj_cj1_list[j])/2 + (cj_cj1_dag_list[j-1]+cj_cj1_dag_list[j])/2 + (cj_dag_cj1_list[j-1]+cj_dag_cj1_list[j])/2 - 1j*(cj_dag_cj1_dag_list[j-1]+cj_dag_cj1_dag_list[j])/2)
+        H_m_j = -1j/(4*epsilon) * (-1+beta(j+1/2,L,beta_sign,epsilon))  * (-1j*(cj_cj1_list[j-1] + cj_cj1_list[j])/2 + (cj_cj1_dag_list[j-1]+cj_cj1_dag_list[j])/2 + (cj_dag_cj1_list[j-1]+cj_dag_cj1_list[j])/2 + 1j*(cj_dag_cj1_dag_list[j-1]+cj_dag_cj1_dag_list[j])/2)
         H_pm_j = -1j/(2*epsilon) * (p*(1j*(cj_cj1_dag_list[j-1]+cj_cj1_dag_list[j])/2 - 1j*(cj_dag_cj1_list[j-1]+cj_dag_cj1_list[j])/2) - (p - epsilon*m)*(-2*1j*cj_dag_cj_list[j]))
 
         #エルミートか確認
@@ -367,7 +407,7 @@ def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsi
     }
 
 #真空の量を計算##########################################################################################
-def compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC):
+def compute_vacuum_values(eigenvectors, L, epsilon, p, m, beta_sign, PBC):
     """Compute vacuum expectation values subtracted from excited profiles."""
     Hp_v = []
     Hm_v = []
@@ -433,8 +473,8 @@ def compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC):
             Hm_v_j = 0+0j
             H_pm_v_j = 0+0j
         else:
-            Hp_v_j = -1/(2*epsilon) * 1j * (1+beta(j+1/2,L,pos,epsilon)) * 1/2 * (1j * (-1*(F1_list[-1]+F1_list[-2])/2) + (-1*(F2_list[-1]+F2_list[-2])/2) + ((F2_list[-1]+F2_list[-2])/2).conj() - 1j * (F1_list[-1]+F1_list[-2]).conj()/2)
-            Hm_v_j = -1/(2*epsilon) * 1j * (-1+beta(j+1/2,L,pos,epsilon)) * 1/2 * (-1j * (-1*(F1_list[-1]+F1_list[-2])/2) + (-1*(F2_list[-1]+F2_list[-2])/2) + ((F2_list[-1]+F2_list[-2])/2).conj() + 1j * (F1_list[-1]+F1_list[-2]).conj()/2)
+            Hp_v_j = -1/(2*epsilon) * 1j * (1+beta(j+1/2,L,beta_sign,epsilon)) * 1/2 * (1j * (-1*(F1_list[-1]+F1_list[-2])/2) + (-1*(F2_list[-1]+F2_list[-2])/2) + ((F2_list[-1]+F2_list[-2])/2).conj() - 1j * (F1_list[-1]+F1_list[-2]).conj()/2)
+            Hm_v_j = -1/(2*epsilon) * 1j * (-1+beta(j+1/2,L,beta_sign,epsilon)) * 1/2 * (-1j * (-1*(F1_list[-1]+F1_list[-2])/2) + (-1*(F2_list[-1]+F2_list[-2])/2) + ((F2_list[-1]+F2_list[-2])/2).conj() + 1j * (F1_list[-1]+F1_list[-2]).conj()/2)
             H_pm_v_j = -1j/(2*epsilon) * (1j * p * (-1*(F2_list[-1]+F2_list[-2])/2 - (F2_list[-1]+F2_list[-2]).conj()) - (p - epsilon*m) * (-2j * c_dag_c_v[j]))
         assert abs(Hp_v_j - np.conj(Hp_v_j)) < 10**-5, "Hp_v_j(j=" + str(j) + ") is not Hermitian!"
         assert abs(Hm_v_j - np.conj(Hm_v_j)) < 10**-5, "Hm_v_j(j=" + str(j) + ") is not Hermitian!"
@@ -608,42 +648,56 @@ def plot_density_map(
     times,
     output_path,
     *,
-    pos,
+    beta_sign,
+    horizon_positions,
     geodesic_time_scale,
-    geodesic_color="white",
-    geodesic_linestyle="-",
-    geodesic_linewidth=2,
+    colorbar_label=None,
+    geodesic_color="cyan",
+    geodesic_linestyle="--",
+    geodesic_linewidth=1.1,
 ):
     """Save a time-site density heatmap and overlay geodesic.dat if present."""
     value_arr = np.array(values, dtype=complex)
     # Hermitian observable の期待値なので本来は実数。小さな数値誤差の虚部はここで落とす。
     value_array = np.real(value_arr).astype(float) #ここで実数にしていることに注意
 
-    data_min = np.nanmin(value_array)
-    data_max = np.nanmax(value_array)
+    color_limit = float(np.nanmax(np.abs(value_array)))
+    if color_limit == 0 or not np.isfinite(color_limit):
+        color_limit = 1.0
 
     nt, num_sites = value_array.shape #時間ステップ数(使わない)とサイト数を取得
 
     plt.rcParams.update({
         'font.size': 18,
-        'axes.labelsize': 25,
+        'axes.labelsize': 30,
         'axes.titlesize': 22,
-        'xtick.labelsize': 13,
-        'ytick.labelsize': 13,
+        'xtick.labelsize': 15,
+        'ytick.labelsize': 15,
     })
 
-    plt.figure(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(8, 6), facecolor="white")
+    ax.set_facecolor("white")
 
     # 背景の密度プロット
-    plt.imshow(
+    im = ax.imshow(
         value_array,
         aspect='auto',
         origin='lower',
-        extent=[0, num_sites, times[0], times[-1]],
-        cmap='viridis',
-        vmin=float(data_min),
-        vmax=float(data_max)
+        extent=[0, num_sites, t_i, t_f],
+        cmap='seismic',
+        vmin=-color_limit,
+        vmax=color_limit,
+        interpolation='nearest',
     )
+
+    for idx, horizon_position in enumerate(horizon_positions):
+        ax.axvline(
+            horizon_position,
+            linestyle="--",
+            color="black",
+            linewidth=1.7,
+            label="Event horizon" if idx == 0 else None,
+        )
 
     # —— geodesic.dat を重ねる（物理範囲→表示範囲の対応） ——
     try:
@@ -654,32 +708,37 @@ def plot_density_map(
         x = geodesic_data[:, 0]  # 物理空間座標（0〜2π）
         t = geodesic_data[:, 1]  # 物理時間（0〜20）
 
-        # geodesic.dat は物理座標 x,t。heatmap は lattice index j と simulation time なので変換する。
-        # スケーリング変換
+        # geodesic.dat は物理座標 x と simulation time t。heatmap の横軸だけ lattice index j へ変換する。
         x_scaled = (x / (2 * np.pi)) * num_sites
-        t_scaled = (t / geodesic_time_scale) * (times[-1] - times[0]) + times[0]
+        t_scaled = t
 
-        plt.plot(
+        ax.plot(
             x_scaled,
             t_scaled,
             linestyle=geodesic_linestyle,
             color=geodesic_color,
             linewidth=geodesic_linewidth,
-            label='geodesic'
         )
-        plt.legend(loc='upper right', fontsize=12)
     except Exception as e:
         print(f"Warning: geodesic.dat の重ね描画に失敗しました: {e}")
     # ————————————————————————————————
 
-    cbar = plt.colorbar(location='left')
-    cbar.ax.tick_params(labelsize=16)
+    ax.set_xlim(0, num_sites)
+    ax.set_ylim(t_i, t_f)
+    ax.set_xlabel(r"$j$", fontweight='bold')
+    ax.set_ylabel(r"$t$", fontweight='bold', rotation=0, labelpad=22)
+    if horizon_positions:
+        ax.legend(loc='upper left', fontsize=20, frameon=True)
 
-    plt.xlabel('j', fontweight='bold')
-    plt.ylabel('t', fontweight='bold')
-    plt.tight_layout()
-    plt.savefig(resolve_output_path(output_path),
-                dpi=300, bbox_inches='tight', transparent=True)
+    cbar = fig.colorbar(im, ax=ax, location='right', pad=0.06)
+    cbar.ax.tick_params(labelsize=15)
+    if colorbar_label:
+        cbar.set_label(colorbar_label, rotation=0, labelpad=32, fontsize=26)
+
+    fig.tight_layout()
+    fig.savefig(resolve_output_path(output_path),
+                dpi=300, bbox_inches='tight', transparent=False)
+    plt.close(fig)
 
 def save_density_animation(
     density,
@@ -756,14 +815,134 @@ def save_density_animation(
     print("保存しました")
     plt.close(fig)  # 余分なウインドウを閉じる
 
-def plot_beta_profile():
-    """Show the configured beta profile before the expensive simulation."""
-    bs = []
-    for j in range(L):
-        bs.append(float(beta(j,L,pos,epsilon)))
-    plt.plot(bs)
-    plt.grid()
-    plt.show()
+def compute_fft_spectrum(values, *, remove_spatial_mean=True):
+    """Return shifted FFT amplitudes for each time slice of a time-site profile."""
+    value_array = np.real(np.asarray(values, dtype=complex)).astype(float)
+    if value_array.ndim != 2:
+        raise ValueError("FFT input must be a time-site array")
+    if remove_spatial_mean:
+        value_array = value_array - value_array.mean(axis=1, keepdims=True)
+    spectrum = np.abs(np.fft.fftshift(np.fft.fft(value_array, axis=1), axes=1))
+    k_values = np.fft.fftshift(np.fft.fftfreq(value_array.shape[1], d=1.0)) * 2 * np.pi
+    return k_values, spectrum
+
+def save_fft_csv(name, k_values, spectrum, times):
+    """Save FFT k values and a time-k spectrum CSV."""
+    np.savetxt(
+        resolve_output_path(f"{name}_fft_k.csv"),
+        k_values,
+        delimiter=",",
+        header="k",
+        comments="",
+    )
+    data = np.column_stack([times, spectrum])
+    header = ",".join(["time"] + [f"k{i}" for i in range(len(k_values))])
+    np.savetxt(
+        resolve_output_path(f"{name}_fft_val.csv"),
+        data,
+        delimiter=",",
+        header=header,
+        comments="",
+    )
+
+def plot_fft_map(name, k_values, spectrum, times):
+    """Save a time-k FFT amplitude heatmap."""
+    color_limit = float(np.nanmax(spectrum))
+    if color_limit == 0 or not np.isfinite(color_limit):
+        color_limit = 1.0
+    fig, ax = plt.subplots(figsize=(8, 6), facecolor="white")
+    ax.set_facecolor("white")
+    im = ax.imshow(
+        spectrum,
+        aspect="auto",
+        origin="lower",
+        extent=[k_values[0], k_values[-1], times[0], times[-1]],
+        cmap="magma",
+        vmin=0,
+        vmax=color_limit,
+        interpolation="nearest",
+    )
+    ax.set_xlabel(r"$k$", fontweight="bold")
+    ax.set_ylabel(r"$t$", fontweight="bold", rotation=0, labelpad=22)
+    ax.set_xticks([-np.pi, 0, np.pi])
+    ax.set_xticklabels([r"$-\pi$", "0", r"$\pi$"])
+    cbar = fig.colorbar(im, ax=ax, location="right", pad=0.06)
+    cbar.set_label(r"$|\mathrm{FFT}|$", rotation=0, labelpad=32, fontsize=22)
+    fig.tight_layout()
+    fig.savefig(resolve_output_path(f"figures/{name}_fft.png"), dpi=300, bbox_inches="tight", transparent=False)
+    plt.close(fig)
+
+def save_fft_animation(name, k_values, spectrum, times, fps=20):
+    """Save an animated k-space FFT spectrum."""
+    positive_k = k_values >= 0
+    k_values = k_values[positive_k]
+    spectrum = spectrum[:, positive_k]
+    fig, ax = plt.subplots(figsize=(6.4, 4.8))
+    line, = ax.plot([], [], lw=1.8, color="purple")
+    y_max = float(np.nanmax(spectrum))
+    if y_max == 0 or not np.isfinite(y_max):
+        y_max = 1.0
+    ax.set_xlim(0, k_values[-1])
+    ax.set_ylim(0, y_max)
+    ax.set_xlabel(r"$k$", fontsize=16)
+    ax.set_ylabel(r"$|\mathrm{FFT}|$", fontsize=16)
+    major_ticks = np.linspace(0, np.pi, 17)
+    minor_ticks = np.linspace(0, np.pi, 65)
+    ax.set_xticks(major_ticks)
+    ax.set_xticks(minor_ticks, minor=True)
+    ax.set_xticklabels([f"{tick:.2f}" for tick in major_ticks])
+    ax.tick_params(axis="x", labelsize=8, rotation=45)
+    ax.grid(True, which="major", linestyle="-", linewidth=0.6, alpha=0.55)
+    ax.grid(True, which="minor", linestyle=":", linewidth=0.45, alpha=0.35)
+    title = ax.set_title("")
+
+    def init():
+        line.set_data([], [])
+        title.set_text("")
+        return (line, title)
+
+    def update(frame):
+        line.set_data(k_values, spectrum[frame])
+        title.set_text(f"{name} FFT, t={times[frame]:.3f}")
+        return (line, title)
+
+    ani = FuncAnimation(
+        fig,
+        update,
+        frames=len(times),
+        init_func=init,
+        blit=True,
+        interval=1000 / fps,
+    )
+    ani.save(resolve_output_path(f"figures/{name}_fft.gif"), writer=PillowWriter(fps=fps))
+    plt.close(fig)
+
+def save_fft_outputs(density_values, times):
+    """Save FFT spectra, heatmaps, and GIFs for configured observables."""
+    for name in fft_observables:
+        if name not in density_values:
+            print(f"FFT skipped: unknown observable {name}")
+            continue
+        k_values, spectrum = compute_fft_spectrum(
+            density_values[name],
+            remove_spatial_mean=fft_remove_spatial_mean,
+        )
+        save_fft_csv(name, k_values, spectrum, times)
+        plot_fft_map(name, k_values, spectrum, times)
+        save_fft_animation(name, k_values, spectrum, times)
+
+def save_beta_profile():
+    """Save the configured beta profile for notebook-side inspection."""
+    sites = np.arange(L)
+    values = np.array([float(beta(j, L, beta_sign, epsilon)) for j in sites])
+    data = np.column_stack([sites, sites * epsilon, values])
+    np.savetxt(
+        resolve_output_path("beta_profile.csv"),
+        data,
+        delimiter=",",
+        header="j,x,beta",
+        comments="",
+    )
 
 def check_particle_hole_pairs(eigenvectors, L):
     """Print modes that fail the expected particle-hole pairing check."""
@@ -817,6 +996,19 @@ def save_summary(summary):
     with resolve_output_path("summary.json").open("w") as f:
         json.dump(json_ready(summary), f, indent=2)
 
+def save_time_site_csv(name, values, times):
+    """Save a time-site profile with time in the first column."""
+    values = np.real(np.asarray(values, dtype=complex)).astype(float)
+    data = np.column_stack([times, values])
+    header = ",".join(["time"] + [f"j{j}" for j in range(values.shape[1])])
+    np.savetxt(resolve_output_path(f"{name}_val.csv"), data, delimiter=",", header=header, comments="")
+
+def save_profile_csv(name, values):
+    """Save a single site profile."""
+    values = np.real(np.asarray(values, dtype=complex)).astype(float)
+    data = np.column_stack([np.arange(len(values)), values])
+    np.savetxt(resolve_output_path(f"{name}.csv"), data, delimiter=",", header="j,value", comments="")
+
 def generate_mode_transform(eigenvectors, L):
     """Convert BdG eigenvectors to the f/g mode-function basis."""
     U = np.zeros((2*L, 2*L), dtype=complex)
@@ -852,32 +1044,50 @@ def save_mode_functions(eigenvectors, eigenvalues, count):
 
 def beta_continuous(x):
     """Evaluate the configured beta profile at a physical coordinate x."""
-    return beta(x / epsilon, L, pos, epsilon)
+    x_eval = np.mod(x, l) if PBC else x
+    return beta(x_eval / epsilon, L, beta_sign, epsilon)
 
-def dtdx_left_geodesic(x, _t):
-    """ODE right-hand side dt/dx for the retained left-moving null geodesic."""
-    return -1.0 / (1.0 - beta_continuous(x))
+def dxdt_packet_geodesic(t, x):
+    """Null geodesic velocity for the packet branch selected by the simulation."""
+    return [beta_continuous(x[0]) + initial_direction_sign]
+
+def hit_left_boundary(_t, x):
+    """Stop an open-boundary geodesic at x=0."""
+    return x[0]
+
+def hit_right_boundary(_t, x):
+    """Stop an open-boundary geodesic at x=l."""
+    return l - x[0]
+
+hit_left_boundary.terminal = True
+hit_left_boundary.direction = -1
+hit_right_boundary.terminal = True
+hit_right_boundary.direction = -1
 
 def save_geodesic_dat():
     """Generate geodesic.dat for heatmap overlays."""
     ensure_output_dirs()
-    x_start = geodesic_x_start_fraction * l
-    x_end = l - geodesic_x_end_offset
+    x_start = j0 * epsilon
+    events = None if PBC else (hit_left_boundary, hit_right_boundary)
     sol = solve_ivp(
-        fun=dtdx_left_geodesic,
-        t_span=(x_start, x_end),
-        y0=[geodesic_t_start],
+        fun=dxdt_packet_geodesic,
+        t_span=(t_i, t_f),
+        y0=[x_start],
         dense_output=True,
+        events=events,
     )
-    xs = np.linspace(x_start, x_end, geodesic_points)
-    ts = sol.sol(xs)[0]
+    t_stop = sol.t[-1]
+    ts = np.linspace(t_i, t_stop, geodesic_points)
+    xs = sol.sol(ts)[0]
+    if PBC:
+        xs = np.mod(xs, l)
     np.savetxt(resolve_output_path("geodesic.dat"), np.column_stack([xs, ts]), fmt="%.10f, %.10f")
     plt.figure()
-    plt.plot(xs, ts)
+    plt.plot(xs, ts, color="cyan", linestyle="--", linewidth=1.1)
     plt.xlabel("x")
     plt.ylabel("t(x)")
     plt.xlim(0, l)
-    plt.title("left-moving null geodesic")
+    plt.title("packet-center null geodesic")
     plt.grid(True)
     plt.tight_layout()
     plt.savefig(resolve_output_path("figures/geodesic.png"), dpi=300, bbox_inches="tight")
@@ -931,6 +1141,7 @@ def resolve_geodesic_time_scale(value):
 def save_outputs(time_values, sigmas, x_ave_list, times):
     """Write numerical outputs, heatmaps, and animations produced by the run."""
     ensure_output_dirs()
+    horizon_positions = save_horizon_positions()
     # run_time_evolution() の辞書から、保存・描画に使う observable を取り出す。
     H_p_val = time_values["H_p"]
     H_m_val = time_values["H_m"]
@@ -939,12 +1150,15 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
     H_p_sigmas = sigmas["H_p"]
     H_m_sigmas = sigmas["H_m"]
 
+    plt.figure()
     plt.plot(times, x_ave_list, label="x average")
     plt.xlabel("time")
     plt.ylabel("x average")
     plt.legend()
     plt.grid()
-    plt.show()
+    plt.tight_layout()
+    plt.savefig(resolve_output_path("figures/x_ave.png"), dpi=300, bbox_inches="tight")
+    plt.close()
     # 後で解析しやすいよう、時間と対応する量を2列のテキストとして保存する。
     np.savetxt(resolve_output_path("x_ave.txt"), np.column_stack([times, x_ave_list]), fmt="%.10e")
     np.savetxt(resolve_output_path("H_m_sigmas.txt"), np.column_stack([times, H_m_sigmas]), fmt="%.10e")
@@ -957,6 +1171,15 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
         "H_pm": H_pm_val,
         "c_dag_c": c_dag_c_val,
     }
+    for name, values in density_values.items():
+        save_time_site_csv(name, values, times)
+    save_profile_csv("H_p_0", H_p_val[0])
+    save_profile_csv("H_m_0", H_m_val[0])
+    save_profile_csv("H_pm_0", H_pm_val[0])
+    save_profile_csv("c_dag_c_0", c_dag_c_val[0])
+
+    if outputs.get("fft", True):
+        save_fft_outputs(density_values, times)
 
     if outputs.get("heatmaps", True):
         for name, plot_config in DENSITY_PLOT_CONFIGS.items():
@@ -965,11 +1188,13 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
                 density_values[name],
                 times,
                 plot_config["output_path"],
-                pos=pos,
+                beta_sign=beta_sign,
+                horizon_positions=horizon_positions,
                 geodesic_time_scale=resolve_geodesic_time_scale(plot_config["geodesic_time_scale"]),
-                geodesic_color=plot_config.get("geodesic_color", "white"),
-                geodesic_linestyle=plot_config.get("geodesic_linestyle", "-"),
-                geodesic_linewidth=plot_config.get("geodesic_linewidth", 2),
+                colorbar_label=plot_config.get("colorbar_label"),
+                geodesic_color=plot_config.get("geodesic_color", "cyan"),
+                geodesic_linestyle=plot_config.get("geodesic_linestyle", "--"),
+                geodesic_linewidth=plot_config.get("geodesic_linewidth", 1.1),
             )
 
     plt.close('all')
@@ -990,19 +1215,25 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
         print("停滞時間: x 平均が指定位置を超えなかったため未計算")
     print("H_p sigma が最小になる t:", t_p_min)
     print("そのときの H_p sigma:", H_p_sigmas[idx_p])
+    plt.figure()
     plt.plot(H_p_val[idx_p])
     plt.title("H_p at t = {:.3f}".format(t_p_min))
     plt.grid()
-    plt.show()
+    plt.tight_layout()
+    plt.savefig(resolve_output_path("figures/H_p_sigma_min.png"), dpi=300, bbox_inches="tight")
+    plt.close()
 
     idx_m = np.argmin(H_m_sigmas)
     t_m_min = times[idx_m]
     print("H_m sigma が最小になる t:", t_m_min)
     print("そのときの H_m sigma:", H_m_sigmas[idx_m])
+    plt.figure()
     plt.plot(H_m_val[idx_m])
     plt.title("H_m at t = {:.3f}".format(t_m_min))
     plt.grid()
-    plt.show()
+    plt.tight_layout()
+    plt.savefig(resolve_output_path("figures/H_m_sigma_min.png"), dpi=300, bbox_inches="tight")
+    plt.close()
 
     if outputs.get("gifs", True):
         for name, animation_config in ANIMATION_CONFIGS.items():
@@ -1022,7 +1253,9 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
         "run_name": CONFIG["run_name"],
         "output_dir": str(output_dir),
         "L": L,
-        "horizon_case": CONFIG["horizon_case"],
+        "scenario": CONFIG["scenario"],
+        "chirality": chirality,
+        "beta_sign": beta_sign,
         "beta_profile": beta_profile,
         "p": p,
         "m": m,
@@ -1034,6 +1267,8 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
         "H_m_sigma_min": H_m_sigmas[idx_m],
         "t_line_0": t_line_0,
         "stagnation_time": stagnation_time,
+        "horizon_positions_j": horizon_positions,
+        "horizon_positions_x": [position*epsilon for position in horizon_positions],
     })
 
 def run_simulation():
@@ -1044,12 +1279,12 @@ def run_simulation():
     if outputs.get("geodesic", True):
         save_geodesic_dat()
 
-    # 1. 背景 beta profile を確認する。
+    # 1. 背景 beta profile を保存する。表示は view_outputs.ipynb 側で行う。
     if outputs.get("show_beta_profile", True):
-        plot_beta_profile()
+        save_beta_profile()
 
     # 2. BdG 行列を作り、固有モードを粒子-正孔対称な形へ整える。
-    H_BdG = build_bdg_matrix(L, p, m, pos, epsilon, PBC)
+    H_BdG = build_bdg_matrix(L, p, m, beta_sign, epsilon, PBC)
     eigenvalues, eigenvectors = diagonalize_bdg_matrix(H_BdG, L)
     check_particle_hole_pairs(eigenvectors, L)
     eigenvectors = enforce_particle_hole_symmetry(eigenvectors, L)
@@ -1066,8 +1301,8 @@ def run_simulation():
 
     # 4. 初期波束、局所エネルギー密度、真空 subtraction 用の値を準備する。
     psi, _ = build_initial_state(L, eigenvectors, j0, sigma, PBC, initial_direction_sign)
-    energy_densities = build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsilon, p, m, pos, PBC)
-    vacuum_values = compute_vacuum_values(eigenvectors, L, epsilon, p, m, pos, PBC)
+    energy_densities = build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsilon, p, m, beta_sign, PBC)
+    vacuum_values = compute_vacuum_values(eigenvectors, L, epsilon, p, m, beta_sign, PBC)
     _, std_pos_p, std_pos_m = compute_initial_observables(psi, energy_densities, vacuum_values, operator_lists)
 
     # 5. 時間発展を回して、最後にテキスト・画像・GIF を保存する。

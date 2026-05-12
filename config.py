@@ -14,15 +14,57 @@ BETA_PROFILE_ALIASES = {
     "flat": "flat",
 }
 
-# horizon_case は物理的な呼び方、pos は既存コードで使ってきた幾何配置の短縮名。
-# lr: left-to-right 側の chi_+ / white-hole case, ur: upper/right 側の chi_- / black-hole case。
-HORIZON_CASE_ALIASES = {
-    "chi_plus_wh": "lr",
-    "p_wh": "lr",
-    "lr": "lr",
-    "chi_minus_bh": "ur",
-    "m_bh": "ur",
-    "ur": "ur",
+# chirality と beta_sign だけをユーザーに見せ、古い lr/ur 名は内部からも外す。
+CHIRALITY_ALIASES = {
+    "chi+": "chi_plus",
+    "chi_plus": "chi_plus",
+    "plus": "chi_plus",
+    "+": "chi_plus",
+    "chi-": "chi_minus",
+    "chi_minus": "chi_minus",
+    "minus": "chi_minus",
+    "-": "chi_minus",
+}
+
+BETA_SIGN_ALIASES = {
+    "+": "plus",
+    "plus": "plus",
+    "positive": "plus",
+    "beta_plus": "plus",
+    "-": "minus",
+    "minus": "minus",
+    "negative": "minus",
+    "beta_minus": "minus",
+}
+
+SCENARIO_ALIASES = {
+    "BH_chi_plus": "BH_chi_plus",
+    "bh_chi_plus": "BH_chi_plus",
+    "bh_chi+": "BH_chi_plus",
+    "BH_chi+": "BH_chi_plus",
+    "WH_chi_plus": "WH_chi_plus",
+    "wh_chi_plus": "WH_chi_plus",
+    "wh_chi+": "WH_chi_plus",
+    "WH_chi+": "WH_chi_plus",
+    "BH_chi_minus": "BH_chi_minus",
+    "bh_chi_minus": "BH_chi_minus",
+    "bh_chi-": "BH_chi_minus",
+    "BH_chi-": "BH_chi_minus",
+}
+
+SCENARIO_CONFIGS = {
+    "BH_chi_plus": {
+        "chirality": "chi_plus",
+        "beta_sign": "minus",
+    },
+    "WH_chi_plus": {
+        "chirality": "chi_plus",
+        "beta_sign": "plus",
+    },
+    "BH_chi_minus": {
+        "chirality": "chi_minus",
+        "beta_sign": "plus",
+    },
 }
 
 DEFAULT_CONFIG = {
@@ -31,7 +73,9 @@ DEFAULT_CONFIG = {
     "l": 2*np.pi,
     "p": 1,
     "m": 0.0001,
-    "horizon_case": "chi_plus_wh",
+    "scenario": "WH_chi_plus",
+    "chirality": "chi_plus",
+    "beta_sign": "plus",
     "t_i": 0,
     "t_f": 5,
     "dt_scale": 0.01,
@@ -39,6 +83,7 @@ DEFAULT_CONFIG = {
 
     # --- beta profile parameters ---
     "beta_profile": "pos",
+    "surface_gravity_beta": False,
     "beta_width": 1,
     "beta_amplitude": 0.6,
     "beta_center_fraction": 2/3,
@@ -47,21 +92,17 @@ DEFAULT_CONFIG = {
     "centered_beta_center_fraction": 1/2,
 
     # --- initial wave-packet parameters ---
-    "j0_by_case": {
-        "chi_plus_wh": 25,
-        "chi_minus_bh": 25,
-    },
+    "j0_fraction": 0.25,
     "sigma_fraction": 0.05,
     "initial_direction": "right",
 
     # --- optional diagnostics kept from the older scripts ---
     "mode_function_count": 10,
-    "geodesic_x_start_fraction": 0.75,
-    "geodesic_x_end_offset": 0.4,
-    "geodesic_t_start": 0.0,
     "geodesic_points": 500,
     "surface_gravity_output_path": "figures/surface_gravity_fit.png",
     "stagnation_position": 5.4789375878605995,
+    "fft_observables": ["H_p"],
+    "fft_remove_spatial_mean": True,
     "output_base_dir": "outputs",
     "run_name": None,
 
@@ -74,28 +115,39 @@ DEFAULT_CONFIG = {
         "mode_functions": True,
         "geodesic": True,
         "surface_gravity_fit": True,
+        "fft": True,
     },
 }
 
 DENSITY_PLOT_CONFIGS = {
     "H_p": {
         "output_path": "figures/H_p.png",
+        "colorbar_label": r"$H_j^+$",
         "geodesic_time_scale": "t_f",
-        "geodesic_color": "red",
+        "geodesic_color": "cyan",
         "geodesic_linestyle": "--",
         "geodesic_linewidth": 1,
     },
     "H_m": {
         "output_path": "figures/H_m.png",
+        "colorbar_label": r"$H_j^-$",
         "geodesic_time_scale": 1.21,
+        "geodesic_color": "cyan",
+        "geodesic_linestyle": "--",
     },
     "c_dag_c": {
         "output_path": "figures/c_dag_c.png",
+        "colorbar_label": r"$c_j^\dagger c_j$",
         "geodesic_time_scale": 20.0,
+        "geodesic_color": "cyan",
+        "geodesic_linestyle": "--",
     },
     "H_pm": {
         "output_path": "figures/H_pm.png",
+        "colorbar_label": r"$H_j^{+-}$",
         "geodesic_time_scale": 20.0,
+        "geodesic_color": "cyan",
+        "geodesic_linestyle": "--",
     },
 }
 
@@ -141,15 +193,25 @@ def prepare_config(config):
     """Validate config values and derive constants used by the numerical pipeline."""
     prepared = dict(config)
 
-    if prepared["horizon_case"] not in HORIZON_CASE_ALIASES:
-        raise ValueError("horizon_case must be 'chi_plus_wh' or 'chi_minus_bh'")
-    prepared["pos"] = HORIZON_CASE_ALIASES[prepared["horizon_case"]]
-    if prepared["horizon_case"] in prepared["j0_by_case"]:
-        j0_case = prepared["horizon_case"]
-    elif prepared["pos"] == "lr":
-        j0_case = "chi_plus_wh"
-    else:
-        j0_case = "chi_minus_bh"
+    if prepared.get("surface_gravity_beta", False):
+        prepared["scenario"] = "BH_chi_minus"
+        prepared["j0_fraction"] = 0.45
+        prepared["sigma_fraction"] = 0.003
+
+    if prepared["scenario"] is not None:
+        if prepared["scenario"] not in SCENARIO_ALIASES:
+            raise ValueError("scenario must be 'BH_chi_plus', 'WH_chi_plus', 'BH_chi_minus', or null")
+        prepared["scenario"] = SCENARIO_ALIASES[prepared["scenario"]]
+        prepared.update(SCENARIO_CONFIGS[prepared["scenario"]])
+
+    if prepared["chirality"] not in CHIRALITY_ALIASES:
+        raise ValueError("chirality must be 'chi_plus' or 'chi_minus'")
+    prepared["chirality"] = CHIRALITY_ALIASES[prepared["chirality"]]
+
+    if prepared["beta_sign"] not in BETA_SIGN_ALIASES:
+        raise ValueError("beta_sign must be 'plus' or 'minus'")
+    prepared["beta_sign"] = BETA_SIGN_ALIASES[prepared["beta_sign"]]
+    prepared["beta_sign_value"] = 1 if prepared["beta_sign"] == "plus" else -1
 
     if prepared["beta_profile"] not in BETA_PROFILE_ALIASES:
         raise ValueError("beta_profile must be 'pos', 'center', or 'flat'")
@@ -161,16 +223,25 @@ def prepare_config(config):
     }
     if prepared["initial_direction"] not in direction_sign_by_name:
         raise ValueError("initial_direction must be 'right' or 'left'")
-    prepared["initial_direction_sign"] = direction_sign_by_name[prepared["initial_direction"]]
+    # chirality が解決済みであれば chi_plus → 右向き / chi_minus → 左向きを優先する。
+    # manual モード (scenario=None) では initial_direction をそのまま使う。
+    if prepared["scenario"] is not None:
+        prepared["initial_direction_sign"] = 1 if prepared["chirality"] == "chi_plus" else -1
+    else:
+        prepared["initial_direction_sign"] = direction_sign_by_name[prepared["initial_direction"]]
 
     L = prepared["L"]
     prepared["epsilon"] = prepared["l"] / L
     prepared["dt"] = prepared["dt_scale"]*(300/L)
     prepared["times"] = np.arange(prepared["t_i"] + prepared["dt"], prepared["t_f"], prepared["dt"])
     prepared["sigma"] = prepared["sigma_fraction"]*L
-    prepared["j0"] = prepared["j0_by_case"][j0_case]
+    prepared["j0"] = int(prepared["j0_fraction"]*L)
     if not prepared["run_name"]:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        prepared["run_name"] = f"{timestamp}_{prepared['horizon_case']}_L{L}"
+        if prepared["scenario"] is None:
+            run_label = f"manual_{prepared['chirality']}_beta_{prepared['beta_sign']}"
+        else:
+            run_label = prepared["scenario"]
+        prepared["run_name"] = f"{timestamp}_{run_label}_L{L}"
     prepared["output_dir"] = str(Path(prepared["output_base_dir"]) / prepared["run_name"])
     return prepared

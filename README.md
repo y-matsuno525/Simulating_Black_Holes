@@ -47,14 +47,31 @@ python3 main.py
 | `L` | 格子点数。BdG 行列サイズは `2L x 2L` です。 |
 | `l` | 物理空間の長さ。標準では `2π`。 |
 | `p`, `m` | BdG ハミルトニアンに入る係数です。現在は位置依存 `p(j)` は使いません。 |
-| `horizon_case` | `"chi_plus_wh"` / `"lr"` または `"chi_minus_bh"` / `"ur"` を指定します。`ll` / `ul` は現在使いません。 |
+| `scenario` | `"BH_chi_plus"`, `"WH_chi_plus"`, `"BH_chi_minus"` から選びます。 |
 | `t_i`, `t_f`, `dt_scale` | 時間範囲と時間刻みを決めます。実際の `dt` は `dt_scale * (300/L)` です。 |
 | `PBC` | 周期境界条件を使う場合は `True`。 |
 | `beta_profile` | `"pos"`, `"center"`, `"flat"` から選びます。 |
+| `surface_gravity_beta` | `true` にすると他の beta 設定より優先して `tanh(0.1*(j-L/2)epsilon)+1` を使い、`scenario` は `"BH_chi_minus"`、`j0_fraction` は `0.45`、`sigma_fraction` は `0.003` になります。 |
 | `beta_width`, `beta_amplitude`, `beta_center_fraction` | horizon 位置付き beta profile の形を決めます。 |
-| `j0_by_case`, `sigma_fraction`, `initial_direction` | 初期 Gaussian packet の中心、幅、進行方向を決めます。 |
+| `sigma_fraction` | 初期 Gaussian packet の幅を決めます。初期位置と進行方向は既定値を使うため、通常は指定不要です。 |
 | `output_base_dir` | run ごとの出力を置く親ディレクトリです。既定は `outputs`。 |
-| `run_name` | 出力ディレクトリ名です。`null` の場合は時刻・case・L から自動生成されます。 |
+| `run_name` | 出力ディレクトリ名です。`null` の場合は時刻・シナリオ名・L から自動生成されます。`scenario: null` の手動指定では `manual_<chirality>_beta_<beta_sign>` が入ります。 |
+
+よく使う状況は、`scenario` だけで用意します。内部では `chirality` と `beta_sign` に展開されます。
+
+| 状況 | `scenario` | 内部の `chirality` | 内部の `beta_sign` |
+| --- | --- | --- | --- |
+| BH に chi+ を置く | `"BH_chi_plus"` | `"chi_plus"` | `"minus"` |
+| WH に chi+ を置く | `"WH_chi_plus"` | `"chi_plus"` | `"plus"` |
+| BH に chi- を置く | `"BH_chi_minus"` | `"chi_minus"` | `"plus"` |
+
+シナリオを使わずに手動指定したい場合は、`scenario` を `null` にして `chirality` と `beta_sign` を直接指定します。
+
+```json
+"scenario": null,
+"chirality": "chi_plus",
+"beta_sign": "minus"
+```
 
 ## 残した解析機能
 
@@ -72,20 +89,23 @@ python3 main.py
 | キー | 説明 |
 | --- | --- |
 | `mode_function_count` | 保存する mode function の本数。不要なら `0`。 |
-| `geodesic_x_start_fraction`, `geodesic_x_end_offset`, `geodesic_t_start`, `geodesic_points` | 測地線生成の初期条件と点数。 |
+| `geodesic_points` | 初期波束中心から伸ばす測地線の保存点数。 |
 | `surface_gravity_output_path` | surface gravity fit 図の保存先。 |
 | `stagnation_position` | 位置平均がこの物理座標を超えた時刻から、`H_p` sigma 最小時刻までを停滞時間として計算します。 |
+| `fft_observables` | FFT を保存・描画する observable 名のリストです。例: `["H_p"]`。 |
+| `fft_remove_spatial_mean` | FFT 前に各時刻 profile の空間平均を引く場合は `true`。 |
 
 重い出力は `outputs` で個別に止められます。
 
 | キー | 説明 |
 | --- | --- |
-| `outputs.show_beta_profile` | beta profile の確認表示を行います。 |
+| `outputs.show_beta_profile` | notebook 表示用の `beta_profile.csv` を保存します。 |
 | `outputs.heatmaps` | `H_p`, `H_m`, `H_pm`, `c_dag_c` の heatmap を保存します。 |
 | `outputs.gifs` | 時間発展 GIF を保存します。 |
 | `outputs.mode_functions` | BdG mode function を保存します。 |
 | `outputs.geodesic` | `geodesic.dat` と確認図を生成します。 |
 | `outputs.surface_gravity_fit` | `H_m_sigmas` の指数フィットを行います。 |
+| `outputs.fft` | 各時刻の FFT スペクトル CSV、heatmap、GIF を生成します。 |
 
 ## 通常の出力
 
@@ -98,12 +118,16 @@ python3 main.py
 | `x_ave.txt` | 時刻と `H_m` profile から計算した平均位置。 |
 | `H_m_sigmas.txt` | 時刻と `H_m` の幅変化。 |
 | `geodesic.dat` | heatmap に重ねる測地線データ。 |
+| `H_p_val.csv`, `H_m_val.csv`, `H_pm_val.csv`, `c_dag_c_val.csv` | heatmap/GIF に使う時系列 profile。先頭列が `time`、以降が格子点です。 |
+| `H_p_0.csv`, `H_m_0.csv`, `H_pm_0.csv`, `c_dag_c_0.csv` | 各 profile の初期時刻データ。 |
 | `figures/H_p.png`, `figures/H_m.png`, `figures/H_pm.png` | 各エネルギー密度の時間発展 heatmap。 |
 | `figures/c_dag_c.png` | `c_j^\dagger c_j` の時間発展 heatmap。 |
 | `figures/H_p.gif`, `figures/H_m.gif`, `figures/H_pm.gif` | 時刻ごとの profile を見る GIF。 |
 | `figures/mode_function_p=<p>_k=<n>.png` | BdG mode function。 |
 | `figures/geodesic.png` | 生成した測地線の確認図。 |
 | `figures/surface_gravity_fit.png` | `H_m` 幅の指数フィット図。 |
+| `<name>_fft_k.csv`, `<name>_fft_val.csv` | `fft_observables` に指定した observable の FFT 波数と時系列スペクトル。 |
+| `figures/<name>_fft.png`, `figures/<name>_fft.gif` | FFT スペクトルの時間発展 heatmap と GIF。 |
 
 ## データ管理方針
 
