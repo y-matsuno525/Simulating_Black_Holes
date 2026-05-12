@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+
+# Run outputs and generated research data
+outputs/
+figure/
+data/
+
+*.gif
+*.png
+
+H_*_val.csv
+H_*_0.csv
+c_dag_c_val.csv
+cdc_0.csv
+cj1_cj_0.csv
+cj1_dag_cj_0.csv
+x_ave.txt
+H_m_sigmas.txt
+geodesic.dat
