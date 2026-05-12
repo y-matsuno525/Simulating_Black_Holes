@@ -51,7 +51,8 @@ python3 main.py
 | `t_i`, `t_f`, `dt_scale` | 時間範囲と時間刻みを決めます。実際の `dt` は `dt_scale * (300/L)` です。 |
 | `PBC` | 周期境界条件を使う場合は `True`。 |
 | `beta_profile` | `"pos"`, `"center"`, `"flat"` から選びます。 |
-| `surface_gravity_beta` | `true` にすると他の beta 設定より優先して `tanh(0.1*(j-L/2)epsilon)+1` を使い、`scenario` は `"BH_chi_minus"`、`j0_fraction` は `0.45`、`sigma_fraction` は `0.003` になります。 |
+| `surface_gravity_beta` | `true` にすると他の beta 設定より優先して `tanh(surface_gravity_beta_width*(j-L/2)epsilon)+1` を使い、`scenario` は `"BH_chi_minus"`、`j0_fraction` は `0.48`、`sigma_fraction` は `0.003` になります。 |
+| `surface_gravity_beta_width` | `surface_gravity_beta` 用の tanh 幅です。既定は `0.1`。 |
 | `beta_width`, `beta_amplitude`, `beta_center_fraction` | horizon 位置付き beta profile の形を決めます。 |
 | `sigma_fraction` | 初期 Gaussian packet の幅を決めます。初期位置と進行方向は既定値を使うため、通常は指定不要です。 |
 | `output_base_dir` | run ごとの出力を置く親ディレクトリです。既定は `outputs`。 |
@@ -94,6 +95,9 @@ python3 main.py
 | `stagnation_position` | 位置平均がこの物理座標を超えた時刻から、`H_p` sigma 最小時刻までを停滞時間として計算します。 |
 | `fft_observables` | FFT を保存・描画する observable 名のリストです。例: `["H_p"]`。 |
 | `fft_remove_spatial_mean` | FFT 前に各時刻 profile の空間平均を引く場合は `true`。 |
+| `animation_marker_fractions_pbc` | PBC の GIF に将来 horizon 補助線を戻すときの格子位置マーカーです。値は `j/L` の割合です。 |
+| `animation_marker_fractions_open` | 開境界の GIF 用の格子位置マーカーです。値は `j/L` の割合です。 |
+| `mode_function_marker_fractions` | BdG mode function 図に引く物理位置マーカーです。値は `x/l` の割合です。 |
 
 重い出力は `outputs` で個別に止められます。
 

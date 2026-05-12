@@ -84,6 +84,7 @@ DEFAULT_CONFIG = {
     # --- beta profile parameters ---
     "beta_profile": "pos",
     "surface_gravity_beta": False,
+    "surface_gravity_beta_width": 0.1,
     "beta_width": 1,
     "beta_amplitude": 0.6,
     "beta_center_fraction": 2/3,
@@ -100,9 +101,17 @@ DEFAULT_CONFIG = {
     "mode_function_count": 10,
     "geodesic_points": 500,
     "surface_gravity_output_path": "figures/surface_gravity_fit.png",
+    # Physical x position used as the threshold for the stagnation-time diagnostic.
     "stagnation_position": 5.4789375878605995,
     "fft_observables": ["H_p"],
     "fft_remove_spatial_mean": True,
+    # Lattice-site fractions drawn as reference markers in density animations.
+    # The last two PBC markers are legacy horizon checks for the L=300 setup.
+    "animation_marker_fractions_pbc": [1/4, 3/4, 146/300, 154/300],
+    # Open-boundary animations only need the main horizon-side reference marker.
+    "animation_marker_fractions_open": [1/4],
+    # Physical x/l fractions drawn in BdG mode-function plots as horizon markers.
+    "mode_function_marker_fractions": [0.235, 0.767],
     "output_base_dir": "outputs",
     "run_name": None,
 
@@ -167,6 +176,133 @@ ANIMATION_CONFIGS = {
 }
 
 
+def beta_from_config(j, config):
+    """Evaluate beta(j) from a prepared or run-local config dictionary."""
+    L_cfg = config["L"]
+    epsilon_cfg = config.get("epsilon", config.get("l", 2*np.pi) / L_cfg)
+
+    if config.get("surface_gravity_beta", False):
+        width = config.get("surface_gravity_beta_width", DEFAULT_CONFIG["surface_gravity_beta_width"])
+        A = 1
+        center = int(L_cfg / 2)
+        return A * np.tanh(width * (j - center) * epsilon_cfg) + A
+
+    sign_value = config.get("beta_sign_value")
+    if sign_value is None:
+        sign_value = 1 if config.get("beta_sign", "plus") == "plus" else -1
+
+    profile = BETA_PROFILE_ALIASES.get(config.get("beta_profile", "pos"), config.get("beta_profile", "pos"))
+    if profile == "flat":
+        return np.zeros_like(j, dtype=float)
+    if profile == "pos_horizon":
+        amp = config["beta_amplitude"]
+        width = config["beta_width"]
+        center = config["beta_center_fraction"] * L_cfg
+        return sign_value * amp * (np.tanh(3 / width * (j - center) * epsilon_cfg) + 1)
+    if profile == "centered_horizon":
+        amp = config["centered_beta_amplitude"]
+        width = config["centered_beta_width"]
+        center = config["centered_beta_center_fraction"] * L_cfg
+        return sign_value * (amp * np.tanh(width * (j - center) * epsilon_cfg) + amp)
+    raise ValueError("beta_profile must be 'pos', 'center', or 'flat'")
+
+
+def beta_expression_from_config(config):
+    """Return a human-readable beta profile expression for display."""
+    if config.get("surface_gravity_beta", False):
+        width = config.get("surface_gravity_beta_width", DEFAULT_CONFIG["surface_gravity_beta_width"])
+        return rf"$\beta(j)=\tanh({width:g}(j-L/2)\epsilon)+1$"
+
+    sign_value = config.get("beta_sign_value")
+    if sign_value is None:
+        sign_value = 1 if config.get("beta_sign", "plus") == "plus" else -1
+    sign_prefix = "" if sign_value == 1 else "-"
+
+    profile = BETA_PROFILE_ALIASES.get(config.get("beta_profile", "pos"), config.get("beta_profile", "pos"))
+    if profile == "flat":
+        return r"$\beta(j)=0$"
+    if profile == "pos_horizon":
+        amp = config["beta_amplitude"]
+        width = config["beta_width"]
+        center_fraction = config["beta_center_fraction"]
+        return rf"$\beta(j)={sign_prefix}{amp:g}\left[\tanh\left(\frac{{3}}{{{width:g}}}(j-{center_fraction:g}L)\epsilon\right)+1\right]$"
+    if profile == "centered_horizon":
+        amp = config["centered_beta_amplitude"]
+        width = config["centered_beta_width"]
+        center_fraction = config["centered_beta_center_fraction"]
+        return rf"$\beta(j)={sign_prefix}\left[{amp:g}\tanh\left({width:g}(j-{center_fraction:g}L)\epsilon\right)+{amp:g}\right]$"
+    return r"$\beta(j)$: unknown profile"
+
+
+def compute_horizon_positions_from_config(config, num_samples=10000):
+    """Return lattice-index positions where abs(beta)=1 for a config."""
+    L_cfg = config.get("L")
+    if L_cfg is None:
+        return []
+    xs = np.linspace(0, L_cfg - 1, num_samples)
+    vals = np.abs(beta_from_config(xs, config)) - 1
+    positions = []
+    for idx in range(len(xs) - 1):
+        v0, v1 = vals[idx], vals[idx + 1]
+        if v0 == 0:
+            positions.append(xs[idx])
+        elif v0 * v1 < 0:
+            x0, x1 = xs[idx], xs[idx + 1]
+            positions.append(x0 - v0 * (x1 - x0) / (v1 - v0))
+    if vals[-1] == 0:
+        positions.append(xs[-1])
+
+    unique_positions = []
+    for position in positions:
+        if not unique_positions or abs(position - unique_positions[-1]) > 1e-3:
+            unique_positions.append(float(position))
+    return unique_positions
+
+
+def beta_derivative_at_j(config, j_position, physical_step=0.25):
+    """Return d beta / dx at a lattice-index position using centered differences."""
+    L_cfg = config.get("L")
+    if L_cfg is None:
+        return None
+    epsilon_cfg = config.get("epsilon", config.get("l", 2*np.pi) / L_cfg)
+    step_j = physical_step / epsilon_cfg
+    j_left = max(0, j_position - step_j)
+    j_right = min(L_cfg - 1, j_position + step_j)
+    if j_right == j_left:
+        return None
+    beta_left = beta_from_config(j_left, config)
+    beta_right = beta_from_config(j_right, config)
+    return float((beta_right - beta_left) / ((j_right - j_left) * epsilon_cfg))
+
+
+def ideal_surface_gravity_from_config(config, horizon_positions=None):
+    """Return (kappa, horizon_j) with kappa=|d beta/dx| at the relevant horizon."""
+    if horizon_positions is None:
+        horizon_positions = compute_horizon_positions_from_config(config)
+    if not horizon_positions:
+        return None, None
+
+    chirality = config.get("chirality")
+    target_beta = None
+    if chirality == "chi_plus":
+        target_beta = -1
+    elif chirality == "chi_minus":
+        target_beta = 1
+
+    if target_beta is None:
+        selected_horizon = horizon_positions[0]
+    else:
+        selected_horizon = min(
+            horizon_positions,
+            key=lambda j: abs(float(beta_from_config(j, config)) - target_beta),
+        )
+
+    beta_prime = beta_derivative_at_j(config, selected_horizon)
+    if beta_prime is None:
+        return None, selected_horizon
+    return abs(beta_prime), selected_horizon
+
+
 def deep_merge(base, overrides):
     """Return base recursively updated with override values."""
     merged = dict(base)
@@ -192,17 +328,25 @@ def load_config(path="config.json"):
 def prepare_config(config):
     """Validate config values and derive constants used by the numerical pipeline."""
     prepared = dict(config)
+    override_notes = []
+
+    def override(key, value, reason):
+        old_value = prepared.get(key)
+        if old_value != value:
+            override_notes.append((key, old_value, value, reason))
+        prepared[key] = value
 
     if prepared.get("surface_gravity_beta", False):
-        prepared["scenario"] = "BH_chi_minus"
-        prepared["j0_fraction"] = 0.45
-        prepared["sigma_fraction"] = 0.003
+        override("scenario", "BH_chi_minus", "surface_gravity_beta 用の基準設定を使うため")
+        override("j0_fraction", 0.48, "surface_gravity_beta では初期波束を horizon 近くに置くため")
+        override("sigma_fraction", 0.003, "surface_gravity_beta では sigma 成長を見るため細い波束を使うため")
 
     if prepared["scenario"] is not None:
         if prepared["scenario"] not in SCENARIO_ALIASES:
             raise ValueError("scenario must be 'BH_chi_plus', 'WH_chi_plus', 'BH_chi_minus', or null")
         prepared["scenario"] = SCENARIO_ALIASES[prepared["scenario"]]
-        prepared.update(SCENARIO_CONFIGS[prepared["scenario"]])
+        for key, value in SCENARIO_CONFIGS[prepared["scenario"]].items():
+            override(key, value, f"scenario={prepared['scenario']} が {key} を決めるため")
 
     if prepared["chirality"] not in CHIRALITY_ALIASES:
         raise ValueError("chirality must be 'chi_plus' or 'chi_minus'")
@@ -236,6 +380,19 @@ def prepare_config(config):
     prepared["times"] = np.arange(prepared["t_i"] + prepared["dt"], prepared["t_f"], prepared["dt"])
     prepared["sigma"] = prepared["sigma_fraction"]*L
     prepared["j0"] = int(prepared["j0_fraction"]*L)
+    prepared["config_override_notes"] = [
+        {
+            "key": key,
+            "old": old_value,
+            "new": new_value,
+            "reason": reason,
+        }
+        for key, old_value, new_value, reason in override_notes
+    ]
+    if override_notes:
+        print("[設定] config の一部を実行用に上書きしました:")
+        for key, old_value, new_value, reason in override_notes:
+            print(f"[設定]   {key}: {old_value!r} -> {new_value!r} / {reason}")
     if not prepared["run_name"]:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         if prepared["scenario"] is None:

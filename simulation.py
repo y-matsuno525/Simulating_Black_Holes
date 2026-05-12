@@ -1,4 +1,5 @@
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -7,23 +8,112 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
 from scipy.integrate import solve_ivp
 from scipy.optimize import curve_fit
+from config import (
+    beta_from_config,
+    compute_horizon_positions_from_config,
+    ideal_surface_gravity_from_config,
+)
 
 CONFIG = None
+PARAMS = None
 DENSITY_PLOT_CONFIGS = {}
 ANIMATION_CONFIGS = {}
 
 
+def log_info(message):
+    """Print a normal run log line."""
+    print(f"[情報] {message}")
+
+
+def log_progress(message):
+    """Print a progress log line."""
+    print(f"[進捗] {message}")
+
+
+def log_diagnostic(message):
+    """Print a numerical diagnostic log line."""
+    print(f"[診断] {message}")
+
+
+def log_result(message):
+    """Print a final-result log line."""
+    print(f"[結果] {message}")
+
+
+def log_warning(message):
+    """Print a warning log line."""
+    print(f"[警告] {message}")
+
+
+def progress_logger(label, total_steps, interval=10):
+    """Return a function that logs progress at roughly interval-percent steps."""
+    last_bucket = {"value": -1}
+
+    def report(step_index):
+        if total_steps <= 0:
+            return
+        percent = int((step_index + 1) / total_steps * 100)
+        bucket = percent // interval
+        if step_index == 0 or step_index == total_steps - 1 or bucket > last_bucket["value"]:
+            log_progress(f"{label}: {percent:3d}% ({step_index + 1}/{total_steps})")
+            last_bucket["value"] = bucket
+
+    return report
+
+
+@dataclass(frozen=True)
+class SimulationParams:
+    """Numerical parameters shared by the core simulation routines."""
+
+    config: dict
+    L: int
+    l: float
+    epsilon: float
+    p: float
+    m: float
+    beta_sign: str
+    t_i: float
+    t_f: float
+    dt: float
+    PBC: bool
+    mode_function_marker_fractions: tuple
+    animation_marker_fractions_pbc: tuple
+    animation_marker_fractions_open: tuple
+    stagnation_position: float
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(
+            config=config,
+            L=config["L"],
+            l=config["l"],
+            epsilon=config["epsilon"],
+            p=config["p"],
+            m=config["m"],
+            beta_sign=config["beta_sign"],
+            t_i=config["t_i"],
+            t_f=config["t_f"],
+            dt=config["dt"],
+            PBC=config["PBC"],
+            mode_function_marker_fractions=tuple(config["mode_function_marker_fractions"]),
+            animation_marker_fractions_pbc=tuple(config["animation_marker_fractions_pbc"]),
+            animation_marker_fractions_open=tuple(config["animation_marker_fractions_open"]),
+            stagnation_position=config["stagnation_position"],
+        )
+
+
 def configure(config, density_plot_configs, animation_configs):
     """Install prepared configuration for the numerical pipeline."""
-    global CONFIG, DENSITY_PLOT_CONFIGS, ANIMATION_CONFIGS
+    global CONFIG, PARAMS, DENSITY_PLOT_CONFIGS, ANIMATION_CONFIGS
     global L, l, epsilon, p, m, chirality, beta_sign, beta_sign_value, t_i, t_f, dt, PBC, beta_profile
-    global surface_gravity_beta, beta_width, beta_amplitude, beta_center_fraction
+    global surface_gravity_beta, surface_gravity_beta_width, beta_width, beta_amplitude, beta_center_fraction
     global centered_beta_width, centered_beta_amplitude, centered_beta_center_fraction
     global j0, sigma, initial_direction_sign, times, mode_function_count
     global geodesic_points, surface_gravity_output_path, stagnation_position, outputs, output_dir
     global fft_observables, fft_remove_spatial_mean
 
     CONFIG = config
+    PARAMS = SimulationParams.from_config(CONFIG)
     DENSITY_PLOT_CONFIGS = density_plot_configs
     ANIMATION_CONFIGS = animation_configs
     L = CONFIG["L"]
@@ -40,6 +130,7 @@ def configure(config, density_plot_configs, animation_configs):
     PBC = CONFIG["PBC"]
     beta_profile = CONFIG["beta_profile"]
     surface_gravity_beta = CONFIG.get("surface_gravity_beta", False)
+    surface_gravity_beta_width = CONFIG.get("surface_gravity_beta_width", 0.1)
     beta_width = CONFIG["beta_width"]
     beta_amplitude = CONFIG["beta_amplitude"]
     beta_center_fraction = CONFIG["beta_center_fraction"]
@@ -85,40 +176,11 @@ def beta_pos_horizon(j, L, beta_sign, epsilon):
 
 def beta(j,L,beta_sign,epsilon):
     """Dispatch to the configured beta profile."""
-    if surface_gravity_beta:
-        width = 0.1
-        A = 1
-        jh = int(L/2)
-        return A*np.tanh(width*(j - jh)*epsilon) + A
-    beta_functions = {
-        "flat": beta_flat,
-        "centered_horizon": beta_centered_horizon,
-        "pos_horizon": beta_pos_horizon,
-    }
-    return beta_functions[beta_profile](j, L, beta_sign, epsilon)
+    return beta_from_config(j, CONFIG)
 
 def compute_horizon_positions(num_samples=10000):
     """Return lattice-index positions where abs(beta)=1 by linear interpolation."""
-    xs = np.linspace(0, L - 1, num_samples)
-    vals = np.array([abs(beta(x, L, beta_sign, epsilon)) - 1 for x in xs])
-    positions = []
-    for idx in range(len(xs) - 1):
-        v0 = vals[idx]
-        v1 = vals[idx + 1]
-        if v0 == 0:
-            positions.append(xs[idx])
-        elif v0 * v1 < 0:
-            x0 = xs[idx]
-            x1 = xs[idx + 1]
-            positions.append(x0 - v0 * (x1 - x0) / (v1 - v0))
-    if vals[-1] == 0:
-        positions.append(xs[-1])
-
-    unique_positions = []
-    for position in positions:
-        if not unique_positions or abs(position - unique_positions[-1]) > 1e-3:
-            unique_positions.append(float(position))
-    return unique_positions
+    return compute_horizon_positions_from_config(CONFIG, num_samples=num_samples)
 
 def save_horizon_positions():
     """Save horizon positions in lattice and physical coordinates."""
@@ -136,9 +198,18 @@ def save_horizon_positions():
     )
     return positions
 
-def build_bdg_matrix(L, p, m, beta_sign, epsilon, PBC):
+def beta_for_params(j, params):
+    """Evaluate beta(j) from an explicit parameter object."""
+    return beta_from_config(j, params.config)
+
+
+def build_bdg_matrix(params):
     """Build the 2L x 2L BdG Hamiltonian in particle-hole block form."""
     #BdGハミルトニアンの作成(符号関係は確認済み)
+    L = params.L
+    p = params.p
+    m = params.m
+    epsilon = params.epsilon
     H_BdG = np.zeros((2*L, 2*L), dtype=complex)
 
     for i in range(2*L):
@@ -152,10 +223,12 @@ def build_bdg_matrix(L, p, m, beta_sign, epsilon, PBC):
                     H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))*(-1)
                 elif i-j == 1:
                     # 左隣との有限差分。beta はリンク中央の値として両端平均を使う。
-                    H_BdG[i, j] = -1/(2*epsilon) * (p - 1j*(beta(j+1/2,L,beta_sign,epsilon)+beta(i+1/2,L,beta_sign,epsilon))/2)
+                    beta_link = (beta_for_params(j+1/2, params) + beta_for_params(i+1/2, params)) / 2
+                    H_BdG[i, j] = -1/(2*epsilon) * (p - 1j*beta_link)
                 elif j-i == 1:
                    # 右隣との有限差分。Hermiticity が保たれるよう複素共役側の符号になる。
-                   H_BdG[i, j] = -1/(2*epsilon) * (p + 1j*(beta(i+1/2,L,beta_sign,epsilon)+beta(j+1/2,L,beta_sign,epsilon))/2)
+                   beta_link = (beta_for_params(i+1/2, params) + beta_for_params(j+1/2, params)) / 2
+                   H_BdG[i, j] = -1/(2*epsilon) * (p + 1j*beta_link)
             #右上
             elif i < L and j >= L:
                 # 粒子 -> 正孔の pairing ブロック。最近接だけが非ゼロ。
@@ -176,19 +249,22 @@ def build_bdg_matrix(L, p, m, beta_sign, epsilon, PBC):
                 if i == j:
                     H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))
                 elif i-j == 1:
-                    H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*(beta(j+1/2-L,L,beta_sign,epsilon)+beta(i+1/2-L,L,beta_sign,epsilon))/2)
+                    beta_link = (beta_for_params(j+1/2-L, params) + beta_for_params(i+1/2-L, params)) / 2
+                    H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*beta_link)
                 elif j-i == 1:
-                    H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*(beta(i+1/2-L,L,beta_sign,epsilon)+beta(j+1/2-L,L,beta_sign,epsilon))/2)
+                    beta_link = (beta_for_params(i+1/2-L, params) + beta_for_params(j+1/2-L, params)) / 2
+                    H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*beta_link)
 
-    if PBC == True:
+    if params.PBC == True:
         # 周期境界条件では j=L-1 と j=0 の間の BdG 行列要素を追加する。
         # 色名は元ノート/図の対応を残した目印で、各行は境界をまたぐ成分。
         #red
-        H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,beta_sign,epsilon)) * (1)
-        H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta(L-1,L,beta_sign,epsilon)) * (-1)
+        beta_boundary = beta_for_params(L-1, params)
+        H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta_boundary) * (1)
+        H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta_boundary) * (-1)
         #blue
-        H_BdG[L-1,0] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,beta_sign,epsilon)) * (1)
-        H_BdG[L,2*L-1] = -1/(2*epsilon) * (p + 1j*beta(L-1,L,beta_sign,epsilon)) * (-1)
+        H_BdG[L-1,0] = -1/(2*epsilon) * (p + 1j*beta_boundary) * (1)
+        H_BdG[L,2*L-1] = -1/(2*epsilon) * (p + 1j*beta_boundary) * (-1)
         #orange
         H_BdG[0,2*L-1] = -1/(2*epsilon) * (-1)
         H_BdG[L-1,L] = -1/(2*epsilon) * (1)
@@ -224,10 +300,12 @@ def enforce_particle_hole_symmetry(eigenvectors, L):
 
 def build_operator_lists(eigenvectors, L, PBC):
     """Construct local bilinear operators in the quasiparticle basis."""
+    log_progress("局所演算子を作成します")
     # ここで作る operator はすべて L x L 行列で、psi.T.conj() @ O_j @ psi により
     # site j の期待値を評価できる形にしておく。
     #cj_dag_cj(作り方は以前と変わらない)
     cj_dag_cj_list = []
+    report_cj_dag_cj = progress_logger("  c_j^dag c_j", L)
     for j in range(L):
         # c_j^\dagger c_j: local number density.  対角の真空項もここで含める。
         cj_dag_cj_tmp = np.zeros((L, L), dtype=complex)
@@ -241,10 +319,11 @@ def build_operator_lists(eigenvectors, L, PBC):
         isHermitian = is_hermitian(cj_dag_cj_tmp)
         assert isHermitian, "cj_dag_cj(j=" + str(j) + ") is not Hermitian!"
         cj_dag_cj_list.append(cj_dag_cj_tmp)
-        print("cj†cj作成中:" + str(int(j/L*100))+"%")
+        report_cj_dag_cj(j)
 
     #cj1_cj
     cj1_cj_list = []
+    report_cj1_cj = progress_logger("  c_{j+1} c_j", max(L - 1, 1))
     for j in range(L-1):
         # c_{j+1} c_j: energy density の最近接 pairing 成分に使う。
         cj1_cj_tmp = np.zeros((L, L), dtype=complex)
@@ -256,7 +335,7 @@ def build_operator_lists(eigenvectors, L, PBC):
                     for n in range(L):
                         cj1_cj_tmp[k,l] += eigenvectors[j+1,n] * eigenvectors[j,n+L]
         cj1_cj_list.append(cj1_cj_tmp)
-        print("cj1_cj作成中:" + str(int(j/L*100))+"%")
+        report_cj1_cj(j)
     #PBCの場合、右端は非ゼロ
     if PBC == True:
         # 周期境界条件では最後の bond (L-1 -> 0) も最近接として追加する。
@@ -275,6 +354,7 @@ def build_operator_lists(eigenvectors, L, PBC):
 
     #cj1_dag_cj
     cj1_dag_cj_list = []
+    report_cj1_dag_cj = progress_logger("  c_{j+1}^dag c_j", max(L - 1, 1))
     for j in range(L-1):
         # c_{j+1}^\dagger c_j: energy density の hopping 成分に使う。
         cj1_dag_cj_tmp = np.zeros((L, L), dtype=complex)
@@ -286,7 +366,7 @@ def build_operator_lists(eigenvectors, L, PBC):
                     for n in range(L):
                         cj1_dag_cj_tmp[k,l] += eigenvectors[j+1,n+L].conj() * eigenvectors[j,n+L]
         cj1_dag_cj_list.append(cj1_dag_cj_tmp)
-        print("cj1†_cj作成中:" + str(int(j/L*100))+"%")
+        report_cj1_dag_cj(j)
     #PBCの場合、右端は非ゼロ
     if PBC == True:
         # hopping 成分でも最後の bond (L-1 -> 0) を追加する。
@@ -328,7 +408,7 @@ def build_initial_state(L, eigenvectors, j0, sigma, PBC, direction_sign):
     mean_pos = np.sum(p_ * x_)
     var_pos = np.sum(p_ * (x_ - mean_pos)**2)
     std_pos_ = np.sqrt(var_pos)
-    print("初期状態のweightの標準偏差:", std_pos_)
+    log_diagnostic(f"初期 Gaussian weight の標準偏差: {std_pos_:.6g} lattice sites")
 
     for j in range(L):
         for n in range(L):
@@ -342,8 +422,13 @@ def build_initial_state(L, eigenvectors, j0, sigma, PBC, direction_sign):
     return psi, weights
 
 #ハミルトニアン密度作成###############################################################################################################
-def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsilon, p, m, beta_sign, PBC):
+def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, params):
     """Assemble H_+, H_-, and mixed local energy-density operators."""
+    L = params.L
+    epsilon = params.epsilon
+    p = params.p
+    m = params.m
+    PBC = params.PBC
     H_p = []
     H_m = []
     H_pm = []
@@ -377,10 +462,24 @@ def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsi
         H_m_j = np.zeros((L, L), dtype=complex)
         H_pm_j = np.zeros((L, L), dtype=complex)
 
+        beta_half = beta_for_params(j+1/2, params)
+        pair_avg = (cj_cj1_list[j-1] + cj_cj1_list[j]) / 2
+        hopping_avg = (cj_cj1_dag_list[j-1] + cj_cj1_dag_list[j]) / 2
+        hopping_dag_avg = (cj_dag_cj1_list[j-1] + cj_dag_cj1_list[j]) / 2
+        pair_dag_avg = (cj_dag_cj1_dag_list[j-1] + cj_dag_cj1_dag_list[j]) / 2
+
+        # H_+ and H_- differ only in the signs multiplying the pairing pieces
+        # and in the beta light-cone factor.  Naming these pieces makes sign
+        # checks match the handwritten formula term by term.
+        H_p_core = 1j*pair_avg + hopping_avg + hopping_dag_avg - 1j*pair_dag_avg
+        H_m_core = -1j*pair_avg + hopping_avg + hopping_dag_avg + 1j*pair_dag_avg
+        mass_density_core = -2*1j*cj_dag_cj_list[j]
+        H_pm_hopping_core = 1j*hopping_avg - 1j*hopping_dag_avg
+
         #ハミルトニアン密度作成
-        H_p_j = -1j/(4*epsilon) * (1+beta(j+1/2,L,beta_sign,epsilon))  * (1j*(cj_cj1_list[j-1] + cj_cj1_list[j])/2 + (cj_cj1_dag_list[j-1]+cj_cj1_dag_list[j])/2 + (cj_dag_cj1_list[j-1]+cj_dag_cj1_list[j])/2 - 1j*(cj_dag_cj1_dag_list[j-1]+cj_dag_cj1_dag_list[j])/2)
-        H_m_j = -1j/(4*epsilon) * (-1+beta(j+1/2,L,beta_sign,epsilon))  * (-1j*(cj_cj1_list[j-1] + cj_cj1_list[j])/2 + (cj_cj1_dag_list[j-1]+cj_cj1_dag_list[j])/2 + (cj_dag_cj1_list[j-1]+cj_dag_cj1_list[j])/2 + 1j*(cj_dag_cj1_dag_list[j-1]+cj_dag_cj1_dag_list[j])/2)
-        H_pm_j = -1j/(2*epsilon) * (p*(1j*(cj_cj1_dag_list[j-1]+cj_cj1_dag_list[j])/2 - 1j*(cj_dag_cj1_list[j-1]+cj_dag_cj1_list[j])/2) - (p - epsilon*m)*(-2*1j*cj_dag_cj_list[j]))
+        H_p_j = -1j/(4*epsilon) * (1 + beta_half) * H_p_core
+        H_m_j = -1j/(4*epsilon) * (-1 + beta_half) * H_m_core
+        H_pm_j = -1j/(2*epsilon) * (p*H_pm_hopping_core - (p - epsilon*m)*mass_density_core)
 
         #エルミートか確認
         isHermitian = is_hermitian(H_p_j)
@@ -407,8 +506,13 @@ def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsi
     }
 
 #真空の量を計算##########################################################################################
-def compute_vacuum_values(eigenvectors, L, epsilon, p, m, beta_sign, PBC):
+def compute_vacuum_values(eigenvectors, params):
     """Compute vacuum expectation values subtracted from excited profiles."""
+    L = params.L
+    epsilon = params.epsilon
+    p = params.p
+    m = params.m
+    PBC = params.PBC
     Hp_v = []
     Hm_v = []
     Hpm_v = []
@@ -473,9 +577,38 @@ def compute_vacuum_values(eigenvectors, L, epsilon, p, m, beta_sign, PBC):
             Hm_v_j = 0+0j
             H_pm_v_j = 0+0j
         else:
-            Hp_v_j = -1/(2*epsilon) * 1j * (1+beta(j+1/2,L,beta_sign,epsilon)) * 1/2 * (1j * (-1*(F1_list[-1]+F1_list[-2])/2) + (-1*(F2_list[-1]+F2_list[-2])/2) + ((F2_list[-1]+F2_list[-2])/2).conj() - 1j * (F1_list[-1]+F1_list[-2]).conj()/2)
-            Hm_v_j = -1/(2*epsilon) * 1j * (-1+beta(j+1/2,L,beta_sign,epsilon)) * 1/2 * (-1j * (-1*(F1_list[-1]+F1_list[-2])/2) + (-1*(F2_list[-1]+F2_list[-2])/2) + ((F2_list[-1]+F2_list[-2])/2).conj() + 1j * (F1_list[-1]+F1_list[-2]).conj()/2)
-            H_pm_v_j = -1j/(2*epsilon) * (1j * p * (-1*(F2_list[-1]+F2_list[-2])/2 - (F2_list[-1]+F2_list[-2]).conj()) - (p - epsilon*m) * (-2j * c_dag_c_v[j]))
+            beta_half = beta_for_params(j+1/2, params)
+            F1_avg = (F1_list[-1] + F1_list[-2]) / 2
+            F2_avg = (F2_list[-1] + F2_list[-2]) / 2
+
+            # Vacuum contractions corresponding to the named operator pieces in
+            # build_energy_densities().  Keeping them in the same order makes it
+            # easier to compare this subtraction with the local-density formula.
+            pair_vacuum = -F1_avg
+            hopping_vacuum = -F2_avg
+            hopping_dag_vacuum = F2_avg.conj()
+            pair_dag_vacuum = F1_avg.conj()
+            H_p_vacuum_core = (
+                1j*pair_vacuum
+                + hopping_vacuum
+                + hopping_dag_vacuum
+                - 1j*pair_dag_vacuum
+            )
+            H_m_vacuum_core = (
+                -1j*pair_vacuum
+                + hopping_vacuum
+                + hopping_dag_vacuum
+                + 1j*pair_dag_vacuum
+            )
+            H_pm_hopping_vacuum_core = 1j * (-F2_avg - F2_avg.conj())
+            mass_density_vacuum_core = -2j * c_dag_c_v[j]
+
+            Hp_v_j = -1/(2*epsilon) * 1j * (1 + beta_half) * 1/2 * H_p_vacuum_core
+            Hm_v_j = -1/(2*epsilon) * 1j * (-1 + beta_half) * 1/2 * H_m_vacuum_core
+            H_pm_v_j = -1j/(2*epsilon) * (
+                p * H_pm_hopping_vacuum_core
+                - (p - epsilon*m) * mass_density_vacuum_core
+            )
         assert abs(Hp_v_j - np.conj(Hp_v_j)) < 10**-5, "Hp_v_j(j=" + str(j) + ") is not Hermitian!"
         assert abs(Hm_v_j - np.conj(Hm_v_j)) < 10**-5, "Hm_v_j(j=" + str(j) + ") is not Hermitian!"
         Hp_v.append(Hp_v_j)
@@ -528,13 +661,13 @@ def compute_initial_observables(psi, energy_densities, vacuum_values, operator_l
     H_p_0, _ = compute_expectation_profile(psi, energy_densities["H_p"], vacuum_values["H_p"])
     weights = np.array([x.real for x in H_p_0])
     std_pos_p = compute_std(weights)
-    print("H_pの標準偏差:", std_pos_p)
+    log_diagnostic(f"H_p 初期 profile の標準偏差: {std_pos_p:.6g} lattice sites")
     initial_values["H_p"] = H_p_0
 
     H_m_0, _ = compute_expectation_profile(psi, energy_densities["H_m"], vacuum_values["H_m"])
     weights = np.array([x.real for x in H_m_0])
     std_pos_m = compute_std(weights)
-    print("H_mの標準偏差:", std_pos_m)
+    log_diagnostic(f"H_m 初期 profile の標準偏差: {std_pos_m:.6g} lattice sites")
     initial_values["H_m"] = H_m_0
 
     H_pm_0, _ = compute_expectation_profile(psi, energy_densities["H_pm"], vacuum_values["H_pm"])
@@ -556,7 +689,7 @@ def log_imag(name, arr):
     """Warn when an observable that should be real has imaginary residue."""
     max_im = np.max(np.abs(np.imag(arr)))
     if max_im > 1e-8:  # 目安
-        print(f"[Warn] {name} has non-negligible imaginary part: max={max_im:.2e}")
+        log_warning(f"{name} の期待値に無視しにくい虚部があります: max |Im|={max_im:.2e}")
 
 def run_time_evolution(
     psi,
@@ -585,6 +718,7 @@ def run_time_evolution(
     }
     x_ave_list = []
     psi_initial = psi.copy()
+    report_time_evolution = progress_logger("時間発展", len(times))
 
     for i, _ in enumerate(times):
         # In the diagonal basis, each eigenmode only receives a phase factor.
@@ -639,7 +773,7 @@ def run_time_evolution(
         # これにより累積丸め誤差を避ける。
         psi = psi_initial.copy()
 
-        print("時間発展中:"+str(int(i/len(times)*100)) + "%")
+        report_time_evolution(i)
 
     return values, sigmas, x_ave_list
 
@@ -705,11 +839,11 @@ def plot_density_map(
         file_path = resolve_output_path("geodesic.dat")
         geodesic_data = np.loadtxt(file_path, delimiter=",")
 
-        x = geodesic_data[:, 0]  # 物理空間座標（0〜2π）
-        t = geodesic_data[:, 1]  # 物理時間（0〜20）
+        x = geodesic_data[:, 0]  # 物理空間座標（0〜l）
+        t = geodesic_data[:, 1]  # simulation time
 
         # geodesic.dat は物理座標 x と simulation time t。heatmap の横軸だけ lattice index j へ変換する。
-        x_scaled = (x / (2 * np.pi)) * num_sites
+        x_scaled = (x / l) * num_sites
         t_scaled = t
 
         ax.plot(
@@ -720,7 +854,7 @@ def plot_density_map(
             linewidth=geodesic_linewidth,
         )
     except Exception as e:
-        print(f"Warning: geodesic.dat の重ね描画に失敗しました: {e}")
+        log_warning(f"geodesic.dat の重ね描画をスキップしました: {e}")
     # ————————————————————————————————
 
     ax.set_xlim(0, num_sites)
@@ -753,7 +887,7 @@ def save_density_animation(
     line_label: str = 'δ' + r'$\langle c_j^\dagger c_j\rangle$',
 
     cmap_line: str = "blue",
-    PBC
+    params
 ):
     """
     Save an animated line plot for a time-dependent lattice density.
@@ -778,10 +912,15 @@ def save_density_animation(
         raise ValueError("times の長さと density の行数が一致していません。")
     if horizon_positions is None:
         # 現在は horizon_positions を描画していないが、将来 axvline を戻すときの既定値として残す。
-        if PBC:
-            horizon_positions = [L / 4, 3 * L / 4, L*(146/300), L*(154/300)]
+        marker_fractions = (
+            params.animation_marker_fractions_pbc
+            if params.PBC
+            else params.animation_marker_fractions_open
+        )
+        if marker_fractions:
+            horizon_positions = [L * fraction for fraction in marker_fractions]
         else:
-            horizon_positions = [L / 4]
+            horizon_positions = []
 
     # ---------- 図オブジェクトの初期化 --------------------------------------
     fig, ax = plt.subplots(figsize=(6.4, 4.8))
@@ -812,7 +951,7 @@ def save_density_animation(
         interval=1000 / fps,     # ミリ秒
     )
     ani.save(resolve_output_path(gif_path), writer=PillowWriter(fps=fps))
-    print("保存しました")
+    log_info(f"GIF を保存しました: {resolve_output_path(gif_path)}")
     plt.close(fig)  # 余分なウインドウを閉じる
 
 def compute_fft_spectrum(values, *, remove_spatial_mean=True):
@@ -921,7 +1060,7 @@ def save_fft_outputs(density_values, times):
     """Save FFT spectra, heatmaps, and GIFs for configured observables."""
     for name in fft_observables:
         if name not in density_values:
-            print(f"FFT skipped: unknown observable {name}")
+            log_warning(f"FFT をスキップしました: 未知の observable '{name}'")
             continue
         k_values, spectrum = compute_fft_spectrum(
             density_values[name],
@@ -943,25 +1082,30 @@ def save_beta_profile():
         header="j,x,beta",
         comments="",
     )
+    log_info("beta profile を保存しました: beta_profile.csv")
 
 def check_particle_hole_pairs(eigenvectors, L):
     """Print modes that fail the expected particle-hole pairing check."""
+    failed_modes = []
     for i in range(L):
         threshold = 1e-10
         ans = eigenvectors[:,i+L] + np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
         if np.all(np.abs(ans) < threshold):
             continue
-            print(str(i))
-            print(np.where(np.abs(ans) < threshold, 0.0, ans))
         else:
             ans = eigenvectors[:,i+L] - np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
             if np.all(np.abs(ans) < threshold):
                 continue
-                print(np.where(np.abs(ans) < threshold, 0.0, ans))
             else:
-                print(str(i)+"''")
                 ans = eigenvectors[:,i+L].T.conj() @ np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
-                print(np.linalg.norm(np.where(np.abs(ans) < threshold, 0.0, ans)))
+                residual = np.linalg.norm(np.where(np.abs(ans) < threshold, 0.0, ans))
+                failed_modes.append((i, residual))
+    if failed_modes:
+        preview = ", ".join(f"k={i}: residual={residual:.2e}" for i, residual in failed_modes[:5])
+        suffix = "" if len(failed_modes) <= 5 else f", ... ({len(failed_modes)} modes total)"
+        log_warning(f"粒子-正孔ペア確認でずれを検出しました: {preview}{suffix}")
+    else:
+        log_diagnostic("粒子-正孔ペア確認: OK")
 
 def ensure_output_dirs():
     """Create the run output directory and its figure subdirectory."""
@@ -1017,25 +1161,25 @@ def generate_mode_transform(eigenvectors, L):
         U[i+L, :] = (eigenvectors[i, :] - eigenvectors[i+L, :]) / (1j*np.sqrt(2))
     return U
 
-def save_mode_functions(eigenvectors, eigenvalues, count):
+def save_mode_functions(eigenvectors, eigenvalues, count, params):
     """Save the first few BdG mode functions as PNG files."""
     ensure_output_dirs()
-    U = generate_mode_transform(eigenvectors, L)
-    f_modes = U[:L, L:]
-    x = np.linspace(0, l, L)
-    for i in range(min(count, L)):
+    U = generate_mode_transform(eigenvectors, params.L)
+    f_modes = U[:params.L, params.L:]
+    x = np.linspace(0, params.l, params.L)
+    for i in range(min(count, params.L)):
         plt.figure()
-        plt.plot(x, f_modes[:, i] / np.sqrt(epsilon))
+        plt.plot(x, f_modes[:, i] / np.sqrt(params.epsilon))
         plt.xlabel(r'$x_j$', fontsize=25)
-        plt.xticks([0, 0.5*l, l], ["0", r"$\pi$", r"$2\pi$"], fontsize=15)
+        plt.xticks([0, 0.5*params.l, params.l], ["0", r"$\pi$", r"$2\pi$"], fontsize=15)
         plt.yticks(fontsize=15)
         plt.ylabel(rf"$f_{{j{i+1}}}$", rotation=0, fontsize=25, labelpad=15)
-        plt.axvline(x=0.235*l, color="red", linewidth=1, linestyle="--")
-        plt.axvline(x=0.767*l, color="red", linewidth=1, linestyle="--")
+        for marker_fraction in params.mode_function_marker_fractions:
+            plt.axvline(x=marker_fraction*params.l, color="red", linewidth=1, linestyle="--")
         plt.title(rf"E={eigenvalues[i]:.3f}", fontsize=20)
         plt.grid(True)
         plt.savefig(
-            resolve_output_path(f"figures/mode_function_p={p}_k={i+1}.png"),
+            resolve_output_path(f"figures/mode_function_p={params.p}_k={i+1}.png"),
             dpi=300,
             bbox_inches="tight",
             transparent=False,
@@ -1092,36 +1236,60 @@ def save_geodesic_dat():
     plt.tight_layout()
     plt.savefig(resolve_output_path("figures/geodesic.png"), dpi=300, bbox_inches="tight")
     plt.close()
+    log_info(f"geodesic を保存しました: t_stop={t_stop:.6g}")
 
 def exp_func(t, A, B):
     """Exponential model used for fitting sigma growth."""
     return A * np.exp(B * t) - A
 
 def fit_and_plot_surface_gravity(times, H_m_sigmas):
-    """Fit H_m sigma growth and save the comparison plot."""
+    """Compare sigma growth with the metric-derived surface-gravity prediction."""
     ensure_output_dirs()
-    H_m_sigmas = np.asarray(H_m_sigmas, dtype=float) * epsilon
-    if len(times) < 2 or len(H_m_sigmas) < 2:
-        print("surface gravity fit skipped: not enough sigma samples")
+    sigma_delta_x = np.asarray(H_m_sigmas, dtype=float) * epsilon
+    if len(times) < 2 or len(sigma_delta_x) < 2:
+        log_warning("surface gravity fit をスキップしました: sigma sample が不足しています")
         return
 
-    A0 = H_m_sigmas[0] if H_m_sigmas[0] != 0 else 1e-12
+    A0 = sigma_delta_x[0] if sigma_delta_x[0] != 0 else 1e-12
     B0 = 1.0
     try:
-        params, _ = curve_fit(exp_func, times, H_m_sigmas, p0=[A0, B0], maxfev=10000)
+        params, _ = curve_fit(exp_func, times, sigma_delta_x, p0=[A0, B0], maxfev=10000)
     except (RuntimeError, ValueError) as exc:
-        print(f"surface gravity fit skipped: {exc}")
+        log_warning(f"surface gravity fit をスキップしました: {exc}")
         return
     A_fit, B_fit = params
-    print("Fitted function: H_m_sigma(t) = A * exp(B t) - A")
-    print("A =", A_fit)
-    print("B =", B_fit)
+    kappa, horizon_j = ideal_surface_gravity_from_config(CONFIG)
+    if kappa is None:
+        log_warning("surface gravity prediction を描画できません: horizon が見つかりません")
+        return
+
+    relative_error = abs(B_fit - kappa) / abs(kappa) if kappa != 0 else np.nan
+    log_result(
+        "surface gravity comparison: "
+        f"kappa_metric={kappa:.6e}, B_fit={B_fit:.6e}, "
+        f"relative_error={relative_error:.6e}, horizon_j={horizon_j:.6g}"
+    )
 
     t_fine = np.linspace(times.min(), times.max(), 2000)
-    ideal_curve = exp_func(t_fine, A_fit, 1.0)
+    analytical_curve = exp_func(t_fine, 1.0, kappa)
     plt.figure(figsize=(12, 8))
-    plt.plot(times, H_m_sigmas*l, "o", label="Numerical simulation", color="blue", lw=1)
-    plt.plot(t_fine, ideal_curve*l, label="Analytical prediction", color="red", lw=3)
+    plt.scatter(times, sigma_delta_x, label="Numerical simulation", color="blue", s=28)
+    plt.plot(
+        t_fine,
+        analytical_curve,
+        label=rf"Analytical prediction ($A=1$, $\kappa={kappa:.3g}$)",
+        color="red",
+        lw=3,
+    )
+    plt.text(
+        0.02,
+        0.95,
+        rf"fit: $B={B_fit:.3g}$" + "\n" + rf"relative error: {relative_error:.3e}",
+        transform=plt.gca().transAxes,
+        va="top",
+        fontsize=18,
+        bbox={"facecolor": "white", "edgecolor": "0.8", "alpha": 0.9},
+    )
     plt.xlabel(r"$t$", fontsize=25, fontweight="bold")
     plt.ylabel(r"$\delta \sigma$", fontsize=25, fontweight="bold", rotation=0, labelpad=30)
     plt.xticks(fontsize=18)
@@ -1142,6 +1310,14 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
     """Write numerical outputs, heatmaps, and animations produced by the run."""
     ensure_output_dirs()
     horizon_positions = save_horizon_positions()
+    if horizon_positions:
+        formatted = ", ".join(
+            f"j={position:.3f} (x={position*epsilon:.3f})"
+            for position in horizon_positions
+        )
+        log_diagnostic(f"horizon position: {formatted}")
+    else:
+        log_warning("horizon position は見つかりませんでした")
     # run_time_evolution() の辞書から、保存・描画に使う observable を取り出す。
     H_p_val = time_values["H_p"]
     H_m_val = time_values["H_m"]
@@ -1202,19 +1378,18 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
     # sigma が最小になる時刻の profile を個別に表示して、packet の収束/拡散を確認する。
     t_p_min = times[idx_p]
     x_ave_physical = np.asarray(x_ave_list, dtype=float) * epsilon
-    stagnation_candidates = np.where(x_ave_physical > stagnation_position)[0]
+    stagnation_candidates = np.where(x_ave_physical > PARAMS.stagnation_position)[0]
     if len(stagnation_candidates) > 0:
         idx_0 = stagnation_candidates[0]
         t_line_0 = times[idx_0]
         stagnation_time = t_p_min - t_line_0
-        print("線形部分通過時間 t_line_0:", t_line_0)
-        print("停滞時間:", stagnation_time)
+        log_result(f"線形部分通過時刻 t_line_0: {t_line_0:.6g}")
+        log_result(f"停滞時間: {stagnation_time:.6g}")
     else:
         t_line_0 = None
         stagnation_time = None
-        print("停滞時間: x 平均が指定位置を超えなかったため未計算")
-    print("H_p sigma が最小になる t:", t_p_min)
-    print("そのときの H_p sigma:", H_p_sigmas[idx_p])
+        log_warning("停滞時間は未計算です: x 平均が指定位置を超えませんでした")
+    log_result(f"H_p sigma 最小: t={t_p_min:.6g}, sigma_delta={H_p_sigmas[idx_p]:.6g}")
     plt.figure()
     plt.plot(H_p_val[idx_p])
     plt.title("H_p at t = {:.3f}".format(t_p_min))
@@ -1225,8 +1400,7 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
 
     idx_m = np.argmin(H_m_sigmas)
     t_m_min = times[idx_m]
-    print("H_m sigma が最小になる t:", t_m_min)
-    print("そのときの H_m sigma:", H_m_sigmas[idx_m])
+    log_result(f"H_m sigma 最小: t={t_m_min:.6g}, sigma_delta={H_m_sigmas[idx_m]:.6g}")
     plt.figure()
     plt.plot(H_m_val[idx_m])
     plt.title("H_m at t = {:.3f}".format(t_m_min))
@@ -1246,7 +1420,7 @@ def save_outputs(time_values, sigmas, x_ave_list, times):
                 ylabel=r'δ$\langle c_j^\dagger c_j \rangle$',
                 line_label=r'δ$\langle c_j^\dagger c_j \rangle$',
                 cmap_line=animation_config["cmap_line"],
-                PBC=PBC,
+                params=PARAMS,
             )
 
     save_summary({
@@ -1275,7 +1449,20 @@ def run_simulation():
     """Run the full black-hole lattice simulation pipeline."""
     ensure_output_dirs()
     save_run_config()
-    print("output_dir:", output_dir)
+    enabled_outputs = [name for name, enabled in outputs.items() if enabled]
+    log_info(
+        "run start: "
+        f"name={CONFIG['run_name']}, L={L}, epsilon={epsilon:.6g}, "
+        f"t=[{t_i}, {t_f}), dt={dt:.6g}, PBC={PBC}"
+    )
+    log_info(
+        "physics config: "
+        f"scenario={CONFIG['scenario']}, chirality={chirality}, beta_sign={beta_sign}, "
+        f"beta_profile={beta_profile}, p={p}, m={m}"
+    )
+    log_info(f"initial packet: j0={j0}, sigma={sigma:.6g}, direction_sign={initial_direction_sign}")
+    log_info(f"enabled outputs: {', '.join(enabled_outputs) if enabled_outputs else 'none'}")
+    log_info(f"output_dir: {output_dir}")
     if outputs.get("geodesic", True):
         save_geodesic_dat()
 
@@ -1284,12 +1471,12 @@ def run_simulation():
         save_beta_profile()
 
     # 2. BdG 行列を作り、固有モードを粒子-正孔対称な形へ整える。
-    H_BdG = build_bdg_matrix(L, p, m, beta_sign, epsilon, PBC)
+    H_BdG = build_bdg_matrix(PARAMS)
     eigenvalues, eigenvectors = diagonalize_bdg_matrix(H_BdG, L)
     check_particle_hole_pairs(eigenvectors, L)
     eigenvectors = enforce_particle_hole_symmetry(eigenvectors, L)
     if outputs.get("mode_functions", True) and mode_function_count > 0:
-        save_mode_functions(eigenvectors, eigenvalues, mode_function_count)
+        save_mode_functions(eigenvectors, eigenvalues, mode_function_count, PARAMS)
 
     # 3. 観測量を quasiparticle basis の L x L operator として準備する。
     cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list = build_operator_lists(eigenvectors, L, PBC)
@@ -1301,8 +1488,8 @@ def run_simulation():
 
     # 4. 初期波束、局所エネルギー密度、真空 subtraction 用の値を準備する。
     psi, _ = build_initial_state(L, eigenvectors, j0, sigma, PBC, initial_direction_sign)
-    energy_densities = build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, L, epsilon, p, m, beta_sign, PBC)
-    vacuum_values = compute_vacuum_values(eigenvectors, L, epsilon, p, m, beta_sign, PBC)
+    energy_densities = build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, PARAMS)
+    vacuum_values = compute_vacuum_values(eigenvectors, PARAMS)
     _, std_pos_p, std_pos_m = compute_initial_observables(psi, energy_densities, vacuum_values, operator_lists)
 
     # 5. 時間発展を回して、最後にテキスト・画像・GIF を保存する。
