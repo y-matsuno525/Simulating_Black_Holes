@@ -35,10 +35,10 @@ def _logL_panel(ax):
         Ls, T = d[:, 0], d[:, 1]
         x = np.log(Ls)
         a, b = np.polyfit(x, T, 1)
-        ax.plot(x, T, "o", color="blue", label="Numerical simulation")
+        ax.plot(x, T, "o", color="blue", label=r"$T_{\mathrm{cont}}$ (continuum estimate)")
         xf = np.linspace(x.min(), x.max(), 100)
         ax.plot(xf, a * xf + b, "-", color="red", label=f"fit: {a:.2f} log L + {b:.2f}")
-        note = ""
+        note = "  (lattice T_lat: run --measure)"
     else:
         x = np.log(np.array([100, 200, 300, 400, 600]))
         ax.plot(x, 0.9 * x - 2.0, "--", color="red", label=r"$T\propto\log L$ (theory)")
