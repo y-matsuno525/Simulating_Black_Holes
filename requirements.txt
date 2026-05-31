@@ -1,7 +1,9 @@
-numpy
-scipy
-matplotlib
-Pillow
+# 動作確認済み: Python 3.13 / numpy 2.2 / scipy 1.15 / matplotlib 3.10 / Pillow 12
+# 下限は安全側に設定（これより新しければ動作想定）。Python は 3.9 以上を想定。
+numpy>=1.24
+scipy>=1.10
+matplotlib>=3.7
+Pillow>=9.0
 # 任意: analysis/majorana_metric.py のシンボリック計量計算に使用（未導入でも数値版で動作）
 # OGRePy
 # GUI(gui.py)は標準ライブラリ tkinter のみ。論文ビルドには別途 TeX(pdflatex/bibtex) が必要。

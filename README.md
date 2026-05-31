@@ -29,7 +29,7 @@ python3 -m pip install -r requirements.txt
 python3 main.py
 ```
 
-計算は `L` や `t_f` によって重くなります。設定は [config.json](/Users/yuki.matsuno/Simulating_Black_Holes/config.json) を編集して変更します。
+計算は `L` や `t_f` によって重くなります。設定は `config.json` を編集して変更します。
 
 必要な主なライブラリ:
 
@@ -207,3 +207,7 @@ python gui.py
 - 実行結果は `outputs/<run_name>/` に分かれます。`run_name` を固定すると同じディレクトリを上書きします。
 - `__pycache__/` は Python の自動生成キャッシュなので、保守対象ではありません。
 - `paper_data/` は容量が大きいため git 管理外です。元データは各旧フォルダにも残しています。
+
+## License
+
+本リポジトリは MIT License で公開しています。詳細は [LICENSE](LICENSE) を参照してください。
