@@ -17,7 +17,10 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "analysis"))
-from dispersion_relation import dispersion_bands, light_cone_slopes  # noqa: E402
+# 正準 BH beta プロファイルと分散は analysis/dispersion_relation に一本化。
+from dispersion_relation import (  # noqa: E402
+    beta_horizon_x, beta_profile_x, dispersion_bands, light_cone_slopes,
+)
 
 try:
     from .common import ELL_DEFAULT, L_DEFAULT, ensure_fig_dir
@@ -25,22 +28,7 @@ except ImportError:
     from common import ELL_DEFAULT, L_DEFAULT, ensure_fig_dir
 
 
-# BH プロファイル beta(x)=A tanh(B(x-x0))+C （論文 Sec.III BH 設定）
-A, B, C = 0.6, 3.0, 0.6
-X0 = 2 * ELL_DEFAULT / 3
 BETAS = [0.0, 0.6, 1.2]   # 代表値: 外側 / horizon 近傍 / 内側
-
-
-def beta_profile(x):
-    return A * np.tanh(B * (x - X0)) + C
-
-
-def _x_for_beta(b):
-    """beta(x)=b となる x（無ければ None）。"""
-    u = (b - C) / A
-    if not -1 < u < 1:
-        return None
-    return X0 + np.arctanh(u) / B
 
 
 def _make(out_name, emphasize_p0=False):
@@ -73,10 +61,10 @@ def _make(out_name, emphasize_p0=False):
     # (b) beta profile
     axb = fig.add_subplot(gs[1, 0])
     xs = np.linspace(0, ELL_DEFAULT, 400)
-    axb.plot(xs, beta_profile(xs), color="black")
+    axb.plot(xs, beta_profile_x(xs), color="black")
     axb.axhline(1, color="red", ls="--", lw=0.8, label=r"$\beta=1$ (horizon)")
     for b in BETAS:
-        xb = _x_for_beta(b)
+        xb = beta_horizon_x(b)
         if xb is not None:
             axb.plot(xb, b, "o", color="C0", ms=5)
             axb.annotate(rf"$\beta={b:g}$", (xb, b), fontsize=7,

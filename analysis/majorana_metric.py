@@ -16,11 +16,9 @@ from __future__ import annotations
 
 import numpy as np
 
-ELL = 2 * np.pi
-
-
-def beta_profile(x, A=0.6, B=3.0, C=0.6, x0=2 * ELL / 3):
-    return A * np.tanh(B * (x - x0)) + C
+# 正準 BH beta プロファイルは dispersion_relation に一本化（重複定義の排除）。
+from dispersion_relation import ELL_DEFAULT as ELL
+from dispersion_relation import beta_profile_x as beta_profile
 
 
 def metric(x, beta_func=beta_profile):

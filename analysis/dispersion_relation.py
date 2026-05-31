@@ -15,6 +15,30 @@ from __future__ import annotations
 import numpy as np
 from numpy import linalg as LA
 
+# --- 正準 beta プロファイル（論文 Sec.III の BH 設定）-----------------------
+# beta(x) = A tanh(B (x - x0)) + C を単一の定義として持ち、図・解析スクリプトは
+# すべてここを参照する（重複定義の排除）。x は物理座標 (0..ell)。
+# 注意: simulation.py の実行パイプラインは config 駆動の config.beta_from_config
+# （格子 index 入力・任意プロファイル）が SSoT。本関数は論文図/解析の固定 BH 設定用。
+ELL_DEFAULT = 2 * np.pi
+BH_BETA_A = 0.6
+BH_BETA_B = 3.0
+BH_BETA_C = 0.6
+BH_BETA_X0 = 2 * ELL_DEFAULT / 3
+
+
+def beta_profile_x(x, A=BH_BETA_A, B=BH_BETA_B, C=BH_BETA_C, x0=BH_BETA_X0):
+    """正準 BH beta プロファイル beta(x)=A tanh(B(x-x0))+C（物理座標 x）。"""
+    return A * np.tanh(B * (x - x0)) + C
+
+
+def beta_horizon_x(target=1.0, A=BH_BETA_A, B=BH_BETA_B, C=BH_BETA_C, x0=BH_BETA_X0):
+    """beta(x)=target となる x を返す。(-1,1) 外で解が無ければ None。"""
+    u = (target - C) / A
+    if not -1.0 < u < 1.0:
+        return None
+    return x0 + np.arctanh(u) / B
+
 
 def build_homogeneous_bdg(beta, p, m, L, epsilon, PBC=True):
     """定数 beta の 2L x 2L BdG 行列（build_bdg_matrix と同規約）。"""

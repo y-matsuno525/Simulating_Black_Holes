@@ -16,6 +16,7 @@ import os
 import queue
 import subprocess
 import sys
+import tempfile
 import threading
 from pathlib import Path
 
@@ -199,9 +200,11 @@ class App(tk.Tk):
             if raw == "":
                 continue
             overrides[key] = self._coerce(key, raw)
-        ov_path = REPO / "_gui_overrides.json"
-        ov_path.write_text(json.dumps(overrides, ensure_ascii=False), encoding="utf-8")
-        self._run_cmd([PYTHON, "run_sim.py", str(ov_path.name)], "シミュレーション実行")
+        # リポジトリを汚さないよう override は一時ディレクトリに書き出す。
+        fd, ov_path = tempfile.mkstemp(prefix="sbh_gui_overrides_", suffix=".json")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(overrides, f, ensure_ascii=False)
+        self._run_cmd([PYTHON, "run_sim.py", ov_path], "シミュレーション実行")
 
     @staticmethod
     def _coerce(key, raw):

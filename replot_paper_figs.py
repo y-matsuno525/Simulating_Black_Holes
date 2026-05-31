@@ -10,6 +10,7 @@ replot_paper_figs.py
 """
 
 import os
+import sys
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
@@ -32,20 +33,21 @@ plt.rcParams.update({
 # レガシー再描画ツール。現行の論文図は paper_figures/make_all.py を使うこと。
 # アーカイブの場所は環境変数 SBH_ARCHIVE_BASE で指定可能（既定はホームディレクトリ）。
 REPO = Path(__file__).resolve().parent
+# ホライズン位置・格子定数は paper_figures/common.py に一本化（重複定義の排除）。
+sys.path.insert(0, str(REPO / "paper_figures"))
+from common import EPS_DEFAULT, J_BH, J_WH, L_DEFAULT  # noqa: E402
+
 BASE = Path(os.environ.get("SBH_ARCHIVE_BASE", Path.home()))
-OUT = REPO / "paper_figs"
-OUT.mkdir(exist_ok=True)
+# 生成図の出力先は paper_figures/generated/ に統一。
+OUT = REPO / "paper_figures" / "generated"
+OUT.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
-# 物理パラメータ
+# 物理パラメータ（common と共有）
 # ---------------------------------------------------------------------------
-L = 300
-l = 2 * np.pi
-eps = l / L
+L = L_DEFAULT
+eps = EPS_DEFAULT
 DT = 0.01
-
-J_BH = 2 / 3 * L + np.arctanh(2 / 3) / (3 * eps)   # ≈ 212.82
-J_WH = 1 / 3 * L - np.arctanh(2 / 3) / (3 * eps)   # ≈  87.18
 
 print(f"BH horizon: j = {J_BH:.4f}")
 print(f"WH horizon: j = {J_WH:.4f}")

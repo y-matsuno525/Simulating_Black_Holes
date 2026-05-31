@@ -15,14 +15,16 @@
 
 検証: `python -m unittest discover -s tests -p "test_*.py"` が PASS。
 
-## フェーズ2: Single Source of Truth 化（再現性）
+## フェーズ2: Single Source of Truth 化（再現性）✅ 完了
 
 | 項目 | 内容 | 状態 |
 | --- | --- | --- |
-| B2 | horizon 値を `config.py` に一本化 | 未着手 |
-| B3 | β プロファイルを `config.py` に一本化 | 未着手 |
-| B4 | 図出力先を `paper_figures/generated/` に統一 | 未着手 |
-| B5 | `_gui_overrides.json` の撤廃（一時ディレクトリ経由） | 未着手 |
+| B2 | 論文図の horizon 値を `paper_figures/common.py` に一本化（`replot` は import）。実行パイプライン側は `config.compute_horizon_positions_from_config` が SSoT である旨を明記 | ✅ |
+| B3 | 正準 BH β プロファイルを `analysis/dispersion_relation.py`（`beta_profile_x`/`beta_horizon_x`）に一本化。`majorana_metric` / `make_dispersion` は import に変更 | ✅ |
+| B4 | 図出力先を `paper_figures/generated/` に統一（`replot` の出力先も変更） | ✅ |
+| B5 | `_gui_overrides.json` の撤廃（`tempfile` で一時ディレクトリに書き出し） | ✅ |
+
+検証: unittest 4件 PASS、`majorana_metric` / `dispersion_relation` / `make_dispersion` / `make_bh_panels` / `make_wh_panels` / `replot_paper_figs` が完走し図が `generated/` に出力。horizon 値 BH=212.81 / WH=87.19 で一致。
 
 ## フェーズ3: 計算コアのリファクタ
 

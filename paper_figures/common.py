@@ -34,7 +34,9 @@ ELL_DEFAULT = 2.0 * np.pi
 EPS_DEFAULT = ELL_DEFAULT / L_DEFAULT
 DT_DEFAULT = 0.01
 
-# 正準ホライズン位置（replot_paper_figs.py と同じ解析値, L=300, ell=2pi）。
+# 正準ホライズン位置（論文図の単一定義元）。L=300, ell=2pi の解析値。
+# make_bh_panels / make_wh_panels / replot_paper_figs はすべてここを import する。
+# 実行パイプライン側の SSoT は config.compute_horizon_positions_from_config（config 駆動・数値）。
 #   BH: j_h = 2/3 L + arctanh(2/3)/(3 eps) ≈ 212.82
 #   WH: j_h = 1/3 L - arctanh(2/3)/(3 eps) ≈  87.18
 J_BH = 2 / 3 * L_DEFAULT + np.arctanh(2 / 3) / (3 * EPS_DEFAULT)
