@@ -160,7 +160,50 @@ Git に入れないもの:
 - 古いテストスクリプト
 - `cj c_j^\dagger` などの未使用演算子チェック
 
+## 論文 (PRB 草稿) の統合と再現
+
+論文 `paper/main.tex` が参照する計算・データ・図生成・解析を本リポジトリに集約しました。
+詳しい作業記録は `CONSOLIDATION_PROGRESS.md` を参照してください。
+
+### ディレクトリ
+
+| パス | 内容 |
+| --- | --- |
+| `paper/` | 論文一式（`main.tex`, `books.bib`, `draft_jp.txt`, `figure/`=論文本体の図8枚）。 |
+| `paper_data/` | 5 つの旧フォルダ（master_thesis, master_thesis_p=0, thesis, old(L=500)）から集約した計算 CSV・geodesic・σ。**約700MBのため git 管理外**（ディスク上のみ）。 |
+| `paper_figures/` | 論文図を保存データから再生成するスクリプト群。出力は `paper_figures/generated/`。 |
+| `analysis/` | 補助解析（分散関係、PG 計量幾何、停滞時間の logL スケーリング）。 |
+| `gui.py` | 計算・図生成・論文ビルドを行う Tkinter 統合 GUI。 |
+| `run_sim.py` | `config.json` を壊さず上書きパラメータで `simulation.py` を実行する入口。 |
+
+### 図と生成元の対応
+
+| `paper/figure` の図 | 生成スクリプト | 主なデータ／計算 |
+| --- | --- | --- |
+| `dispersion.png`, `p0_dispersion.png` | `paper_figures/make_dispersion.py` | `analysis/dispersion_relation.py`（解析式 εE±=β sin k ± √(p²(1−cos k)²+sin²k)） |
+| `doubler_fft.png` | `paper_figures/make_doubler_fft.py` | β=1.2 分散 + 内部 run の空間 FFT |
+| `p=0_BH.png`, `p=1_BH.png` | `paper_figures/make_bh_panels.py` | `paper_data/p{0,1}/lr_p, ur_p_2` + geodesic |
+| `WH_p=0.png`, `WH_p=1.png` | `paper_figures/make_wh_panels.py` | `paper_data/p{0,1}/ur_m, ur_p` + `analysis/stagnation_logL.py` |
+| `sg.png` | `paper_figures/make_surface_gravity.py` | `paper_data/H_m_sigmas_p{0,1}.txt` の指数フィット |
+
+> 生成図は保存データからの「同等再現図」です（論文 PDF の各パネルは特定の初期条件 run を
+> 使っており、レイアウトは一致しません）。論文本体 `paper/figure/` は上書きせず保持しています。
+
+### 再現手順
+
+```bash
+# 1) 論文図を一括再生成（paper_figures/generated/ に出力）
+python paper_figures/make_all.py
+
+# 2) 論文をビルド（要 TeX: pdflatex/bibtex）
+cd paper && pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex
+
+# 3) もしくは GUI から計算・図生成・ビルドをまとめて操作
+python gui.py
+```
+
 ## 注意
 
 - 実行結果は `outputs/<run_name>/` に分かれます。`run_name` を固定すると同じディレクトリを上書きします。
 - `__pycache__/` は Python の自動生成キャッシュなので、保守対象ではありません。
+- `paper_data/` は容量が大きいため git 管理外です。元データは各旧フォルダにも残しています。

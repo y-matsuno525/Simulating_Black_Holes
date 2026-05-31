@@ -25,6 +25,8 @@ paper_data/
 *.synctex.gz
 paper/main.pdf
 paper/main.log
+mainNotes.bib
+paper/mainNotes.bib
 
 # GUI 一時ファイル
 _gui_overrides.json

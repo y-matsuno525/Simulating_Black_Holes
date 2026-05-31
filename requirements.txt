@@ -2,3 +2,6 @@ numpy
 scipy
 matplotlib
 Pillow
+# 任意: analysis/majorana_metric.py のシンボリック計量計算に使用（未導入でも数値版で動作）
+# OGRePy
+# GUI(gui.py)は標準ライブラリ tkinter のみ。論文ビルドには別途 TeX(pdflatex/bibtex) が必要。

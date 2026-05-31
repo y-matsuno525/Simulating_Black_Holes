@@ -18,7 +18,7 @@
 | 4 | `paper_figures/` スクリプト群作成 | ✅ | (本コミット) | common+make_*×5+make_all、全7図生成確認 |
 | 5 | `analysis/` 補助計算スクリプト作成 | ✅ | 34736f4 | dispersion/majorana/stagnation 全て動作確認 |
 | 6 | `gui.py`（Tkinter統合GUI）作成 | ✅ | (本コミット) | 3タブ+ログ+図プレビュー、run_sim.py、import確認 |
-| 7 | .gitignore/README/requirements更新・検証 | 🟦 | - | gitignore✅、論文ビルド✅、README/requirements/テスト 残 |
+| 7 | .gitignore/README/requirements更新・検証 | ✅ | (本コミット) | README/requirements更新、全検証pass |
 
 ## 主要な判明事項（実装中に確定）
 - `*_val.csv` はヘッダ無し・time列無しの `(999,300)`。geodesic は `x,t` ヘッダ付き。
@@ -39,4 +39,16 @@
 - OGRePy はオプション依存（未導入環境では majorana_metric をスキップ可能に）。
 
 ## 検証結果
-（実装後に追記）
+- `python paper_figures/make_all.py` → `paper_figures/generated/` に 8 図生成（成功）。
+- 論文ビルド: `pdflatex→bibtex→pdflatex×2` で `paper/main.pdf`(1.5MB) 生成。未解決引用・欠損図なし。
+- 既存テスト `python -m unittest tests.test_numerical_sanity` → 4 件すべて OK（既存コード非破壊）。
+- `run_sim.py` 上書き実行（L=40 簡易 run）→ `outputs/` 出力を確認。
+- `gui.py` 構文・import・tkinter 8.6 を確認（ヘッドレスのため mainloop は未起動）。
+- 分散解析: 解析式と数値対角化の一致（最大誤差 0.025）、k=0 傾き=β±1 を確認。
+- `paper/figure/`（論文本体）は無変更。元 5 フォルダも無変更（コピー統合）。
+
+## 残課題 / 引き継ぎ
+- 論文 PDF の厳密パネル（j0=30/40/180 等の特定 run）の再現は、`run_sim.py` を該当 config で
+  実走して `paper_data/` を作り直す必要がある（現状は保存データからの同等図）。
+- `analysis/stagnation_logL.py --measure`（格子 T_lat 実測）は simulation のフックのみで未実装。
+- `gui.py` の実 GUI 動作（描画・プレビュー）は GUI 環境での目視確認が必要。
