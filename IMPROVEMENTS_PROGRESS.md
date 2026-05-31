@@ -26,14 +26,18 @@
 
 検証: unittest 4件 PASS、`majorana_metric` / `dispersion_relation` / `make_dispersion` / `make_bh_panels` / `make_wh_panels` / `replot_paper_figs` が完走し図が `generated/` に出力。horizon 値 BH=212.81 / WH=87.19 で一致。
 
-## フェーズ3: 計算コアのリファクタ
+## フェーズ3: 計算コアのリファクタ（一部）✅ / ⏸
 
 | 項目 | 内容 | 状態 |
 | --- | --- | --- |
-| C4 | グローバル変数を `SimulationParams` に集約 | 未着手 |
-| C1 | `build_operator_lists()` のベクトル化 | 未着手 |
-| C2/C3 | BdG 疎構造化 / 時間発展テーブル事前計算 | 未着手 |
-| C5/C6/C7 | 定数・許容誤差の集約 + 型ヒント | 未着手 |
+| C1 | `build_operator_lists()` を O(L^4)→O(L^3) にベクトル化（外積+対角項。新ヘルパー `_cj_dag_cj_op`/`_cj1_cj_op`/`_cj1_dag_cj_op`）。L=120 で約0.1秒 | ✅ |
+| C3 | 時間発展ループの n ループを位相ベクトル積に置換（`exp(-iE t)` を一括適用） | ✅ |
+| C5/C6 | 散在していた許容誤差を定数化（`ATOL_HERMITIAN`/`IMAG_WARN_THRESHOLD`/`PH_PAIR_ATOL`） | ✅ |
+| C7 | ベクトル化ヘルパー・`build_operator_lists` に型ヒント付与（全面付与は今後） | 一部 |
+| C2 | BdG 行列のベクトル化 | ⏸ 見送り（O(L^2) で非支配的・β リンク平均/PBC 角の索引が繊細。効果<リスク） |
+| C4 | グローバル変数を `SimulationParams` に集約 | ⏸ 見送り（~40関数に波及する大規模改修。現行テスト4件+回帰では安全に検証しきれず別タスク化） |
+
+検証: L=10(PBC)/L=12(open) で演算子リスト・エネルギー密度・真空値・固有値の全24配列がリファクタ前と一致（`np.allclose`）。unittest 4件 PASS。小規模エンドツーエンド実行（run_sim.py, L=12）も完走。
 
 ## フェーズ4: テスト・ドキュメント拡充
 

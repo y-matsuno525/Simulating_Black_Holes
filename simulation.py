@@ -19,6 +19,11 @@ PARAMS = None
 DENSITY_PLOT_CONFIGS = {}
 ANIMATION_CONFIGS = {}
 
+# --- 数値許容誤差（散在していた "close enough" 基準を 1 箇所に集約）-----------
+ATOL_HERMITIAN = 1e-10       # 行列の Hermitian 判定 (is_hermitian)
+IMAG_WARN_THRESHOLD = 1e-8   # 実数のはずの期待値に許す虚部の上限 (log_imag)
+PH_PAIR_ATOL = 1e-10         # 粒子-正孔ペア確認の許容誤差 (check_particle_hole_pairs)
+
 
 def log_info(message):
     """Print a normal run log line."""
@@ -152,7 +157,7 @@ def configure(config, density_plot_configs, animation_configs):
 
 def is_hermitian(matrix):
     """Return True when a matrix is Hermitian to numerical precision."""
-    is_hermitian = np.allclose(matrix, np.conj(matrix.T), atol=1e-10)
+    is_hermitian = np.allclose(matrix, np.conj(matrix.T), atol=ATOL_HERMITIAN)
 
     if is_hermitian:
         return True
@@ -298,87 +303,76 @@ def enforce_particle_hole_symmetry(eigenvectors, L):
         V[L:,i+L] = np.conj(eigenvectors[:L,i])
     return V
 
-def build_operator_lists(eigenvectors, L, PBC):
-    """Construct local bilinear operators in the quasiparticle basis."""
+def _diag_add(matrix: np.ndarray, scalar: complex) -> None:
+    """In-place に行列の対角へスカラーを加算する（δ_{kl} 項用）。"""
+    idx = np.arange(matrix.shape[0])
+    matrix[idx, idx] += scalar
+
+
+def _cj_dag_cj_op(eigenvectors: np.ndarray, j: int, L: int) -> np.ndarray:
+    """c_j^dag c_j の L x L 演算子（O(L^2) ベクトル化）。"""
+    pk = eigenvectors[j, :L]      # 粒子成分
+    hk = eigenvectors[j, L:]      # 正孔成分
+    M = np.outer(pk.conj(), pk) - np.outer(hk, hk.conj())
+    _diag_add(M, np.vdot(hk, hk))  # Σ_n |V[j,n+L]|^2
+    return M
+
+
+def _cj1_cj_op(eigenvectors: np.ndarray, a: int, b: int, L: int) -> np.ndarray:
+    """c_a c_b の pairing 演算子（bond b->a）を O(L^2) で作る。"""
+    A_p, A_h = eigenvectors[a, :L], eigenvectors[a, L:]
+    B_p, B_h = eigenvectors[b, :L], eigenvectors[b, L:]
+    M = np.outer(A_h, B_p) - np.outer(B_h, A_p)
+    _diag_add(M, np.dot(A_p, B_h))  # Σ_n V[a,n] V[b,n+L]
+    return M
+
+
+def _cj1_dag_cj_op(eigenvectors: np.ndarray, a: int, b: int, L: int) -> np.ndarray:
+    """c_a^dag c_b の hopping 演算子（bond b->a）を O(L^2) で作る。"""
+    A_p, A_h = eigenvectors[a, :L], eigenvectors[a, L:]
+    B_p, B_h = eigenvectors[b, :L], eigenvectors[b, L:]
+    M = np.outer(A_p.conj(), B_p) - np.outer(B_h, A_h.conj())
+    _diag_add(M, np.vdot(A_h, B_h))  # Σ_n conj(V[a,n+L]) V[b,n+L]
+    return M
+
+
+def build_operator_lists(eigenvectors: np.ndarray, L: int, PBC: bool):
+    """Construct local bilinear operators in the quasiparticle basis.
+
+    以前は site/bond ごとに k,l,n の 3 重ループ（全体 O(L^4)）で組んでいたが、
+    各演算子は外積 + 対角項で表せるため O(L^2)/site にベクトル化している。
+    psi.T.conj() @ O_j @ psi で site j の期待値を評価できる形は不変。
+    """
     log_progress("局所演算子を作成します")
-    # ここで作る operator はすべて L x L 行列で、psi.T.conj() @ O_j @ psi により
-    # site j の期待値を評価できる形にしておく。
-    #cj_dag_cj(作り方は以前と変わらない)
+    #cj_dag_cj: local number density. 対角の真空項も含める。
     cj_dag_cj_list = []
     report_cj_dag_cj = progress_logger("  c_j^dag c_j", L)
     for j in range(L):
-        # c_j^\dagger c_j: local number density.  対角の真空項もここで含める。
-        cj_dag_cj_tmp = np.zeros((L, L), dtype=complex)
-        for k in range(L):
-            for l in range(L):
-                cj_dag_cj_tmp[k,l] = eigenvectors[j,k].conj() * eigenvectors[j,l]
-                cj_dag_cj_tmp[k,l] += -1*eigenvectors[j,l+L].conj() * eigenvectors[j,k+L]
-                if k == l:
-                    for n in range(L):
-                        cj_dag_cj_tmp[k,l] += eigenvectors[j,n+L].conj() * eigenvectors[j,n+L]
-        isHermitian = is_hermitian(cj_dag_cj_tmp)
-        assert isHermitian, "cj_dag_cj(j=" + str(j) + ") is not Hermitian!"
-        cj_dag_cj_list.append(cj_dag_cj_tmp)
+        M = _cj_dag_cj_op(eigenvectors, j, L)
+        assert is_hermitian(M), "cj_dag_cj(j=" + str(j) + ") is not Hermitian!"
+        cj_dag_cj_list.append(M)
         report_cj_dag_cj(j)
 
-    #cj1_cj
+    #cj1_cj: c_{j+1} c_j（最近接 pairing 成分）
     cj1_cj_list = []
     report_cj1_cj = progress_logger("  c_{j+1} c_j", max(L - 1, 1))
     for j in range(L-1):
-        # c_{j+1} c_j: energy density の最近接 pairing 成分に使う。
-        cj1_cj_tmp = np.zeros((L, L), dtype=complex)
-        for k in range(L):
-            for l in range(L):
-                cj1_cj_tmp[k,l] = eigenvectors[j+1,k+L] * eigenvectors[j,l]
-                cj1_cj_tmp[k,l] -= eigenvectors[j+1,l] * eigenvectors[j,k+L]
-                if k == l:
-                    for n in range(L):
-                        cj1_cj_tmp[k,l] += eigenvectors[j+1,n] * eigenvectors[j,n+L]
-        cj1_cj_list.append(cj1_cj_tmp)
+        cj1_cj_list.append(_cj1_cj_op(eigenvectors, j+1, j, L))
         report_cj1_cj(j)
-    #PBCの場合、右端は非ゼロ
-    if PBC == True:
-        # 周期境界条件では最後の bond (L-1 -> 0) も最近接として追加する。
-        # 開境界の場合はこの bond が存在しないので、下の else でゼロ行列を入れる。
-        cj1_cj_tmp = np.zeros((L, L), dtype=complex)
-        for k in range(L):
-            for l in range(L):
-                cj1_cj_tmp[k,l] = eigenvectors[0,k+L] * eigenvectors[L-1,l]
-                cj1_cj_tmp[k,l] -= eigenvectors[0,l] * eigenvectors[L-1,k+L]
-                if k == l:
-                    for n in range(L):
-                        cj1_cj_tmp[k,l] += eigenvectors[0,n] * eigenvectors[L-1,n+L]
-        cj1_cj_list.append(cj1_cj_tmp)
+    # PBC では最後の bond (L-1 -> 0) も最近接として追加。開境界はゼロ行列。
+    if PBC:
+        cj1_cj_list.append(_cj1_cj_op(eigenvectors, 0, L-1, L))
     else:
         cj1_cj_list.append(np.zeros((L, L), dtype=complex))
 
-    #cj1_dag_cj
+    #cj1_dag_cj: c_{j+1}^dag c_j（hopping 成分）
     cj1_dag_cj_list = []
     report_cj1_dag_cj = progress_logger("  c_{j+1}^dag c_j", max(L - 1, 1))
     for j in range(L-1):
-        # c_{j+1}^\dagger c_j: energy density の hopping 成分に使う。
-        cj1_dag_cj_tmp = np.zeros((L, L), dtype=complex)
-        for k in range(L):
-            for l in range(L):
-                cj1_dag_cj_tmp[k,l] = eigenvectors[j+1,k].conj() * eigenvectors[j,l]
-                cj1_dag_cj_tmp[k,l] -= eigenvectors[j+1,l+L].conj() * eigenvectors[j,k+L]
-                if k == l:
-                    for n in range(L):
-                        cj1_dag_cj_tmp[k,l] += eigenvectors[j+1,n+L].conj() * eigenvectors[j,n+L]
-        cj1_dag_cj_list.append(cj1_dag_cj_tmp)
+        cj1_dag_cj_list.append(_cj1_dag_cj_op(eigenvectors, j+1, j, L))
         report_cj1_dag_cj(j)
-    #PBCの場合、右端は非ゼロ
-    if PBC == True:
-        # hopping 成分でも最後の bond (L-1 -> 0) を追加する。
-        cj1_dag_cj_tmp = np.zeros((L, L), dtype=complex)
-        for k in range(L):
-            for l in range(L):
-                cj1_dag_cj_tmp[k,l] = eigenvectors[0,k].conj() * eigenvectors[L-1,l]
-                cj1_dag_cj_tmp[k,l] -= eigenvectors[0,l+L].conj() * eigenvectors[L-1,k+L]
-                if k == l:
-                    for n in range(L):
-                        cj1_dag_cj_tmp[k,l] += eigenvectors[0,n+L].conj() * eigenvectors[L-1,n+L]
-        cj1_dag_cj_list.append(cj1_dag_cj_tmp)
+    if PBC:
+        cj1_dag_cj_list.append(_cj1_dag_cj_op(eigenvectors, 0, L-1, L))
     else:
         cj1_dag_cj_list.append(np.zeros((L, L), dtype=complex))
 
@@ -688,7 +682,7 @@ def compute_initial_observables(psi, energy_densities, vacuum_values, operator_l
 def log_imag(name, arr):
     """Warn when an observable that should be real has imaginary residue."""
     max_im = np.max(np.abs(np.imag(arr)))
-    if max_im > 1e-8:  # 目安
+    if max_im > IMAG_WARN_THRESHOLD:
         log_warning(f"{name} の期待値に無視しにくい虚部があります: max |Im|={max_im:.2e}")
 
 def run_time_evolution(
@@ -718,12 +712,13 @@ def run_time_evolution(
     }
     x_ave_list = []
     psi_initial = psi.copy()
+    # 対角基底では各固有モードに位相 exp(-iE t) が掛かるだけ。E を配列化して
+    # ステップごとに L 個の位相をベクトルで掛ける（旧 n ループの O(L) を排除）。
+    E_modes = np.asarray(eigenvalues[:L]).reshape(-1, 1)
     report_time_evolution = progress_logger("時間発展", len(times))
 
     for i, _ in enumerate(times):
-        # In the diagonal basis, each eigenmode only receives a phase factor.
-        for n,E in enumerate(eigenvalues[:L]):
-            psi[n] = np.exp(-1j*E*(dt*(i+1))) * psi_initial[n]
+        psi = np.exp(-1j * E_modes * (dt * (i + 1))) * psi_initial
 
         # 各時刻で local density profile を評価し、heatmap 用に時系列として積む。
         #H_pの期待値
@@ -1088,7 +1083,7 @@ def check_particle_hole_pairs(eigenvectors, L):
     """Print modes that fail the expected particle-hole pairing check."""
     failed_modes = []
     for i in range(L):
-        threshold = 1e-10
+        threshold = PH_PAIR_ATOL
         ans = eigenvectors[:,i+L] + np.concatenate((eigenvectors[L:,i].conj(), eigenvectors[:L,i].conj()), 0)
         if np.all(np.abs(ans) < threshold):
             continue
