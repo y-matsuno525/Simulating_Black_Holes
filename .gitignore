@@ -6,8 +6,15 @@ outputs/
 figure/
 data/
 
+# Consolidated paper data (kept on disk, NOT committed: ~700MB of time-series CSVs)
+paper_data/
+
 *.gif
 *.png
+
+# Exception: the paper's own figures are small and needed to compile paper/main.tex
+!paper/figure/
+!paper/figure/*.png
 
 H_*_val.csv
 H_*_0.csv
