@@ -39,10 +39,23 @@
 
 検証: L=10(PBC)/L=12(open) で演算子リスト・エネルギー密度・真空値・固有値の全24配列がリファクタ前と一致（`np.allclose`）。unittest 4件 PASS。小規模エンドツーエンド実行（run_sim.py, L=12）も完走。
 
-## フェーズ4: テスト・ドキュメント拡充
+## フェーズ4: テスト・ドキュメント拡充 ✅（E1除く）
 
 | 項目 | 内容 | 状態 |
 | --- | --- | --- |
-| D4 | 回帰テスト追加 | 未着手 |
-| A5 | config スキーマ検証 | 未着手 |
-| E1 | 英語 README（任意） | 未着手 |
+| D4 | `tests/test_operators_regression.py` 追加。ベクトル化前の素朴な O(L^4) 実装を参照実装として保持し、ベクトル化版と小規模 L(=6, PBC両方)で完全一致を固定 | ✅ |
+| A5 | `config.validate_config()` を追加し `prepare_config` で早期検証（L/l/p/m/t_f/PBC/dt_scale/各fraction の型・範囲）。不正値テストも追加 | ✅ |
+| E1 | 英語 README（任意） | ⏸ 見送り（任意項目。日本語READMEは充実） |
+
+検証: `python -m unittest discover -s tests` で 7 件（既存4 + 新規3）PASS。
+
+---
+
+## 残課題（別タスク化）
+
+- **C4**: グローバル変数の `SimulationParams` 全面集約（~40関数に波及・大規模）。
+- **C2**: `build_bdg_matrix` のベクトル化（非支配的・索引が繊細）。
+- **E1**: 英語 README / API ドキュメント。
+
+いずれも今回の検証範囲（unittest 7件 + 演算子回帰）では安全に担保しきれない、
+または効果が小さいため見送り。着手時は本ファイルのフェーズ構成に追記する。

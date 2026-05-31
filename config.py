@@ -325,8 +325,48 @@ def load_config(path="config.json"):
     return prepare_config(config)
 
 
+def _is_number(value):
+    """bool を除く int/float かどうか（JSON の true/false を数値扱いしない）。"""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def validate_config(config):
+    """主要キーの型・範囲を検証し、不正値は分かりやすい ValueError にする。
+
+    重い計算へ進む前の早期診断が目的。物理的な妥当性ではなく、明らかな型・範囲
+    エラー（負の格子数、t_f<=t_i など）のみを対象にする。
+    """
+    def require(key):
+        if key not in config:
+            raise ValueError(f"config: 必須キー '{key}' がありません")
+        return config[key]
+
+    L = require("L")
+    if isinstance(L, bool) or not isinstance(L, int) or L <= 1:
+        raise ValueError(f"config: 'L' は 2 以上の整数で指定してください (got {L!r})")
+    if not (_is_number(require("l")) and config["l"] > 0):
+        raise ValueError(f"config: 'l' は正の数で指定してください (got {config['l']!r})")
+    for key in ("p", "m"):
+        if not _is_number(require(key)):
+            raise ValueError(f"config: '{key}' は数値で指定してください (got {config[key]!r})")
+    t_i, t_f = require("t_i"), require("t_f")
+    if not (_is_number(t_i) and _is_number(t_f)) or t_f <= t_i:
+        raise ValueError(f"config: 't_f' は 't_i' より大きい必要があります (t_i={t_i!r}, t_f={t_f!r})")
+    if not isinstance(require("PBC"), bool):
+        raise ValueError(f"config: 'PBC' は真偽値で指定してください (got {config['PBC']!r})")
+    ds = config.get("dt_scale")
+    if ds is not None and not (_is_number(ds) and ds > 0):
+        raise ValueError(f"config: 'dt_scale' は正の数で指定してください (got {ds!r})")
+    for key in ("j0_fraction", "sigma_fraction"):
+        v = config.get(key)
+        if v is not None and not (_is_number(v) and 0 <= v <= 1):
+            raise ValueError(f"config: '{key}' は 0..1 の範囲で指定してください (got {v!r})")
+    return config
+
+
 def prepare_config(config):
     """Validate config values and derive constants used by the numerical pipeline."""
+    validate_config(config)
     prepared = dict(config)
     override_notes = []
 

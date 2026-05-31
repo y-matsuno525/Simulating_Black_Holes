@@ -38,6 +38,14 @@ python3 main.py
 - `matplotlib`
 - `Pillow` または matplotlib の GIF 保存に必要な PillowWriter 環境
 
+数値計算の健全性チェックと演算子ベクトル化の回帰テストを同梱しています。
+
+```bash
+python -m unittest discover -s tests
+```
+
+push / PR では GitHub Actions（`.github/workflows/test.yml`）で自動実行されます。
+
 ## 主な設定
 
 `config.json` でよく触る項目です。
