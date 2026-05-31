@@ -12,16 +12,26 @@
 
 | # | タスク | 状態 | コミット | 備考 |
 |---|---|---|---|---|
-| 1 | データ集約（CSV/geodesic→`paper_data/`） | ⬜ | - | 元フォルダは保持しコピー |
-| 2 | 論文一式→`paper/` 取込 | ⬜ | - | main.tex/books.bib/draft/figure |
-| 3 | Notebook図生成ロジック把握 | ⬜ | - | figure.ipynb×2, plot.ipynb 等 |
-| 4 | `paper_figures/` スクリプト群作成 | ⬜ | - | common+make_*×5+make_all |
-| 5 | `analysis/` 補助計算スクリプト作成 | ⬜ | - | dispersion/majorana/stagnation |
+| 1 | データ集約（CSV/geodesic→`paper_data/`） | ✅ | 69baf3d | 5フォルダ198CSV集約。686MBのためgitignore |
+| 2 | 論文一式→`paper/` 取込 | ✅ | 69baf3d | main.tex/books.bib/draft/figure(8図) |
+| 3 | Notebook図生成ロジック把握 | ✅ | - | CSV形式(ヘッダ無(999,300))・geodesic形式を確定 |
+| 4 | `paper_figures/` スクリプト群作成 | ✅ | (本コミット) | common+make_*×5+make_all、全7図生成確認 |
+| 5 | `analysis/` 補助計算スクリプト作成 | 🟦 | - | dispersion✅/majorana/stagnation |
 | 6 | `gui.py`（Tkinter統合GUI）作成 | ⬜ | - | 3タブ+ログ+図プレビュー |
-| 7 | .gitignore/README/requirements更新・検証 | ⬜ | - | make_all/ビルド/テスト/GUI |
+| 7 | .gitignore/README/requirements更新・検証 | 🟦 | - | gitignore✅、README/requirements/検証 残 |
+
+## 主要な判明事項（実装中に確定）
+- `*_val.csv` はヘッダ無し・time列無しの `(999,300)`。geodesic は `x,t` ヘッダ付き。
+- 表面重力: master_thesis の `H_m_sigmas.txt` は実は p=0 データ。真の p=1 は std ブランチ
+  `p=1_H_m_sigmas.txt`（負開始→ほぼ線形成長、波束変形に対応）。
+- 分散の2バンド解析式 `εE±(k)=β sin k ± √(p²(1−cosk)²+sin²k)` を導出、数値対角化と一致(誤差0.025)。
+  k=0傾き=β±1、k=πで p=0→ダブラーゼロモード/p=1→±2pギャップ（本文と整合）。
+- 生成図は「保存データからの同等再現」。論文PDFの厳密パネル(j0=30等)とはレイアウトが異なるため、
+  `paper/figure/`(論文本体)は上書きせず `paper_figures/generated/` へ出力。
 
 ## コミット履歴（このブランチ）
-（順次追記）
+- 69baf3d: 論文一式取込・データ集約・gitignore方針
+- (本コミット): paper_figures/ 図生成スクリプト群 + analysis/dispersion_relation.py
 
 ## 留意点 / 判明事項
 - 複合図の元レイアウト生成コードは現存せず、Notebookセルから新規に起こす（完全一致でなく同等図が目標）。
