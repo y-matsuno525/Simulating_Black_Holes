@@ -16,6 +16,19 @@ paper_data/
 !paper/figure/
 !paper/figure/*.png
 
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.out
+*.toc
+*.synctex.gz
+paper/main.pdf
+paper/main.log
+
+# GUI 一時ファイル
+_gui_overrides.json
+
 H_*_val.csv
 H_*_0.csv
 c_dag_c_val.csv

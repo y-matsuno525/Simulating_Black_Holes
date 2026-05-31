@@ -16,9 +16,9 @@
 | 2 | 論文一式→`paper/` 取込 | ✅ | 69baf3d | main.tex/books.bib/draft/figure(8図) |
 | 3 | Notebook図生成ロジック把握 | ✅ | - | CSV形式(ヘッダ無(999,300))・geodesic形式を確定 |
 | 4 | `paper_figures/` スクリプト群作成 | ✅ | (本コミット) | common+make_*×5+make_all、全7図生成確認 |
-| 5 | `analysis/` 補助計算スクリプト作成 | 🟦 | - | dispersion✅/majorana/stagnation |
-| 6 | `gui.py`（Tkinter統合GUI）作成 | ⬜ | - | 3タブ+ログ+図プレビュー |
-| 7 | .gitignore/README/requirements更新・検証 | 🟦 | - | gitignore✅、README/requirements/検証 残 |
+| 5 | `analysis/` 補助計算スクリプト作成 | ✅ | 34736f4 | dispersion/majorana/stagnation 全て動作確認 |
+| 6 | `gui.py`（Tkinter統合GUI）作成 | ✅ | (本コミット) | 3タブ+ログ+図プレビュー、run_sim.py、import確認 |
+| 7 | .gitignore/README/requirements更新・検証 | 🟦 | - | gitignore✅、論文ビルド✅、README/requirements/テスト 残 |
 
 ## 主要な判明事項（実装中に確定）
 - `*_val.csv` はヘッダ無し・time列無しの `(999,300)`。geodesic は `x,t` ヘッダ付き。
