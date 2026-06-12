@@ -12,7 +12,7 @@ WH_p=1.png:
       p=1 では左右モード結合により horizon を部分透過。
 
 由来: master_thesis/figure.ipynb, thesis/plot.ipynb, various_beta.ipynb(logL)。
-horizon は解析値 J_WH≈87.18。
+horizon は archived data の解析値 J_WH≈87.18。
 """
 
 from __future__ import annotations

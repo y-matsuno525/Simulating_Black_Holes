@@ -1,0 +1,274 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{amsmath,amssymb,bm}
+\usepackage[margin=25mm]{geometry}
+
+\newcommand{\chip}{\chi^{+}}
+\newcommand{\chim}{\chi^{-}}
+\newcommand{\eps}{\epsilon}
+\newcommand{\bbeta}{\beta}
+
+\title{Hamiltonian Density in the $\chi^\pm$ Basis}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Definition of the $\chi^\pm$ modes}
+
+We use the two local Majorana-like modes
+\begin{align}
+  \chi_j^\pm
+  =
+  \frac{1}{\sqrt{2}}
+  \left(
+    e^{\pm i\pi/4}c_j
+    +
+    e^{\mp i\pi/4}c_j^\dagger
+  \right).
+\end{align}
+The inverse transformation is
+\begin{align}
+  c_j
+  =
+  \frac{1}{\sqrt{2}}
+  \left(
+    e^{-i\pi/4}\chi_j^+
+    +
+    e^{i\pi/4}\chi_j^-
+  \right).
+\end{align}
+The anticommutation relations are
+\begin{align}
+  \{\chi_i^+,\chi_j^+\}=\delta_{ij},
+  \qquad
+  \{\chi_i^-,\chi_j^-\}=\delta_{ij},
+  \qquad
+  \{\chi_i^+,\chi_j^-\}=0.
+\end{align}
+
+\section{Useful bilinears}
+
+The onsite number operator becomes
+\begin{align}
+  c_j^\dagger c_j
+  =
+  \frac{1}{2}
+  +
+  i\chi_j^+\chi_j^- .
+\end{align}
+For a nearest-neighbor bond $(j,j+1)$,
+\begin{align}
+  c_{j+1}c_j
+  =
+  \frac{1}{2}
+  \left(
+    i\chi_j^+\chi_{j+1}^+
+    -
+    i\chi_j^-\chi_{j+1}^-
+    -
+    \chi_j^-\chi_{j+1}^+
+    -
+    \chi_j^+\chi_{j+1}^-
+  \right),
+\end{align}
+and
+\begin{align}
+  c_{j+1}^\dagger c_j
+  =
+  \frac{1}{2}
+  \left(
+    -\chi_j^+\chi_{j+1}^+
+    -
+    \chi_j^-\chi_{j+1}^-
+    -
+    i\chi_j^-\chi_{j+1}^+
+    +
+    i\chi_j^+\chi_{j+1}^-
+  \right).
+\end{align}
+The corresponding expressions for the left bond $(j-1,j)$ are obtained by
+replacing $(j,j+1)$ with $(j-1,j)$.
+
+\section{Site-centered density used in the code}
+
+The code defines a site density by averaging the left and right bonds around
+site $j$.  In this convention, the same local factor
+$\bbeta_{j+1/2}\equiv \bbeta(j+1/2)$ multiplies the averaged
+nearest-neighbor operator at site $j$.
+Therefore the site-centered densities are
+\begin{align}
+  H_j^+
+  &=
+  -\frac{i}{4\eps}
+  \left(1+\bbeta_{j+1/2}\right)
+  \left(
+    \chi_{j-1}^+\chi_j^+
+    +
+    \chi_j^+\chi_{j+1}^+
+  \right),
+  \\
+  H_j^-
+  &=
+  \frac{i}{4\eps}
+  \left(-1+\bbeta_{j+1/2}\right)
+  \left(
+    \chi_{j-1}^-\chi_j^-
+    +
+    \chi_j^-\chi_{j+1}^-
+  \right),
+  \\
+  H_j^{+-}
+  &=
+  -\frac{i p}{4\eps}
+  \left(
+    \chi_{j-1}^+\chi_j^-
+    +
+    \chi_{j-1}^-\chi_j^+
+    +
+    \chi_j^+\chi_{j+1}^-
+    +
+    \chi_j^-\chi_{j+1}^+
+  \right)
+  -
+  \frac{p-\eps m}{\eps}\chi_j^+\chi_j^- .
+\end{align}
+The local Hamiltonian density is
+\begin{align}
+  H_j
+  =
+  H_j^+ + H_j^- + H_j^{+-}.
+\end{align}
+For open boundary conditions, the implementation sets the endpoint densities
+to zero.
+
+\section{Total Hamiltonian in the code convention}
+
+The total Hamiltonian is the sum over site-centered densities,
+\begin{align}
+  H = \sum_j H_j .
+\end{align}
+Because each nearest-neighbor bond appears once from the density at its left
+site and once from the density at its right site, the coefficient on the bond
+$(a,a+1)$ contains the averaged beta factor
+\begin{align}
+  \bar{\bbeta}_{a+1/2}
+  =
+  \frac{\bbeta_{a+1/2}+\bbeta_{a+3/2}}{2}.
+\end{align}
+This is the same link average used in the BdG matrix construction.  Therefore
+the summed Hamiltonian can be written as
+\begin{align}
+  H
+  &=
+  \sum_a
+  \Bigg[
+    -\frac{i}{2\eps}
+    \left(1+\bar{\bbeta}_{a+1/2}\right)
+    \chi_a^+\chi_{a+1}^+
+    +
+    \frac{i}{2\eps}
+    \left(-1+\bar{\bbeta}_{a+1/2}\right)
+    \chi_a^-\chi_{a+1}^-
+    \nonumber\\
+  &\hspace{35mm}
+    -
+    \frac{i p}{2\eps}
+    \left(
+      \chi_a^+\chi_{a+1}^-
+      +
+      \chi_a^-\chi_{a+1}^+
+    \right)
+  \Bigg]
+  -
+  \frac{p-\eps m}{\eps}
+  \sum_j
+  \chi_j^+\chi_j^- .
+\end{align}
+
+\section{Heisenberg equation of motion}
+
+For either species $\sigma=\pm$, the Heisenberg equation is
+\begin{align}
+  i\frac{\partial}{\partial t}\chi_j^\sigma
+  =
+  [\chi_j^\sigma,H].
+\end{align}
+Using the anticommutation relations, a useful identity for any two
+$\chi$ operators is
+\begin{align}
+  [\chi_a,\chi_b\chi_c]
+  =
+  \{\chi_a,\chi_b\}\chi_c
+  -
+  \chi_b\{\chi_a,\chi_c\}.
+\end{align}
+Equivalently, if the collective index $\alpha=(j,\sigma)$ is used and
+$\{\chi_\alpha,\chi_\beta\}=\delta_{\alpha\beta}$, then
+\begin{align}
+  [\chi_\alpha,\chi_\beta\chi_\gamma]
+  =
+  \delta_{\alpha\beta}\chi_\gamma
+  -
+  \delta_{\alpha\gamma}\chi_\beta .
+\end{align}
+
+\subsection{Equations from the code Hamiltonian}
+
+Using the summed Hamiltonian in the code convention, the equations of motion
+are
+\begin{align}
+  i\partial_t \chi_j^+
+  &=
+  -\frac{i}{2\eps}
+  \left[
+    \left(1+\bar{\bbeta}_{j+1/2}\right)\chi_{j+1}^+
+    -
+    \left(1+\bar{\bbeta}_{j-1/2}\right)\chi_{j-1}^+
+  \right]
+  \nonumber\\
+  &\quad
+  -\frac{i p}{2\eps}
+  \left(
+    \chi_{j+1}^-
+    -
+    \chi_{j-1}^-
+  \right)
+  -
+  \frac{p-\eps m}{\eps}\chi_j^- ,
+  \\
+  i\partial_t \chi_j^-
+  &=
+  \frac{i}{2\eps}
+  \left[
+    \left(-1+\bar{\bbeta}_{j+1/2}\right)\chi_{j+1}^-
+    -
+    \left(-1+\bar{\bbeta}_{j-1/2}\right)\chi_{j-1}^-
+  \right]
+  \nonumber\\
+  &\quad
+  -\frac{i p}{2\eps}
+  \left(
+    \chi_{j+1}^+
+    -
+    \chi_{j-1}^+
+  \right)
+  +
+  \frac{p-\eps m}{\eps}\chi_j^+ .
+\end{align}
+Here
+\begin{align}
+  \bar{\bbeta}_{j+1/2}
+  =
+  \frac{\bbeta_{j+1/2}+\bbeta_{j+3/2}}{2},
+  \qquad
+  \bar{\bbeta}_{j-1/2}
+  =
+  \frac{\bbeta_{j-1/2}+\bbeta_{j+1/2}}{2}.
+\end{align}
+These follow directly from
+$i\partial_t\chi_j^\pm=[\chi_j^\pm,H]$ and the bilinear commutator identity
+above.
+
+\end{document}

@@ -35,7 +35,7 @@ plt.rcParams.update({
 REPO = Path(__file__).resolve().parent
 # ホライズン位置・格子定数は paper_figures/common.py に一本化（重複定義の排除）。
 sys.path.insert(0, str(REPO / "paper_figures"))
-from common import EPS_DEFAULT, J_BH, J_WH, L_DEFAULT  # noqa: E402
+from common import EPS_DEFAULT, J_BH, J_WH_LEGACY as J_WH, L_DEFAULT  # noqa: E402
 
 BASE = Path(os.environ.get("SBH_ARCHIVE_BASE", Path.home()))
 # 生成図の出力先は paper_figures/generated/ に統一。

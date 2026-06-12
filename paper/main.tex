@@ -394,23 +394,23 @@ For the black hole wave packet dynamics shown in Figs.~\ref{fig:bh_p0} and \ref{
 
 \begin{figure*}[t]
 \includegraphics[width=\linewidth]{figure/p=0_BH.png}
-\caption{Wave packet dynamics for the black hole profile with $p=0$. The system parameters are $L=300$, $\ell=2\pi$, and $\beta(x)=A\tanh[B(x-x_0)]+C$ with $A=0.6$, $B=3$, and $C=0.6$. In (a,b), $x_0=2\ell/3$ and the event horizon is at $j_h\approx213$; in (c,d), $x_0=\ell/3$ and the event horizon is at $j_h\approx113$. (a) Packet initialized outside the horizon with ingoing group velocity ($j_0=30$, $\sigma=0.05L$). (b) Packet initialized outside the horizon with outgoing group velocity ($j_0=40$, $\sigma=0.05L$). (c) Packet initialized inside the horizon with a right-moving initial spinor ($j_0=180$, $\sigma=0.05L$). (d) Packet initialized inside the horizon with a left-moving initial spinor ($j_0=180$, $\sigma=0.05L$). Red dashed lines indicate the event horizon, and cyan curves indicate the corresponding null geodesics $dx/dt=\beta(x)\pm1$.}
+\caption{Wave packet dynamics for the black hole profile with $p=0$. The system parameters are $L=300$, $\ell=2\pi$, and $\beta(x)=A\tanh[B(x-x_0)]+C$ with $A=0.6$, $B=3$, and $C=0.6$. In (a,b), $x_0=2\ell/3$ and the event horizon is at $j_h\approx213$; in (c,d), $x_0=\ell/3$ and the event horizon is at $j_h\approx113$. (a) Packet initialized outside the horizon with ingoing group velocity ($j_0=60$, $\sigma=0.05L$). (b) Packet initialized outside the horizon with outgoing group velocity ($j_0=120$, $\sigma=0.05L$). (c) Packet initialized inside the horizon with a right-moving initial spinor ($j_0=150$, $\sigma=0.05L$). (d) Packet initialized inside the horizon with a left-moving initial spinor ($j_0=150$, $\sigma=0.05L$). Black dotted lines indicate the event horizon, and cyan dashed curves indicate the corresponding null geodesics $dx/dt=\beta(x)\pm1$.}
 \label{fig:bh_p0}
 \end{figure*}
 We first examine the motion of the wave packet for the case $p=0$.
 Fig.~\ref{fig:bh_p0} shows the time evolution of wave packets for several initial conditions.
-The event horizon is indicated by the red line, while the geodesic is shown by the light-blue curve.
+The event horizon is indicated by the black dotted line, while the geodesic is shown by the cyan dashed curve.
 The region to the right of the event horizon corresponds to the black hole interior.
 Figs.~\ref{fig:bh_p0}(a,b) show that wave packets initially placed outside the black hole follow the corresponding geodesic trajectories for both ingoing and outgoing motion.
 Figs.~\ref{fig:bh_p0}(c,d) show the time evolution of a wave packet initially placed inside the black hole.
 Inside the event horizon, both characteristic velocities are positive in this setup, so wave packets propagate only toward increasing $x$.
 Thus, the wave packet is expected to propagate only to the right.
 The numerical results show that both the right-moving mode in Fig.~\ref{fig:bh_p0}(c) and the left-moving mode in Fig.~\ref{fig:bh_p0}(d) propagate in the rightward direction.
-The initial state was chosen with $j_0=180$, and the standard deviation was set to $\sigma=0.05L$.
+The initial state was chosen with $j_0=150$, and the standard deviation was set to $\sigma=0.05L$.
 
 \begin{figure*}[t]
 \includegraphics[width=\linewidth]{figure/p=1_BH.png}
-\caption{Wave packet dynamics for the black hole profile with $p=1$. System parameters are the same as in Fig.~\ref{fig:bh_p0}: in (a,b), $x_0=2\ell/3$ and $j_h\approx213$; in (c,d), $x_0=\ell/3$ and $j_h\approx113$. (a) Packet initialized outside the horizon with ingoing group velocity ($j_0=30$, $\sigma=0.05L$). (b) Packet initialized outside the horizon with outgoing group velocity ($j_0=40$, $\sigma=0.05L$). (c) Packet initialized inside the horizon with a right-moving initial spinor ($j_0=180$, $\sigma=0.05L$). (d) Packet initialized inside the horizon with a left-moving initial spinor ($j_0=180$, $\sigma=0.05L$). Red dashed lines indicate the event horizon, and cyan curves indicate the corresponding null geodesics $dx/dt=\beta(x)\pm1$. Interior oscillations in (c,d) are more pronounced than in the $p=0$ case owing to the stronger excitation of doubler modes, as confirmed by the $k$-space analysis of Fig.~\ref{fig:doubler_fft}.}
+\caption{Wave packet dynamics for the black hole profile with $p=1$. System parameters are the same as in Fig.~\ref{fig:bh_p0}: in (a,b), $x_0=2\ell/3$ and $j_h\approx213$; in (c,d), $x_0=\ell/3$ and $j_h\approx113$. (a) Packet initialized outside the horizon with ingoing group velocity ($j_0=60$, $\sigma=0.05L$). (b) Packet initialized outside the horizon with outgoing group velocity ($j_0=120$, $\sigma=0.05L$). (c) Packet initialized inside the horizon with a right-moving initial spinor ($j_0=150$, $\sigma=0.05L$). (d) Packet initialized inside the horizon with a left-moving initial spinor ($j_0=150$, $\sigma=0.05L$). Black dotted lines indicate the event horizon, and cyan dashed curves indicate the corresponding null geodesics $dx/dt=\beta(x)\pm1$. Interior oscillations in (c,d) are more pronounced than in the $p=0$ case owing to the stronger excitation of doubler modes, as confirmed by the $k$-space analysis of Fig.~\ref{fig:doubler_fft}.}
 \label{fig:bh_p1}
 \end{figure*}
 Next, we investigate the motion of the wave packet for the case $p=1$.
@@ -442,7 +442,7 @@ It implies that the surface gravity can be read off from the exponential growth 
 For the surface-gravity extraction (Fig.~\ref{fig:sg}), we use $A=1$, $B=1$, $C=1$, $x_0=\pi$ (so $x_h=x_0$, $\kappa=|\beta'(x_h)|=1$, and $j_h=0.5L$), $j_0=245$, $\sigma=0.003L$, and fit the data over the time interval $t\in[0,1]$.
 \begin{figure}[t]
 \includegraphics[width=\linewidth]{figure/sg.png}
-\caption{Extraction of surface gravity from wave packet broadening ($L=300$, $A=B=C=1$, $x_0=\pi$, $\kappa=1$, $j_0=245$, $\sigma=0.003L$, with the fit performed over $t\in[0,1]$). Blue dots show the numerical simulation results, and red curves show the near-horizon approximation in Eq.~\eqref{eq:sigma_kappa}. (a) Result for $p=0$, with relative error $\approx2\%$. (b) Result for $p=1$, with relative error $\approx6\%$ due to simultaneous wave packet dispersion. The vertical axis $\delta\sigma\equiv\sigma(t)-\sigma(0)$ denotes the change in the wave-packet standard deviation.}
+\caption{Extraction of surface gravity from wave packet broadening ($L=300$, $A=B=C=1$, $x_0=\pi$, $\kappa=1$, $j_0=245$, $\sigma=0.003L$, with the fit performed over $t\in[0,1]$). Blue dots show the numerical simulation results, and red curves show the analytical near-horizon approximation in Eq.~\eqref{eq:sigma_kappa} with $\kappa=1$. (a) Result for $p=0$, with relative error $\approx2\%$. (b) Result for $p=1$, with relative error $\approx6\%$ due to simultaneous wave packet dispersion. The vertical axis $\delta\sigma\equiv\sigma(t)-\sigma(0)$ denotes the change in the wave-packet standard deviation.}
 \label{fig:sg}
 \end{figure}
 Fig.~\ref{fig:sg} compares the numerical data with the analytical prediction.
@@ -458,7 +458,7 @@ In this section, we present the results of numerical simulations of particle dyn
 For the white-hole dynamics, we use $A=C=-0.6$, $B=3$, $x_0=7\pi/5$ (white-hole horizon at $j_h\approx0.743L$), with $j_0=0.2L$ and $\sigma=0.05L$.
 \begin{figure}[t]
 \includegraphics[width=\linewidth]{figure/WH_p=0.png}
-\caption{Wave packet dynamics in the white-hole geometry for $p=0$. (a) Space-time diagram of $\mathcal{H}_j^+$ for $L=300$, $j_0=0.2L$, and $\sigma=0.05L$, with $\beta$ profile parameters $A=C=-0.6$, $B=3$, and $x_0=7\pi/5$ (white-hole horizon at $j_h\approx0.743L$). The wave packet is compressed toward the white-hole horizon (red dashed line) and eventually reflected due to finite lattice resolution. (b) Lattice stagnation time $T_{\mathrm{lat}}$ versus $\log L$ for various system sizes, using $A=C=-1$, $B=0.75$, $x_0=9\pi/5$, $j_0=0.2L$, and $\sigma=0.05L$. Blue dots show numerical simulation results, and the red line shows a linear fit, confirming the scaling of Eq.~\eqref{eq:T_logL}.}
+\caption{Wave packet dynamics in the white-hole geometry for $p=0$. (a) Space-time diagram of $\mathcal{H}_j^+$ for $L=300$, $j_0=0.2L$, and $\sigma=0.05L$, with $\beta$ profile parameters $A=C=-0.6$, $B=3$, and $x_0=7\pi/5$ (white-hole horizon at $j_h\approx0.743L$). The wave packet is compressed toward the white-hole horizon (black dotted line) and eventually reflected due to finite lattice resolution; the cyan dashed curve shows the corresponding null geodesic. (b) Lattice stagnation time $T_{\mathrm{lat}}$ versus $\ln L$ for various system sizes, using $A=C=-1$, $B=0.75$, $x_0=9\pi/5$, $j_0=0.2L$, and $\sigma=0.05L$. Blue dots show numerical simulation results, which are consistent with the logarithmic scaling of Eq.~\eqref{eq:T_logL}.}
 \label{fig:wh_p0}
 \end{figure}
 For $p = 0$, as shown in Fig.~\ref{fig:wh_p0}, the wave packet is initially compressed at the white-hole horizon, yielding behavior consistent with the ideal analytical expectation. However, after a certain time, the wave packet collapses and is reflected. This behavior is attributed to a finite-size effect arising when the wave-packet standard deviation becomes smaller than the lattice spacing.
@@ -467,21 +467,22 @@ Near the white-hole horizon, the same linearized null-geodesic argument gives an
 In the lattice model, this continuum description breaks down once this standard deviation becomes comparable to the lattice spacing $\varepsilon=\ell/L$.
 Defining the continuum estimate of the stagnation time $T_{\mathrm{cont}}$ by $\sigma(T_{\mathrm{cont}})\sim\varepsilon$, one obtains
 \begin{align}
-    T_{\mathrm{cont}} \propto \log L ,
+    T_{\mathrm{cont}} \propto \ln L ,
     \label{eq:T_logL}
 \end{align}
 for fixed continuum size $\ell$ and fixed initial physical standard deviation $\sigma_0$.
 
 We then test this logarithmic scaling by examining the dependence of the lattice stagnation time $T_{\mathrm{lat}}$ on the system size $L$.
-To define $T_{\mathrm{lat}}$ in the numerical data, we first identify the time $t_{\mathrm{in}}$ at which the second derivative of $\beta$ evaluated at the wave-packet mean position falls below $0.1$.
+To define $T_{\mathrm{lat}}$ in the numerical data, we first identify the time $t_{\mathrm{in}}$ using the criterion $|\partial_x^2\beta|<0.1$, evaluated at the wave-packet mean position.
 We then identify the time $t_{\mathrm{min}}$ at which the wave-packet standard deviation reaches its minimum.
 The lattice stagnation time is defined as $T_{\mathrm{lat}} = t_{\mathrm{min}} - t_{\mathrm{in}}$.
-The results shown in Fig.~\ref{fig:wh_p0} confirm that $T_{\mathrm{lat}}$ follows the scaling predicted for $T_{\mathrm{cont}}$.
+The approximately linear dependence of the data on $\ln L$ in Fig.~\ref{fig:wh_p0}(b) is consistent with the logarithmic system-size scaling predicted for $T_{\mathrm{cont}}$.
+This comparison tests only the logarithmic dependence, not its coefficient: $T_{\mathrm{lat}}$ is defined operationally from the nonlinear lattice collapse and reflection, so its slope need not equal the continuum value $1/\kappa$.
 Therefore, we conclude that the reflection of the wave packet is caused by a finite-size effect associated with its standard deviation becoming smaller than the lattice spacing.
 
 \begin{figure}[t]
 \includegraphics[width=\linewidth]{figure/WH_p=1.png}
-\caption{White-hole dynamics for $p=1$ ($L=300$, $j_0=0.2L$, $\sigma=0.05L$, with the same $\beta$ profile as Fig.~\ref{fig:wh_p0}(a), $A=C=-0.6$, $B=3$, $x_0=7\pi/5$, and $j_h\approx0.743L$). (a) Space-time diagram of $\mathcal{H}_j^+$. (b) Space-time diagram of $\mathcal{H}_j^-$. (c) Space-time diagram of $\mathcal{H}_j^\pm$. Unlike the $p=0$ case, the coupling between the right- and left-moving components allows partial transmission across the white-hole horizon (red dashed line).}
+\caption{White-hole dynamics for $p=1$ ($L=300$, $j_0=0.2L$, $\sigma=0.05L$, with the same $\beta$ profile as Fig.~\ref{fig:wh_p0}(a), $A=C=-0.6$, $B=3$, $x_0=7\pi/5$, and $j_h\approx0.743L$). (a) Space-time diagram of $\mathcal{H}_j^+$. (b) Space-time diagram of $\mathcal{H}_j^-$. (c) Space-time diagram of $\mathcal{H}_j^\pm$. Unlike the $p=0$ case, the coupling between the right- and left-moving components allows partial transmission across the white-hole horizon (black dotted line); cyan dashed curves show the corresponding null geodesics.}
 \label{fig:wh_p1}
 \end{figure}
 For $p=1$, the wave packet dynamics differs from the $p=0$ case.
@@ -493,7 +494,7 @@ In this work, we have investigated particle dynamics in a one-dimensional lattic
 
 For the black hole geometry, Gaussian wave packets initialized both outside and inside the event horizon closely follow the corresponding geodesics for both $p=0$ and $p=1$ parameter choices. The oscillatory behavior observed inside the black hole arises from doubler modes, with the $p=1$ case exhibiting more pronounced oscillations owing to stronger overlap with, and excitation of, these modes. We also extracted the surface gravity from the exponential growth of the wave-packet standard deviation in the near-horizon regime, finding agreement within a relative error of $\sim 2\%$ for $p=0$ and a larger discrepancy of $\sim 6\%$ for $p=1$, with the latter attributed to deformation of the wave packet during broadening.
 
-For the white-hole geometry, the wave packet is compressed toward the white-hole horizon in a manner consistent with the continuum expectation, but eventually collapses and reflects due to a finite-size effect. The lattice stagnation time follows the logarithmic system-size scaling $T_{\mathrm{lat}}\propto\log L$, as confirmed numerically. For $p=1$, partial transmission across the white-hole horizon is observed, suggesting an important role of the coupling between left- and right-moving modes.
+For the white-hole geometry, the wave packet is compressed toward the white-hole horizon in a manner consistent with the continuum expectation, but eventually collapses and reflects due to a finite-size effect. The lattice stagnation time is consistent with the logarithmic system-size scaling $T_{\mathrm{lat}}\propto\ln L$. For $p=1$, partial transmission across the white-hole horizon is observed, suggesting an important role of the coupling between left- and right-moving modes.
 
 These results demonstrate that the one-dimensional lattice fermion model provides a practical framework for assessing curved-spacetime particle dynamics in lattice fermion simulators. Future directions include extending the model to time-dependent backgrounds to study particle-creation phenomena such as Hawking radiation and cosmological particle production, as well as implementing the lattice Hamiltonian on near-term quantum hardware to experimentally probe these phenomena.
 

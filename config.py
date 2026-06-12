@@ -234,8 +234,23 @@ def beta_expression_from_config(config):
     return r"$\beta(j)$: unknown profile"
 
 
-def compute_horizon_positions_from_config(config, num_samples=10000):
-    """Return lattice-index positions where abs(beta)=1 for a config."""
+def horizon_target_beta_from_config(config):
+    """Return the branch-specific horizon target beta for the configured chirality."""
+    chirality = config.get("chirality")
+    if chirality == "chi_plus":
+        return -1.0
+    if chirality == "chi_minus":
+        return 1.0
+    return None
+
+
+def compute_abs_horizon_positions_from_config(config, num_samples=10000):
+    """Return lattice-index positions where abs(beta)=1.
+
+    This is kept only for diagnostics and legacy plots.  Branch-resolved wave
+    packet dynamics should use compute_horizon_positions_from_config(), which
+    looks for beta=-1 for chi_plus and beta=+1 for chi_minus.
+    """
     L_cfg = config.get("L")
     if L_cfg is None:
         return []
@@ -257,6 +272,36 @@ def compute_horizon_positions_from_config(config, num_samples=10000):
         if not unique_positions or abs(position - unique_positions[-1]) > 1e-3:
             unique_positions.append(float(position))
     return unique_positions
+
+
+def compute_target_horizon_positions_from_config(config, target_beta, num_samples=10000):
+    """Return lattice-index positions where beta(j)=target_beta."""
+    L_cfg = config.get("L")
+    if L_cfg is None:
+        return []
+    xs = np.linspace(0, L_cfg - 1, num_samples)
+    vals = beta_from_config(xs, config) - target_beta
+    positions = []
+    for idx in range(len(xs) - 1):
+        v0, v1 = vals[idx], vals[idx + 1]
+        if v0 == 0:
+            positions.append(xs[idx])
+        elif v0 * v1 < 0:
+            x0, x1 = xs[idx], xs[idx + 1]
+            positions.append(x0 - v0 * (x1 - x0) / (v1 - v0))
+    if vals[-1] == 0:
+        positions.append(xs[-1])
+
+    unique_positions = []
+    for position in positions:
+        if not unique_positions or abs(position - unique_positions[-1]) > 1e-3:
+            unique_positions.append(float(position))
+    return unique_positions
+
+
+def compute_horizon_positions_from_config(config, num_samples=10000):
+    """Return metric-horizon positions where abs(beta)=1 for a config."""
+    return compute_abs_horizon_positions_from_config(config, num_samples)
 
 
 def beta_derivative_at_j(config, j_position, physical_step=0.25):
@@ -282,12 +327,7 @@ def ideal_surface_gravity_from_config(config, horizon_positions=None):
     if not horizon_positions:
         return None, None
 
-    chirality = config.get("chirality")
-    target_beta = None
-    if chirality == "chi_plus":
-        target_beta = -1
-    elif chirality == "chi_minus":
-        target_beta = 1
+    target_beta = horizon_target_beta_from_config(config)
 
     if target_beta is None:
         selected_horizon = horizon_positions[0]
