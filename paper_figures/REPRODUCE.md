@@ -101,5 +101,13 @@ python paper_figures\make_fig6b_scaling.py --max-L 600
 `FIG6` combines the cached/recomputed `FIG6a` panel with the `FIG6b` scaling
 panel and writes `paper_figures/generated/panels/FIG6/FIG6.png` and `.pdf`.
 
+The independently recomputed diagnostic scaling data are tracked separately in
+`paper_figures/measured_data/T_lat_measured_L800.csv`.  They are not the
+manuscript FIG6(b) data, but they can be replotted with:
+
+```powershell
+python paper_figures\measure_fig6b_scaling.py --plot-only
+```
+
 This file is the intended replacement for the old GUI-based workflow when the
 task is to reproduce a manuscript figure.

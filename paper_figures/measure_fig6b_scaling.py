@@ -34,8 +34,9 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 RUN_ROOT = REPO / "paper_reproduction" / "runs" / "FIG6b_measured"
-DATA_DIR = REPO / "paper_data" / "logL"
-DATA_PATH = DATA_DIR / "T_lat_measured_L500.csv"
+DATA_DIR = REPO / "paper_figures" / "measured_data"
+LEGACY_DATA_DIR = REPO / "paper_data" / "logL"
+DATA_PATH = DATA_DIR / "T_lat_measured_L800.csv"
 OUT_DIR = REPO / "paper_figures" / "generated" / "panels" / "FIG6"
 
 DEFAULT_LS = (100, 200, 300, 400, 500)
@@ -115,23 +116,27 @@ def run_one(L: int, *, rerun: bool) -> dict:
 
 def _load_existing_rows() -> dict[int, list[float]]:
     rows: dict[int, list[float]] = {}
-    for path in sorted(DATA_DIR.glob("T_lat_measured_L*.csv")):
-        data = np.genfromtxt(path, delimiter=",", names=True)
-        if data.size == 0:
-            continue
-        for row in np.atleast_1d(data):
-            L = int(row["L"])
-            rows[L] = [
-                float(row["L"]),
-                float(row["lnL"]),
-                float(row["T_lat"]),
-                float(row["t_in"]),
-                float(row["t_min"]),
-                float(row["H_p_sigma_min"]),
-                float(row["summary_stagnation_time"]),
-                float(row["t_in_after_drop"]),
-                float(row["T_lat_after_drop"]),
-            ]
+    for data_dir in (DATA_DIR, LEGACY_DATA_DIR):
+        for path in sorted(data_dir.glob("T_lat_measured_L*.csv")):
+            data = np.genfromtxt(path, delimiter=",", names=True)
+            if data.size == 0:
+                continue
+            for row in np.atleast_1d(data):
+                L = int(row["L"])
+                rows.setdefault(
+                    L,
+                    [
+                        float(row["L"]),
+                        float(row["lnL"]),
+                        float(row["T_lat"]),
+                        float(row["t_in"]),
+                        float(row["t_min"]),
+                        float(row["H_p_sigma_min"]),
+                        float(row["summary_stagnation_time"]),
+                        float(row["t_in_after_drop"]),
+                        float(row["T_lat_after_drop"]),
+                    ],
+                )
     return rows
 
 
