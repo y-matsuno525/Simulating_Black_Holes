@@ -31,7 +31,8 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 RUN_ROOT = REPO / "paper_reproduction" / "runs" / "FIG6b_measured"
-DATA_PATH = REPO / "paper_data" / "logL" / "T_lat_measured_L500.csv"
+DATA_DIR = REPO / "paper_data" / "logL"
+DATA_PATH = DATA_DIR / "T_lat_measured_L500.csv"
 OUT_DIR = REPO / "paper_figures" / "generated" / "panels" / "FIG6"
 
 DEFAULT_LS = (100, 200, 300, 400, 500)
@@ -109,12 +110,40 @@ def run_one(L: int, *, rerun: bool) -> dict:
     return summary
 
 
+def _load_existing_rows() -> dict[int, list[float]]:
+    rows: dict[int, list[float]] = {}
+    for path in sorted(DATA_DIR.glob("T_lat_measured_L*.csv")):
+        data = np.genfromtxt(path, delimiter=",", names=True)
+        if data.size == 0:
+            continue
+        for row in np.atleast_1d(data):
+            L = int(row["L"])
+            rows[L] = [
+                float(row["L"]),
+                float(row["lnL"]),
+                float(row["T_lat"]),
+                float(row["t_in"]),
+                float(row["t_min"]),
+                float(row["H_p_sigma_min"]),
+                float(row["summary_stagnation_time"]),
+                float(row["t_in_after_drop"]),
+                float(row["T_lat_after_drop"]),
+            ]
+    return rows
+
+
+def _data_path_for_rows(rows: np.ndarray) -> Path:
+    max_l = int(np.nanmax(rows[:, 0]))
+    return DATA_DIR / f"T_lat_measured_L{max_l}.csv"
+
+
 def write_results(summaries: list[dict]) -> Path:
-    DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    merged_rows = _load_existing_rows()
     rows = []
     for item in summaries:
         measured = postprocess_run(int(item["L"]))
-        rows.append([
+        row = [
             item["L"],
             np.log(float(item["L"])),
             measured["T_lat"],
@@ -124,11 +153,21 @@ def write_results(summaries: list[dict]) -> Path:
             item.get("stagnation_time", np.nan),
             measured["t_in_after_drop"],
             measured["T_lat_after_drop"],
-        ])
-    rows = np.asarray(rows, dtype=float)
+        ]
+        print(
+            "[fig6b-measure] measured "
+            f"L={int(item['L'])}: T_lat={measured['T_lat']:.6g}, "
+            f"t_in={measured['t_in']:.6g}, t_min={measured['t_min']:.6g}"
+        )
+        merged_rows[int(item["L"])] = row
+        rows.append(row)
+    if not rows and not merged_rows:
+        raise RuntimeError("no Fig. 6(b) measurements available")
+    rows = np.asarray(list(merged_rows.values()), dtype=float)
     rows = rows[np.argsort(rows[:, 0])]
+    data_path = _data_path_for_rows(rows)
     np.savetxt(
-        DATA_PATH,
+        data_path,
         rows,
         delimiter=",",
         header=(
@@ -137,8 +176,8 @@ def write_results(summaries: list[dict]) -> Path:
         ),
         comments="",
     )
-    print(f"[fig6b-measure] wrote -> {DATA_PATH}")
-    return DATA_PATH
+    print(f"[fig6b-measure] wrote -> {data_path}")
+    return data_path
 
 
 def beta_second_derivative(x: np.ndarray) -> np.ndarray:
@@ -201,7 +240,14 @@ def postprocess_run(L: int) -> dict:
 
 def load_results(path: Path = DATA_PATH) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     data = np.genfromtxt(path, delimiter=",", names=True)
+    data = np.atleast_1d(data)
     return np.asarray(data["L"]), np.asarray(data["lnL"]), np.asarray(data["T_lat"])
+
+
+def _output_stem(path: Path) -> str:
+    Ls, _, _ = load_results(path)
+    max_l = int(np.nanmax(Ls))
+    return f"L{max_l}"
 
 
 def draw_measured_panel(ax, path: Path = DATA_PATH):
@@ -232,28 +278,40 @@ def save_figures(path: Path = DATA_PATH) -> None:
 
     configure_figure5_style()
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    stem = _output_stem(path)
 
     fig, ax = plt.subplots(figsize=(3.35, 2.45))
     draw_measured_panel(ax, path)
     for ext in ("pdf", "png"):
         fig.savefig(
-            (OUT_DIR / "FIG6b_measured_L500").with_suffix(f".{ext}"),
+            (OUT_DIR / f"FIG6b_measured_{stem}").with_suffix(f".{ext}"),
             dpi=600 if ext == "png" else None,
             bbox_inches="tight",
         )
     plt.close(fig)
+
+    fig6a_csv = PANEL_SPECS["fig6a"].run_dir / f"{PANEL_SPECS['fig6a'].observable}_val.csv"
+    if not fig6a_csv.exists():
+        print(
+            "[fig6b-measure] skipped combined FIG6 plot because FIG6(a) data is missing: "
+            f"{fig6a_csv}"
+        )
+        print("[fig6b-measure] run this once if you need the combined figure:")
+        print("  python paper_figures/reproduce_panel.py FIG6a --rerun")
+        print(f"[fig6b-measure] saved -> {OUT_DIR / f'FIG6b_measured_{stem}.png'}")
+        return
 
     fig, axes = plt.subplots(1, 2, figsize=(6.7, 2.55), constrained_layout=True)
     draw_panel(fig, axes[0], PANEL_SPECS["fig6a"])
     draw_measured_panel(axes[1], path)
     for ext in ("pdf", "png"):
         fig.savefig(
-            (OUT_DIR / "FIG6_measured_L500").with_suffix(f".{ext}"),
+            (OUT_DIR / f"FIG6_measured_{stem}").with_suffix(f".{ext}"),
             dpi=600 if ext == "png" else None,
             bbox_inches="tight",
         )
     plt.close(fig)
-    print(f"[fig6b-measure] saved -> {OUT_DIR / 'FIG6_measured_L500.png'}")
+    print(f"[fig6b-measure] saved -> {OUT_DIR / f'FIG6_measured_{stem}.png'}")
 
 
 def parse_l_values(raw: str | None, max_l: int) -> list[int]:
@@ -277,8 +335,10 @@ def main(argv: list[str] | None = None) -> None:
         if not L_values:
             raise SystemExit("No L values selected.")
         summaries = [run_one(L, rerun=args.rerun) for L in L_values]
-        write_results(summaries)
-    save_figures()
+        data_path = write_results(summaries)
+    else:
+        data_path = DATA_PATH
+    save_figures(data_path)
 
 
 if __name__ == "__main__":
