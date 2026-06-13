@@ -15,7 +15,7 @@ except ImportError:
     from style import configure_figure5_style
 
 
-DATA = REPO / "paper_data" / "logL" / "T_lat_digitized.csv"
+DATA = REPO / "paper_figures" / "reference_data" / "T_lat_digitized.csv"
 OUT_DIR = REPO / "paper_figures" / "generated" / "panels" / "FIG6"
 DEFAULT_MAX_L: float | None = None
 

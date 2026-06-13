@@ -1,8 +1,11 @@
-"""Measure Fig. 6(b) stagnation-time scaling by running the lattice model.
+"""Diagnostic measurement of Fig. 6(b) stagnation-time scaling.
 
 This is the calculation-based counterpart to ``make_fig6b_scaling.py``, which
-plots digitized manuscript points.  The default run list is capped at L=500 to
-avoid the expensive L=800 calculation.
+plots the digitized manuscript points used for the paper figure.  This script
+instead recomputes an operational ``T_lat`` from newly generated lattice output,
+so its ``FIG6b_measured_*`` files are diagnostic checks rather than manuscript
+reproduction figures.  The default run list is capped at L=500 to avoid the
+expensive L=800 calculation.
 """
 
 from __future__ import annotations
@@ -329,6 +332,10 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--rerun", action="store_true", help="Recompute even if cached summaries exist.")
     parser.add_argument("--plot-only", action="store_true", help="Only redraw figures from the measured CSV.")
     args = parser.parse_args(argv)
+    print(
+        "[fig6b-measure] diagnostic mode: this does not reproduce the manuscript "
+        "FIG6(b). Use `python paper_figures/reproduce_panel.py FIG6b` for the paper figure."
+    )
 
     if not args.plot_only:
         L_values = parse_l_values(args.Ls, args.max_L)

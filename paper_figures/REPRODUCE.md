@@ -89,7 +89,7 @@ That run writes `H_p_val.csv`, `H_m_val.csv`, and `H_pm_val.csv`, so
 white-hole time evolution only once.
 
 `FIG6b` reads the digitized manuscript points stored in
-`paper_data/logL/T_lat_digitized.csv` and replots the log-L scaling. It does
+`paper_figures/reference_data/T_lat_digitized.csv` and replots the log-L scaling. It does
 not run the BdG calculation. The digitized points include `L=800`, but this is
 only an image-derived data point, not a new `L=800` simulation. To plot only a
 smaller range, run for example:
