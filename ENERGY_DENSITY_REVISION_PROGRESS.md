@@ -136,16 +136,24 @@ by zero in the operator definition if `H = sum_j h_j` is to hold exactly.
 
 ## Phase 4: affected figures
 
-- [ ] Fig. 2: recalculate all four density panels.
-- [ ] Fig. 3: recalculate all four density panels.
-- [ ] Fig. 4(b): regenerate the FFT from the revised Fig. 3(a) data.
-- [ ] Fig. 5: recalculate widths and update both fitted errors.
-- [ ] Fig. 6(a): recalculate the white-hole density panel.
-- [ ] Fig. 6(b): separately decide whether to retain the current reference data
-      or remeasure `T_lat` with the revised density.
-- [ ] Fig. 7: recalculate all three density panels.
-- [ ] Confirm that Fig. 1 and Fig. 4(a) remain unchanged because they use the
-      homogeneous dispersion rather than local density data.
+- [x] Fig. 2: recalculate all four density panels.
+- [x] Fig. 3: recalculate all four density panels.
+- [x] Fig. 4(b): regenerate the FFT from the revised Fig. 3(a) data
+      (doubler peak `k_d = 1.1714` unchanged; FFT is normalized so the
+      `1/epsilon` rescaling cancels).
+- [x] Fig. 5: recalculate widths and update both fitted errors.
+      Revised: `kappa_fit(p=0) = 1.0332` (rel err 3.3%),
+      `kappa_fit(p=1) = 0.9514` (rel err 4.9%).
+      Old-density values were 1.0030 (0.3%) and 0.9036 (9.6%).
+- [x] Fig. 6(a): recalculate the white-hole density panel (`x0 = 2 ell/3`).
+- [x] Fig. 6(b): retained the digitized manuscript reference data unchanged;
+      no remeasurement performed (reference points are image-derived and not
+      affected by the density-operator normalization).
+- [x] Fig. 7: recalculate all three density panels (`x0 = 2 ell/3`).
+- [x] Confirm that Fig. 1 and Fig. 4(a) remain unchanged because they use the
+      homogeneous dispersion rather than local density data. `dispersion.png`
+      not regenerated; Fig. 4(a) re-rendered as part of the two-panel
+      `doubler_fft.png` with identical dispersion input.
 
 ## Phase 5: paper synchronization
 
@@ -190,4 +198,5 @@ comparisons pass.
 | 2026-07-23 | Rewrote `compute_vacuum_values()` with per-bond contractions `F1[b]`, `F2[b]` and the same link betas, endpoint rule, and `1/epsilon^2` normalization as the density operators | Full suite incl. new Fock-space tests (31 tests) | OK; commit `ab937b7` |
 | 2026-07-23 | Added `tests/test_energy_density.py`: full-Fock-space (Jordan-Wigner, L=6) comparison of the coded densities and vacuum values against literal Eqs. (41)-(43); sum rule `eps*sum_j H_j = H` incl. the onsite constant; left/right link betas; one-sided endpoints; Hermiticity; scaling invariance of center/width | `python -m unittest discover -s tests` (31 tests) | OK; commit `c96d753` |
 | 2026-07-23 | Figure-code notation: colorbars now show the vacuum-subtracted `delta E_{j,+/-}` and `delta E_{j,int}` (`H^{int}` replaces `H^{+-}`/`H^{pm}`); Fig. 6/7 white-hole runs switched to the manuscript profile `x0 = 2 ell/3` (`j_h ~ 212.81`); manifest tests and REPRODUCE.md updated | Full suite (31 tests) | OK; commit `1ee63c2` |
-| 2026-07-23 | Representative panels rerun with the revised density: FIG2c and FIG6a; old runs preserved as baselines | Comparison script (bulk ratio `1/eps`, conserved `eps*sum_j`, center/std/peak) | FIG2c: ratio 47.7465, integral 3.9395 conserved, center/std shifts <0.1 site. FIG6a: integral 1.79288 conserved, stagnation at `j_h~212.8` |
+| 2026-07-23 | Representative panels rerun with the revised density: FIG2c and FIG6a; old runs preserved as baselines | Comparison script (bulk ratio `1/eps`, conserved `eps*sum_j`, center/std/peak) | FIG2c: ratio 47.7465, integral 3.9395 conserved, center/std shifts <0.1 site. FIG6a: integral 1.79288 conserved, stagnation at `j_h~212.8`; commit `6b6db9f` |
+| 2026-07-23 | Full figure regeneration: FIG2a/b/d, FIG3a-d, FIG4(b), FIG5 (recomputed sigma data), FIG6 composite, FIG7; verified composites copied to `paper/figure/` (`p=0_BH.png`, `p=1_BH.png`, `WH_p=0.png`, `WH_p=1.png`, `sg.png`, `doubler_fft.png`) | Old/new comparisons per panel; visual inspection of FIG6/FIG7 | Trajectories/peaks unchanged (<0.5 site); `kappa_fit`: p=0 1.0332 (3.3%), p=1 0.9514 (4.9%) |
