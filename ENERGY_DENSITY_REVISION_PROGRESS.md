@@ -157,20 +157,30 @@ by zero in the operator definition if `H = sum_j h_j` is to hold exactly.
 
 ## Phase 5: paper synchronization
 
-- [ ] Use `a^+` and `a^-` consistently in the simulation section and captions.
-- [ ] Use `H^+`, `H^-`, and `H^{\mathrm{int}}` consistently in equations, captions,
-      colorbars, and prose.
-- [ ] Label plotted vacuum-subtracted quantities as `delta E_{j,s}` where the
-      manuscript defines that quantity.
-- [ ] Update all numerical values that change after recalculation, especially
-      the Fig. 5 surface-gravity errors.
-- [ ] Resolve the Fig. 6/7 choice:
-      `x0=0.7 ell, j_h about 223` or `x0=2 ell/3, j_h about 213`.
-- [ ] Remove the duplicated dynamics section and duplicated `sec:dynamics`
-      label in `main_revised.tex`.
-- [ ] Copy only verified regenerated figures into the manuscript figure folder.
-- [ ] Build the manuscript and check cross-references, captions, and figure
-      labels.
+- [x] Use `a^+` and `a^-` consistently in the simulation section and captions.
+      (Verified: no `chi^{+/-}` remained in `main_revised.tex`.)
+- [x] Use `H^+`, `H^-`, and `H^{\mathrm{int}}` consistently in equations, captions,
+      colorbars, and prose. Fig. 7(c) caption now uses
+      `\mathcal{H}_j^{\mathrm{int}}`.
+- [x] Label plotted vacuum-subtracted quantities as `delta E_{j,s}` where the
+      manuscript defines that quantity. Captions of Figs. 2, 3, 6(a), and 7 now
+      reference `\delta\mathcal{E}_{j,s}`; `\delta\mathcal{E}_{j,int}` defined
+      in the text after Eq. (44).
+- [x] Update all numerical values that change after recalculation, especially
+      the Fig. 5 surface-gravity errors: 0.3% -> 3.3% (p=0) and
+      9.6% -> 4.9% (p=1) in the caption, body text, and conclusions.
+- [x] Resolve the Fig. 6/7 choice: adopted `x0=2 ell/3, j_h about 213`
+      (matches the manuscript); old `x0=0.7 ell` runs kept for comparison.
+- [x] Remove the duplicated dynamics section and duplicated `sec:dynamics`
+      label in `main_revised.tex` (kept the first section; preserved the
+      `|C|=1` remark).
+- [x] Copy only verified regenerated figures into the manuscript figure folder.
+- [x] Build the manuscript and check cross-references, captions, and figure
+      labels. `pdflatex`+`bibtex` build: 10 pages, 0 undefined references,
+      no multiply-defined labels. `books.bib` synced with the Downloads
+      manuscript bibliography plus the 8 entries only `main.tex` cites.
+      Remaining bst messages come from arXiv entries lacking `journal`
+      fields (pre-existing in the source bibliography).
 
 ## Verification commands
 
@@ -199,4 +209,5 @@ comparisons pass.
 | 2026-07-23 | Added `tests/test_energy_density.py`: full-Fock-space (Jordan-Wigner, L=6) comparison of the coded densities and vacuum values against literal Eqs. (41)-(43); sum rule `eps*sum_j H_j = H` incl. the onsite constant; left/right link betas; one-sided endpoints; Hermiticity; scaling invariance of center/width | `python -m unittest discover -s tests` (31 tests) | OK; commit `c96d753` |
 | 2026-07-23 | Figure-code notation: colorbars now show the vacuum-subtracted `delta E_{j,+/-}` and `delta E_{j,int}` (`H^{int}` replaces `H^{+-}`/`H^{pm}`); Fig. 6/7 white-hole runs switched to the manuscript profile `x0 = 2 ell/3` (`j_h ~ 212.81`); manifest tests and REPRODUCE.md updated | Full suite (31 tests) | OK; commit `1ee63c2` |
 | 2026-07-23 | Representative panels rerun with the revised density: FIG2c and FIG6a; old runs preserved as baselines | Comparison script (bulk ratio `1/eps`, conserved `eps*sum_j`, center/std/peak) | FIG2c: ratio 47.7465, integral 3.9395 conserved, center/std shifts <0.1 site. FIG6a: integral 1.79288 conserved, stagnation at `j_h~212.8`; commit `6b6db9f` |
-| 2026-07-23 | Full figure regeneration: FIG2a/b/d, FIG3a-d, FIG4(b), FIG5 (recomputed sigma data), FIG6 composite, FIG7; verified composites copied to `paper/figure/` (`p=0_BH.png`, `p=1_BH.png`, `WH_p=0.png`, `WH_p=1.png`, `sg.png`, `doubler_fft.png`) | Old/new comparisons per panel; visual inspection of FIG6/FIG7 | Trajectories/peaks unchanged (<0.5 site); `kappa_fit`: p=0 1.0332 (3.3%), p=1 0.9514 (4.9%) |
+| 2026-07-23 | Full figure regeneration: FIG2a/b/d, FIG3a-d, FIG4(b), FIG5 (recomputed sigma data), FIG6 composite, FIG7; verified composites copied to `paper/figure/` (`p=0_BH.png`, `p=1_BH.png`, `WH_p=0.png`, `WH_p=1.png`, `sg.png`, `doubler_fft.png`) | Old/new comparisons per panel; visual inspection of FIG6/FIG7 | Trajectories/peaks unchanged (<0.5 site); `kappa_fit`: p=0 1.0332 (3.3%), p=1 0.9514 (4.9%); commit `c10beb8` |
+| 2026-07-23 | Manuscript sync: removed duplicated dynamics section/label, `delta E` caption notation, `H^{int}` in Fig. 7(c), Fig. 5 errors 3.3%/4.9%, merged `books.bib`; built with pdflatex+bibtex (10 pages, 0 undefined refs); verified tex synced back to Downloads | LaTeX build log inspection | OK |
