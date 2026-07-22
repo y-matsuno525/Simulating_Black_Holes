@@ -57,17 +57,20 @@ visual style as `FIG5`: Matplotlib's sans-serif font family, black dotted
 horizon lines, cyan dashed null-geodesic curves, matching reference-line
 widths, and the same legend style.
 
-For `FIG6a` and `FIG7`, the white-hole profile is fixed from the manuscript
-caption:
+For `FIG6a` and `FIG7`, the white-hole profile is fixed from the
+`main_revised.tex` caption:
 
 ```text
 L = 300, ell = 2*pi, m = 0
-beta(x) = -0.6 * tanh[3 * (x - 7*pi/5)] - 0.6
-j_h = 222.808... = 0.743 L
+beta(x) = -0.6 * tanh[3 * (x - 2*ell/3)] - 0.6
+j_h = 212.81... (~ 213)
 j0 = 0.2 L, sigma = 0.05 L
 initial spinor = chi+
 t in [0, 8]
 ```
+
+The older `x0 = 0.7 ell` runs (j_h ~ 222.8) are kept for comparison in
+`paper_reproduction/runs/*_x0_0p7ell`.
 
 The panels are:
 

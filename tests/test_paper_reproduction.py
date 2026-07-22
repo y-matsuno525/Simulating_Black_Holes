@@ -107,14 +107,15 @@ class PaperReproductionTests(unittest.TestCase):
         self.assertEqual(cfg["initial_direction"], "right")
         self.assertEqual(cfg["beta_sign"], "minus")
         self.assertAlmostEqual(cfg["beta_amplitude"], 0.6)
-        self.assertAlmostEqual(cfg["beta_center_fraction"], 0.7)
+        self.assertAlmostEqual(cfg["beta_center_fraction"], 2 / 3)
         self.assertAlmostEqual(cfg["j0_fraction"], 0.2)
         self.assertAlmostEqual(cfg["sigma_fraction"], 0.05)
         self.assertEqual(spec.observable, "H_p")
         self.assertAlmostEqual(spec.t_plot, 8.0)
         self.assertTrue(spec.show_geodesic)
         self.assertTrue(spec.show_legend)
-        self.assertAlmostEqual(horizon_positions_from_config(spec)[0], 0.743 * 300, delta=0.2)
+        # main_revised.tex: x0 = 2*ell/3 puts the white-hole horizon at j_h ~ 213.
+        self.assertAlmostEqual(horizon_positions_from_config(spec)[0], 212.81, delta=0.2)
 
     def test_fig7_manifest_matches_white_hole_caption(self):
         self.assertEqual(FIGURE_GROUPS["fig7"], ["fig7a", "fig7b", "fig7c"])
@@ -131,7 +132,7 @@ class PaperReproductionTests(unittest.TestCase):
                 self.assertEqual(spec.observable, observable)
                 self.assertEqual(cfg["scenario"], None)
                 self.assertEqual(cfg["beta_sign"], "minus")
-                self.assertAlmostEqual(cfg["beta_center_fraction"], 0.7)
+                self.assertAlmostEqual(cfg["beta_center_fraction"], 2 / 3)
                 self.assertAlmostEqual(cfg["j0_fraction"], 0.2)
                 self.assertAlmostEqual(spec.t_plot, 8.0)
                 self.assertTrue(spec.show_geodesic)

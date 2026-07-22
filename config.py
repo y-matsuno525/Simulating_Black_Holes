@@ -131,7 +131,7 @@ DEFAULT_CONFIG = {
 DENSITY_PLOT_CONFIGS = {
     "H_p": {
         "output_path": "figures/H_p.png",
-        "colorbar_label": r"$H_j^+$",
+        "colorbar_label": r"$\delta\mathcal{E}_{j,+}$",
         "geodesic_time_scale": "t_f",
         "geodesic_color": "cyan",
         "geodesic_linestyle": "--",
@@ -139,7 +139,7 @@ DENSITY_PLOT_CONFIGS = {
     },
     "H_m": {
         "output_path": "figures/H_m.png",
-        "colorbar_label": r"$H_j^-$",
+        "colorbar_label": r"$\delta\mathcal{E}_{j,-}$",
         "geodesic_time_scale": 1.21,
         "geodesic_color": "cyan",
         "geodesic_linestyle": "--",
@@ -153,7 +153,7 @@ DENSITY_PLOT_CONFIGS = {
     },
     "H_pm": {
         "output_path": "figures/H_pm.png",
-        "colorbar_label": r"$H_j^{+-}$",
+        "colorbar_label": r"$\delta\mathcal{E}_{j,\mathrm{int}}$",
         "geodesic_time_scale": 20.0,
         "geodesic_color": "cyan",
         "geodesic_linestyle": "--",

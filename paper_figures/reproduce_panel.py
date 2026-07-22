@@ -136,7 +136,11 @@ def _bh_panel(
         figure_id=figure_id,
         tag=tag,
         observable=observable,
-        label=rf"$\mathcal{{H}}_j^{{{'+' if observable == 'H_p' else '-'}}}$",
+        label=(
+            r"$\delta\mathcal{E}_{j,+}$"
+            if observable == "H_p"
+            else r"$\delta\mathcal{E}_{j,-}$"
+        ),
         caption_title=title,
         t_plot=t_plot,
         overrides=_run_overrides(
@@ -178,7 +182,10 @@ def _wh_panel(
             chirality="chi_plus",
             initial_direction="right",
             beta_sign="minus",
-            beta_center_fraction=0.7,
+            # main_revised.tex fixes the white-hole profile at x0 = 2*ell/3
+            # (j_h ~ 213); the older 0.7*ell runs are kept for comparison in
+            # paper_reproduction/runs/*_x0_0p7ell.
+            beta_center_fraction=2 / 3,
             j0_fraction=0.2,
             t_f=t_plot,
         ),
@@ -240,25 +247,25 @@ PANEL_SPECS: dict[str, PanelSpec] = {
     # Fig. 6/7 white-hole panels from the manuscript captions.
     "fig6a": _wh_panel(
         "FIG6a", "FIG6", "a", p=0, observable="H_p",
-        label=r"$\mathcal{H}_j^{+}$", t_plot=8.0,
+        label=r"$\delta\mathcal{E}_{j,+}$", t_plot=8.0,
         title=r"FIG6(a) $p=0$ white-hole compression",
     ),
     "fig7a": _wh_panel(
         "FIG7a", "FIG7", "a", p=1, observable="H_p",
-        label=r"$\mathcal{H}_j^{+}$", t_plot=8.0,
+        label=r"$\delta\mathcal{E}_{j,+}$", t_plot=8.0,
         title=r"FIG7(a) $p=1$, $\mathcal{H}^+$",
         run_id="FIG7",
     ),
     "fig7b": _wh_panel(
         "FIG7b", "FIG7", "b", p=1, observable="H_m",
-        label=r"$\mathcal{H}_j^{-}$", t_plot=8.0,
+        label=r"$\delta\mathcal{E}_{j,-}$", t_plot=8.0,
         title=r"FIG7(b) $p=1$, $\mathcal{H}^-$",
         run_id="FIG7",
     ),
     "fig7c": _wh_panel(
         "FIG7c", "FIG7", "c", p=1, observable="H_pm",
-        label=r"$\mathcal{H}_j^{\pm}$", t_plot=8.0,
-        title=r"FIG7(c) $p=1$, $\mathcal{H}^{\pm}$",
+        label=r"$\delta\mathcal{E}_{j,\mathrm{int}}$", t_plot=8.0,
+        title=r"FIG7(c) $p=1$, $\mathcal{H}^{\mathrm{int}}$",
         run_id="FIG7",
     ),
 }

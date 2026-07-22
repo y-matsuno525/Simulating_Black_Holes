@@ -91,7 +91,7 @@ def make_wh_p1():
     panels = [
         ("ur_p", "H_p", r"$\mathcal{H}_j^{+}$", "(a) $H^{+}$"),
         ("ur_m", "H_m", r"$\mathcal{H}_j^{-}$", "(b) $H^{-}$"),
-        ("ur_p", "H_pm", r"$\mathcal{H}_j^{\pm}$", "(c) $H^{\\pm}$"),
+        ("ur_p", "H_pm", r"$\mathcal{H}_j^{\mathrm{int}}$", "(c) $H^{\\mathrm{int}}$"),
     ]
     fig, axes = plt.subplots(1, 3, figsize=(13, 3.8), constrained_layout=True)
     for ax, (scen, obs, label, title) in zip(axes, panels):
