@@ -114,14 +114,25 @@ by zero in the operator definition if `H = sum_j h_j` is to hold exactly.
 
 ## Phase 3: numerical comparison
 
-- [ ] Save the current figure outputs and numerical summaries as the baseline.
-- [ ] Recalculate one representative black-hole panel first (`FIG2c`).
-- [ ] Compare the old and revised profiles, including peak position, width,
+- [x] Save the current figure outputs and numerical summaries as the baseline.
+      Old runs copied to `paper_reproduction/runs/*_pre_density_fix`
+      (Fig. 2/3/5) and `*_x0_0p7ell` (Fig. 6a/7).
+- [x] Recalculate one representative black-hole panel first (`FIG2c`).
+- [x] Compare the old and revised profiles, including peak position, width,
       integrated energy, and maximum pointwise difference.
-- [ ] Recalculate one representative white-hole panel (`FIG6a`) because it is
+      FIG2c: bulk ratio new/old = 47.7465 = `1/eps` exactly; center/std/peak
+      shifts < 0.1 site; `eps*sum_j` now conserved at 3.9395 (old drifted
+      0.0825296 -> 0.0824228); max pointwise `|new - old/eps|` = 3.8% of peak
+      (endpoint/near-gradient link corrections).
+- [x] Recalculate one representative white-hole panel (`FIG6a`) because it is
       most sensitive near `1 + beta = 0`.
-- [ ] Confirm that trajectory changes are small and identify any color-scale or
-      near-horizon changes before launching all runs.
+      FIG6a (x0 also moved to `2 ell/3`): `eps*sum_j` conserved at 1.79288
+      (old drifted ~10% near stagnation); packet stagnates at the new horizon
+      `j_h ~ 212.8`; compression-then-reflection physics unchanged.
+- [x] Confirm that trajectory changes are small and identify any color-scale or
+      near-horizon changes before launching all runs. Color scale rises by
+      `1/eps ~ 47.75`; no qualitative near-horizon changes beyond the intended
+      link-centered corrections.
 
 ## Phase 4: affected figures
 
@@ -178,4 +189,5 @@ comparisons pass.
 | 2026-07-23 | Rewrote `build_energy_densities()`: complete bond energies with `beta_{j-1/2}`/`beta_{j+1/2}`, half-bond site assignment, one-sided open-boundary endpoints, `1/epsilon^2` continuum normalization, explicit onsite constant `-(p-eps*m)/(2 eps^2)` in `H_pm` | Old regression suite (22 tests) | OK; commit `56c82f3`; vacuum subtraction updated in the next commit |
 | 2026-07-23 | Rewrote `compute_vacuum_values()` with per-bond contractions `F1[b]`, `F2[b]` and the same link betas, endpoint rule, and `1/epsilon^2` normalization as the density operators | Full suite incl. new Fock-space tests (31 tests) | OK; commit `ab937b7` |
 | 2026-07-23 | Added `tests/test_energy_density.py`: full-Fock-space (Jordan-Wigner, L=6) comparison of the coded densities and vacuum values against literal Eqs. (41)-(43); sum rule `eps*sum_j H_j = H` incl. the onsite constant; left/right link betas; one-sided endpoints; Hermiticity; scaling invariance of center/width | `python -m unittest discover -s tests` (31 tests) | OK; commit `c96d753` |
-| 2026-07-23 | Figure-code notation: colorbars now show the vacuum-subtracted `delta E_{j,+/-}` and `delta E_{j,int}` (`H^{int}` replaces `H^{+-}`/`H^{pm}`); Fig. 6/7 white-hole runs switched to the manuscript profile `x0 = 2 ell/3` (`j_h ~ 212.81`); manifest tests and REPRODUCE.md updated | Full suite (31 tests) | OK |
+| 2026-07-23 | Figure-code notation: colorbars now show the vacuum-subtracted `delta E_{j,+/-}` and `delta E_{j,int}` (`H^{int}` replaces `H^{+-}`/`H^{pm}`); Fig. 6/7 white-hole runs switched to the manuscript profile `x0 = 2 ell/3` (`j_h ~ 212.81`); manifest tests and REPRODUCE.md updated | Full suite (31 tests) | OK; commit `1ee63c2` |
+| 2026-07-23 | Representative panels rerun with the revised density: FIG2c and FIG6a; old runs preserved as baselines | Comparison script (bulk ratio `1/eps`, conserved `eps*sum_j`, center/std/peak) | FIG2c: ratio 47.7465, integral 3.9395 conserved, center/std shifts <0.1 site. FIG6a: integral 1.79288 conserved, stagnation at `j_h~212.8` |
