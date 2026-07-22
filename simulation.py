@@ -422,15 +422,30 @@ def build_initial_state(L, eigenvectors, j0, sigma, PBC, direction_sign):
 
 #ハミルトニアン密度作成###############################################################################################################
 def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, params):
-    """Assemble H_+, H_-, and mixed local energy-density operators."""
+    """Assemble H_+, H_-, and mixed local energy-density operators.
+
+    main_revised.tex Eqs. (40)-(43) の連続体密度 H_j を実装する:
+      - 各リンク (b, b+1) にリンク中心の beta_{b+1/2} を掛けた完全なボンド
+        エネルギーを先に作り、その半分ずつを両隣の site へ割り当てる。
+      - 左リンクには beta_{j-1/2}、右リンクには beta_{j+1/2} を使う。
+      - 開境界では存在しない外側リンクだけを省き、端点には片側リンクの
+        半分を残す（ゼロ化しない）。
+      - H = epsilon * sum_j H_j が成り立つ 1/epsilon^2 規格化を使う。
+    ボンド系リストは index b がリンク (b, b+1) を表し、index L-1 は PBC の
+    wrap リンク（開境界ではゼロ行列）なので、Python の負 index [j-1] が
+    j=0 の左リンクとして自然に端点規則を満たす。
+    """
     L = params.L
     epsilon = params.epsilon
     p = params.p
     m = params.m
-    PBC = params.PBC
     H_p = []
     H_m = []
     H_pm = []
+
+    def bond_beta(b):
+        """リンク (b, b+1) 中心の beta。PBC の wrap リンクは b=L-1 扱い。"""
+        return beta_for_params((b % L) + 1/2, params)
 
     # 以降の式では c_j c_{j+1}, c_j c_{j+1}^\dagger なども必要になる。
     # 直接作った c_{j+1} c_j 系から、反交換関係と Hermitian conjugate で向きをそろえる。
@@ -454,31 +469,47 @@ def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, params)
     for cj1_cj in cj1_cj_list:
         cj_dag_cj1_dag_list.append(cj1_cj.T.conj())
 
+    # H_+ と H_- はペアリング項の符号と光円錐因子だけが異なる。
+    # a_b^+ a_{b+1}^+ = core_p(b)/2, a_b^- a_{b+1}^- = core_m(b)/2,
+    # a_b^- a_{b+1}^+ - a_b^+ a_{b+1}^- = cross(b) に対応する。
+    def bond_cores(b):
+        pair = cj_cj1_list[b]
+        hopping = cj_cj1_dag_list[b]
+        hopping_dag = cj_dag_cj1_list[b]
+        pair_dag = cj_dag_cj1_dag_list[b]
+        core_p = 1j*pair + hopping + hopping_dag - 1j*pair_dag
+        core_m = -1j*pair + hopping + hopping_dag + 1j*pair_dag
+        cross = 1j*hopping - 1j*hopping_dag
+        return core_p, core_m, cross
+
     for j in range(L):
-        # 各 site j に局所 energy density operator を作る。
-        # j-1 と j の bond を平均することで、site 中心の密度として扱う。
-        H_p_j = np.zeros((L, L), dtype=complex)
-        H_m_j = np.zeros((L, L), dtype=complex)
-        H_pm_j = np.zeros((L, L), dtype=complex)
+        beta_left = bond_beta(j - 1)
+        beta_right = bond_beta(j)
+        core_p_left, core_m_left, cross_left = bond_cores(j - 1)
+        core_p_right, core_m_right, cross_right = bond_cores(j)
 
-        beta_half = beta_for_params(j+1/2, params)
-        pair_avg = (cj_cj1_list[j-1] + cj_cj1_list[j]) / 2
-        hopping_avg = (cj_cj1_dag_list[j-1] + cj_cj1_dag_list[j]) / 2
-        hopping_dag_avg = (cj_dag_cj1_list[j-1] + cj_dag_cj1_list[j]) / 2
-        pair_dag_avg = (cj_dag_cj1_dag_list[j-1] + cj_dag_cj1_dag_list[j]) / 2
+        # Eq. (41): H^+_j = -i/(4 eps^2)[(1+beta_{j+1/2}) a^+_j a^+_{j+1}
+        #                                + (1+beta_{j-1/2}) a^+_{j-1} a^+_j]
+        H_p_j = -1j/(8*epsilon**2) * (
+            (1 + beta_left) * core_p_left + (1 + beta_right) * core_p_right
+        )
+        # Eq. (42): H^-_j = +i/(4 eps^2)[(1-beta_{j+1/2}) a^-_j a^-_{j+1}
+        #                                + (1-beta_{j-1/2}) a^-_{j-1} a^-_j]
+        H_m_j = 1j/(8*epsilon**2) * (
+            (1 - beta_left) * core_m_left + (1 - beta_right) * core_m_right
+        )
 
-        # H_+ and H_- differ only in the signs multiplying the pairing pieces
-        # and in the beta light-cone factor.  Naming these pieces makes sign
-        # checks match the handwritten formula term by term.
-        H_p_core = 1j*pair_avg + hopping_avg + hopping_dag_avg - 1j*pair_dag_avg
-        H_m_core = -1j*pair_avg + hopping_avg + hopping_dag_avg + 1j*pair_dag_avg
+        # Eq. (43): bond part -ip/(4 eps^2)[cross(j) + cross(j-1)] plus the
+        # onsite piece -ip/eps^2 a^+_j a^-_j = (p/eps^2) c^dag_j c_j - p/(2 eps^2).
+        # コードでは onsite の c^dag c 係数として従来どおり (p - eps*m) を使う。
         mass_density_core = -2*1j*cj_dag_cj_list[j]
-        H_pm_hopping_core = 1j*hopping_avg - 1j*hopping_dag_avg
-
-        #ハミルトニアン密度作成
-        H_p_j = -1j/(4*epsilon) * (1 + beta_half) * H_p_core
-        H_m_j = -1j/(4*epsilon) * (-1 + beta_half) * H_m_core
-        H_pm_j = -1j/(2*epsilon) * (p*H_pm_hopping_core - (p - epsilon*m)*mass_density_core)
+        H_pm_j = (
+            -1j/(4*epsilon**2) * p * (cross_left + cross_right)
+            - 1j/(2*epsilon**2) * (-(p - epsilon*m)) * mass_density_core
+        )
+        # 既知の定数項（onsite a^+ a^- 由来）。vacuum subtraction で相殺されるが、
+        # epsilon * sum_j H_j = H を演算子として厳密に保つため明示的に含める。
+        _diag_add(H_pm_j, -(p - epsilon*m)/(2*epsilon**2))
 
         #エルミートか確認
         isHermitian = is_hermitian(H_p_j)
@@ -491,12 +522,6 @@ def build_energy_densities(cj_dag_cj_list, cj1_cj_list, cj1_dag_cj_list, params)
         H_p.append(H_p_j)
         H_m.append(H_m_j)
         H_pm.append(H_pm_j)
-        if not PBC:
-            if j == L-1 or j == 0:
-                # 開境界では端点の両側に bond がそろわないため、端の密度はゼロにして除外する。
-                H_p[-1] = np.zeros((L, L), dtype=complex)
-                H_m[-1] = np.zeros((L, L), dtype=complex)
-                H_pm[-1] = np.zeros((L, L), dtype=complex)
 
     return {
         "H_p": H_p,

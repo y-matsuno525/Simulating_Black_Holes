@@ -80,14 +80,14 @@ by zero in the operator definition if `H = sum_j h_j` is to hold exactly.
 
 ## Phase 1: code changes
 
-- [ ] Refactor `build_energy_densities()` into explicit left-bond and
+- [x] Refactor `build_energy_densities()` into explicit left-bond and
       right-bond contributions.
-- [ ] Use `beta_{j-1/2}` for the left bond and `beta_{j+1/2}` for the right
+- [x] Use `beta_{j-1/2}` for the left bond and `beta_{j+1/2}` for the right
       bond in `H_p` and `H_m`.
-- [ ] Keep the on-site part of the mixed contribution unchanged.
-- [ ] Split the mixed bond contribution equally between adjacent sites.
-- [ ] Preserve one-sided endpoint contributions for open boundaries.
-- [ ] Include the additional `1/epsilon` required for continuum density.
+- [x] Keep the on-site part of the mixed contribution unchanged.
+- [x] Split the mixed bond contribution equally between adjacent sites.
+- [x] Preserve one-sided endpoint contributions for open boundaries.
+- [x] Include the additional `1/epsilon` required for continuum density.
 - [ ] Apply exactly the same bond assignment, endpoint rule, and normalization
       in `compute_vacuum_values()`.
 - [ ] Keep `H_pm` as the internal key and display it as `H^{\mathrm{int}}` in
@@ -170,3 +170,5 @@ comparisons pass.
 |---|---|---|---|
 | 2026-07-23 | Created revision plan from `main_revised.tex` and current code inspection | Equation/operator comparison and LaTeX inspection | Planning complete; source code not changed |
 | 2026-07-23 | Fixed the paper-facing mixed-term notation | Checked Eqs. (40), (43), and the existing Fig. 7 caption | Use `H^{int}` in the manuscript and figures; retain internal key `H_pm` |
+| 2026-07-23 | Checkpoint commit `70c2cdc` on branch `claude/energy-density-revision`; imported `main_revised.tex` into `paper/` | `python -m unittest discover -s tests` (22 tests) | OK |
+| 2026-07-23 | Rewrote `build_energy_densities()`: complete bond energies with `beta_{j-1/2}`/`beta_{j+1/2}`, half-bond site assignment, one-sided open-boundary endpoints, `1/epsilon^2` continuum normalization, explicit onsite constant `-(p-eps*m)/(2 eps^2)` in `H_pm` | Old regression suite (22 tests) | OK; vacuum subtraction updated in the next commit |
