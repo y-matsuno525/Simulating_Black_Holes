@@ -6,6 +6,7 @@ import numpy as np
 
 from config import (
     DEFAULT_CONFIG,
+    beta_from_config,
     compute_horizon_positions_from_config,
     deep_merge,
     prepare_config,
@@ -114,6 +115,47 @@ class NumericalSanityTests(unittest.TestCase):
                 params = self.small_params(PBC=PBC)
                 H_BdG = build_bdg_matrix(params)
                 self.assertTrue(is_hermitian(H_BdG))
+
+    def test_bdg_beta_terms_use_link_center_for_nonuniform_profile(self):
+        params = self.small_params(
+            L=8,
+            p=0.3,
+            beta_profile="pos",
+            beta_amplitude=0.6,
+            beta_width=1.0,
+            beta_center_fraction=0.5,
+            PBC=False,
+        )
+        H_BdG = build_bdg_matrix(params)
+        a = 4
+        beta_link = beta_from_config(a + 0.5, params.config)
+        pref = -1/(2*params.epsilon)
+        L = params.L
+
+        np.testing.assert_allclose(H_BdG[a+1, a], pref * (params.p - 1j*beta_link))
+        np.testing.assert_allclose(H_BdG[a, a+1], pref * (params.p + 1j*beta_link))
+        np.testing.assert_allclose(H_BdG[L+a+1, L+a], pref * (-params.p - 1j*beta_link))
+        np.testing.assert_allclose(H_BdG[L+a, L+a+1], pref * (-params.p + 1j*beta_link))
+
+    def test_bdg_periodic_boundary_uses_last_link_center_beta(self):
+        params = self.small_params(
+            L=8,
+            p=0.3,
+            beta_profile="pos",
+            beta_amplitude=0.6,
+            beta_width=1.0,
+            beta_center_fraction=0.5,
+            PBC=True,
+        )
+        H_BdG = build_bdg_matrix(params)
+        L = params.L
+        beta_boundary = beta_from_config(L - 0.5, params.config)
+        pref = -1/(2*params.epsilon)
+
+        np.testing.assert_allclose(H_BdG[0, L-1], pref * (params.p - 1j*beta_boundary))
+        np.testing.assert_allclose(H_BdG[L-1, 0], pref * (params.p + 1j*beta_boundary))
+        np.testing.assert_allclose(H_BdG[L, 2*L-1], pref * (-params.p - 1j*beta_boundary))
+        np.testing.assert_allclose(H_BdG[2*L-1, L], pref * (-params.p + 1j*beta_boundary))
 
     def test_local_energy_densities_and_vacuum_values_are_hermitian(self):
         params = self.small_params(L=6)

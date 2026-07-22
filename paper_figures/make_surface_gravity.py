@@ -98,7 +98,7 @@ def recompute_surface_gravity_data() -> None:
         print(f"[sg] wrote {dst}")
 
 
-def _panel(ax, sigma_path, eps, ell, title):
+def _panel(ax, sigma_path, eps, ell):
     data = np.loadtxt(sigma_path)
     times = data[:, 0]
     sig = data[:, 1] * eps
@@ -111,7 +111,6 @@ def _panel(ax, sigma_path, eps, ell, title):
     ax.plot(t_fine, ideal * ell, "-", color="red", lw=2.5, label="Analytical prediction")
     ax.set_xlabel(r"$t$")
     ax.set_ylabel(r"$\delta\sigma$", rotation=0, labelpad=12)
-    ax.set_title(f"{title}: $\\kappa_\\mathrm{{fit}}={kappa:.3f}$ (err {rel_err:.1f}%)", fontsize=10)
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=8, loc="upper left")
     return kappa
@@ -140,12 +139,12 @@ def main(argv: list[str] | None = None):
 
     fig, axes = plt.subplots(1, 2, figsize=(9, 3.6), constrained_layout=True)
     if p0.exists():
-        k0 = _panel(axes[0], p0, EPS_DEFAULT, ELL_DEFAULT, "(a) $p=0$")
+        k0 = _panel(axes[0], p0, EPS_DEFAULT, ELL_DEFAULT)
         print(f"[sg] p=0 kappa_fit = {k0:.4f}")
     else:
         axes[0].set_title("(a) p=0 (data missing)")
     if p1.exists():
-        k1 = _panel(axes[1], p1, EPS_DEFAULT, ELL_DEFAULT, "(b) $p=1$")
+        k1 = _panel(axes[1], p1, EPS_DEFAULT, ELL_DEFAULT)
         print(f"[sg] p=1 kappa_fit = {k1:.4f}")
     else:
         axes[1].set_title("(b) p=1 (data missing)")

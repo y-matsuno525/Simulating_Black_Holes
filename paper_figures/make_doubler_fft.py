@@ -12,10 +12,10 @@ sys.path.insert(0, str(REPO / "analysis"))
 from dispersion_relation import dispersion_bands  # noqa: E402
 
 try:
-    from .common import DT_DEFAULT, PAPER_DATA, ensure_fig_dir, load_val
+    from .common import DT_DEFAULT, ensure_fig_dir
     from .style import configure_figure5_style
 except ImportError:
-    from common import DT_DEFAULT, PAPER_DATA, ensure_fig_dir, load_val
+    from common import DT_DEFAULT, ensure_fig_dir
     from style import configure_figure5_style
 
 
@@ -24,6 +24,7 @@ P = 1
 FFT_TIMES = (0.0, 3.0, 3.5, 4.0)
 GENERATED_DIR = REPO / "paper_figures" / "generated" / "panels" / "FIG4"
 PAPER_FIGURE_DIR = REPO / "paper" / "figure"
+FFT_RUN_DIR = REPO / "paper_reproduction" / "runs" / "FIG3a"
 
 
 def doubler_k(beta: float = BETA_INTERIOR) -> float:
@@ -45,6 +46,11 @@ def fft_snapshots(data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     if norm == 0.0 or not np.isfinite(norm):
         norm = 1.0
     return k, spectra / norm
+
+
+def load_time_site_data(path: Path) -> np.ndarray:
+    raw = np.loadtxt(path, delimiter=",", skiprows=1, dtype=complex)
+    return np.real(raw[:, 1:])
 
 
 def _style_spines(ax) -> None:
@@ -92,11 +98,11 @@ def set_positive_k_ticks(ax, kd: float) -> None:
 
 
 def draw_fft_panel(ax, kd: float) -> None:
-    csv = PAPER_DATA / "p1" / "ur_p_2" / "H_p_val.csv"
+    csv = FFT_RUN_DIR / "H_p_val.csv"
     if not csv.exists():
-        raise FileNotFoundError(csv)
+        raise FileNotFoundError(f"{csv}. Run `python paper_figures/reproduce_panel.py FIG3a --rerun` first.")
 
-    data = load_val(csv)
+    data = load_time_site_data(csv)
     k, spectra = fft_snapshots(data)
     colors = ("#0072B2", "#E69F00", "#009E73", "#D55E00")
     for tval, spectrum, color in zip(FFT_TIMES, spectra, colors):

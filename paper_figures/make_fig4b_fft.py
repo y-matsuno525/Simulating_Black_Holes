@@ -1,7 +1,7 @@
 """Generate the Fig. 4(b) FFT spectrum panel.
 
 The input is the black-hole interior p=1 run used in the manuscript:
-``paper_data/p1/ur_p_2/H_p_val.csv``.  The plotted spectrum is the
+``paper_reproduction/runs/FIG3a/H_p_val.csv``.  The plotted spectrum is the
 positive-k magnitude of the spatial FFT after subtracting the spatial
 mean, normalized by the global maximum over the selected snapshots.
 """
@@ -17,16 +17,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "analysis"))
 from dispersion_relation import dispersion_bands  # noqa: E402
 
 try:
-    from .common import DT_DEFAULT, PAPER_DATA, ensure_fig_dir, load_val
+    from .common import DT_DEFAULT, ensure_fig_dir
     from .style import configure_figure5_style
 except ImportError:
-    from common import DT_DEFAULT, PAPER_DATA, ensure_fig_dir, load_val
+    from common import DT_DEFAULT, ensure_fig_dir
     from style import configure_figure5_style
 
 
 BETA_INTERIOR = 1.2
 P = 1
 FFT_TIMES = (0.0, 3.0, 3.5, 4.0)
+FFT_RUN_DIR = Path(__file__).resolve().parent.parent / "paper_reproduction" / "runs" / "FIG3a"
 
 
 def doubler_k() -> float:
@@ -53,6 +54,11 @@ def fft_snapshots(data: np.ndarray):
     return k, spectra / norm
 
 
+def load_time_site_data(path: Path) -> np.ndarray:
+    raw = np.loadtxt(path, delimiter=",", skiprows=1, dtype=complex)
+    return np.real(raw[:, 1:])
+
+
 def main():
     import matplotlib
 
@@ -61,11 +67,11 @@ def main():
 
     configure_figure5_style()
 
-    csv = PAPER_DATA / "p1" / "ur_p_2" / "H_p_val.csv"
+    csv = FFT_RUN_DIR / "H_p_val.csv"
     if not csv.exists():
-        raise FileNotFoundError(csv)
+        raise FileNotFoundError(f"{csv}. Run `python paper_figures/reproduce_panel.py FIG3a --rerun` first.")
 
-    data = load_val(csv)
+    data = load_time_site_data(csv)
     k, spectra = fft_snapshots(data)
     kd = doubler_k()
 

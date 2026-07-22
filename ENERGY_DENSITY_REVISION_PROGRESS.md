@@ -1,0 +1,172 @@
+# Energy-density revision progress
+
+## Objective
+
+Make the numerical observables, paper figures, and manuscript consistent with
+Eqs. (40)--(43) of `main_revised.tex` in
+`C:/Users/ymats/Downloads/black_hole_simulation (13)`.
+
+This file is the progress tracker for that work. Update the checkboxes and the
+log after each verified step.
+
+## Source of truth
+
+- Manuscript: `black_hole_simulation (13)/main_revised.tex`
+- Field notation: `a^+` and `a^-`
+- Mixed contribution in paper text and figures: `H^int`
+  (LaTeX: `H^{\mathrm{int}}`)
+- Existing internal/output key `H_pm`: retained temporarily for compatibility
+- `main_revised.tex` already uses `H^{\mathrm{int}}` in Eqs. (40) and (43).
+  Existing figure captions and colorbars that still use `H^\pm` will be
+  updated to `H^{\mathrm{int}}`.
+- Total Hamiltonian: one term per bond, with `beta` evaluated at that bond's
+  center, `beta_{j+1/2}`
+- Local continuum density:
+
+  ```text
+  H = epsilon * sum_j H_j
+  ```
+
+- Horizon: the continuous solution of `beta(x_h) = +/-1`; `j_h = x_h/epsilon`
+  is a continuous plotting coordinate and does not need to be an integer
+
+## Confirmed current state
+
+| Item | Status | Note |
+|---|---|---|
+| BdG bond-centered beta | Done | `build_bdg_matrix()` uses the beta value of each bond |
+| `a^- = -chi^-` transformation | Verified | Pure-minus initial states differ only by a global sign |
+| Hamiltonian in the `a` basis | Verified | Matches the fermionic Hamiltonian to machine precision |
+| Heisenberg equations in `main_revised.tex` | Verified | Both lattice equations match to machine precision |
+| Local density beta assignment | Needs change | Current code applies `beta_{j+1/2}` to both adjacent bonds |
+| Endpoint density | Needs change | Current code zeros both endpoints |
+| Continuum-density normalization | Needs change | Current values carry one fewer factor of `1/epsilon` |
+| Vacuum subtraction | Needs change | Must use the same revised local operator |
+| Fig. 6/7 horizon parameters | Needs decision | PNG uses `x0=0.7 ell`, manuscript says `x0=2 ell/3` |
+
+## Required local-density definition
+
+First define the complete bond contribution. For the plus branch,
+
+```text
+B^+_{j+1/2} = -i/(2 epsilon) * (1 + beta_{j+1/2}) * a^+_j a^+_{j+1}.
+```
+
+The site energy is one half of each adjacent complete bond,
+
+```text
+h^+_j = (B^+_{j-1/2} + B^+_{j+1/2}) / 2.
+```
+
+The continuum energy density plotted in the paper is
+
+```text
+H^+_j = h^+_j / epsilon.
+```
+
+The same order of operations applies to the minus and mixed contributions:
+apply the correct coefficient to each bond first, then distribute one half of
+the complete bond to each adjacent site.
+
+At an open boundary, omit only the nonexistent bond:
+
+```text
+h_1 = B_{3/2}/2
+h_L = B_{L-1/2}/2
+```
+
+The endpoint values may be hidden in the figure, but they must not be replaced
+by zero in the operator definition if `H = sum_j h_j` is to hold exactly.
+
+## Phase 1: code changes
+
+- [ ] Refactor `build_energy_densities()` into explicit left-bond and
+      right-bond contributions.
+- [ ] Use `beta_{j-1/2}` for the left bond and `beta_{j+1/2}` for the right
+      bond in `H_p` and `H_m`.
+- [ ] Keep the on-site part of the mixed contribution unchanged.
+- [ ] Split the mixed bond contribution equally between adjacent sites.
+- [ ] Preserve one-sided endpoint contributions for open boundaries.
+- [ ] Include the additional `1/epsilon` required for continuum density.
+- [ ] Apply exactly the same bond assignment, endpoint rule, and normalization
+      in `compute_vacuum_values()`.
+- [ ] Keep `H_pm` as the internal key and display it as `H^{\mathrm{int}}` in
+      paper-facing output.
+- [ ] Document whether saved `H_*_val.csv` files contain site energies or
+      continuum densities. The revised pipeline should save continuum density.
+
+## Phase 2: tests
+
+- [ ] Test the left and right beta coefficients directly for a nonuniform
+      profile.
+- [ ] Test the plus, minus, and mixed local operators for Hermiticity.
+- [ ] Test open-boundary endpoint contributions.
+- [ ] Test the sum rule `epsilon * sum_j H_j = H` in a small full-Fock-space
+      system, allowing only the explicitly known constant term.
+- [ ] Test that vacuum subtraction uses the same revised density operator.
+- [ ] Test that multiplying a complete density profile by a positive constant
+      does not change the measured packet center or width.
+- [ ] Run `python -m unittest discover -s tests`.
+
+## Phase 3: numerical comparison
+
+- [ ] Save the current figure outputs and numerical summaries as the baseline.
+- [ ] Recalculate one representative black-hole panel first (`FIG2c`).
+- [ ] Compare the old and revised profiles, including peak position, width,
+      integrated energy, and maximum pointwise difference.
+- [ ] Recalculate one representative white-hole panel (`FIG6a`) because it is
+      most sensitive near `1 + beta = 0`.
+- [ ] Confirm that trajectory changes are small and identify any color-scale or
+      near-horizon changes before launching all runs.
+
+## Phase 4: affected figures
+
+- [ ] Fig. 2: recalculate all four density panels.
+- [ ] Fig. 3: recalculate all four density panels.
+- [ ] Fig. 4(b): regenerate the FFT from the revised Fig. 3(a) data.
+- [ ] Fig. 5: recalculate widths and update both fitted errors.
+- [ ] Fig. 6(a): recalculate the white-hole density panel.
+- [ ] Fig. 6(b): separately decide whether to retain the current reference data
+      or remeasure `T_lat` with the revised density.
+- [ ] Fig. 7: recalculate all three density panels.
+- [ ] Confirm that Fig. 1 and Fig. 4(a) remain unchanged because they use the
+      homogeneous dispersion rather than local density data.
+
+## Phase 5: paper synchronization
+
+- [ ] Use `a^+` and `a^-` consistently in the simulation section and captions.
+- [ ] Use `H^+`, `H^-`, and `H^{\mathrm{int}}` consistently in equations, captions,
+      colorbars, and prose.
+- [ ] Label plotted vacuum-subtracted quantities as `delta E_{j,s}` where the
+      manuscript defines that quantity.
+- [ ] Update all numerical values that change after recalculation, especially
+      the Fig. 5 surface-gravity errors.
+- [ ] Resolve the Fig. 6/7 choice:
+      `x0=0.7 ell, j_h about 223` or `x0=2 ell/3, j_h about 213`.
+- [ ] Remove the duplicated dynamics section and duplicated `sec:dynamics`
+      label in `main_revised.tex`.
+- [ ] Copy only verified regenerated figures into the manuscript figure folder.
+- [ ] Build the manuscript and check cross-references, captions, and figure
+      labels.
+
+## Verification commands
+
+```powershell
+python -m unittest discover -s tests
+python paper_figures\reproduce_panel.py FIG2 --rerun
+python paper_figures\reproduce_panel.py FIG3 --rerun
+python paper_figures\reproduce_panel.py FIG4
+python paper_figures\reproduce_panel.py FIG5
+python paper_figures\reproduce_panel.py FIG6 --rerun
+python paper_figures\reproduce_panel.py FIG7 --rerun
+```
+
+Run the full figure set only after the representative Fig. 2(c) and Fig. 6(a)
+comparisons pass.
+
+## Progress log
+
+| Date | Change | Verification | Result |
+|---|---|---|---|
+| 2026-07-23 | Created revision plan from `main_revised.tex` and current code inspection | Equation/operator comparison and LaTeX inspection | Planning complete; source code not changed |
+| 2026-07-23 | Fixed the paper-facing mixed-term notation | Checked Eqs. (40), (43), and the existing Fig. 7 caption | Use `H^{int}` in the manuscript and figures; retain internal key `H_pm` |

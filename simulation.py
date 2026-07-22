@@ -216,6 +216,11 @@ def build_bdg_matrix(params):
     m = params.m
     epsilon = params.epsilon
     H_BdG = np.zeros((2*L, 2*L), dtype=complex)
+    pref = -1/(2*epsilon)
+
+    def link_beta(a):
+        """Beta on the link between sites a and a+1."""
+        return beta_for_params(a + 1/2, params)
 
     for i in range(2*L):
         for j in range(2*L):
@@ -225,57 +230,57 @@ def build_bdg_matrix(params):
             if i < L and j < L:
                 if i == j:
                     # 粒子ブロックの onsite 項。m は質量項として対角成分に入る。
-                    H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))*(-1)
+                    H_BdG[i, j] = pref * (2*p - epsilon*(2*m))*(-1)
                 elif i-j == 1:
-                    # 左隣との有限差分。beta はリンク中央の値として両端平均を使う。
-                    beta_link = (beta_for_params(j+1/2, params) + beta_for_params(i+1/2, params)) / 2
-                    H_BdG[i, j] = -1/(2*epsilon) * (p - 1j*beta_link)
+                    # beta is evaluated directly at the link center a+1/2.
+                    beta_link = link_beta(j)
+                    H_BdG[i, j] = pref * (p - 1j*beta_link)
                 elif j-i == 1:
                    # 右隣との有限差分。Hermiticity が保たれるよう複素共役側の符号になる。
-                   beta_link = (beta_for_params(i+1/2, params) + beta_for_params(j+1/2, params)) / 2
-                   H_BdG[i, j] = -1/(2*epsilon) * (p + 1j*beta_link)
+                   beta_link = link_beta(i)
+                   H_BdG[i, j] = pref * (p + 1j*beta_link)
             #右上
             elif i < L and j >= L:
                 # 粒子 -> 正孔の pairing ブロック。最近接だけが非ゼロ。
                 if j-i == L-1:
-                    H_BdG[i, j] = -1/(2*epsilon) * (-1)
+                    H_BdG[i, j] = pref * (-1)
                 elif j-i == L+1:
-                    H_BdG[i, j] = -1/(2*epsilon) * (1)
+                    H_BdG[i, j] = pref * (1)
             #左下
             elif i >= L and j < L:
                 # 正孔 -> 粒子の pairing ブロック。上のブロックと対応する位置を埋める。
                 if i-j == L-1:
-                    H_BdG[i, j] = -1/(2*epsilon) * (-1)
+                    H_BdG[i, j] = pref * (-1)
                 elif i-j == L+1:
-                    H_BdG[i, j] = -1/(2*epsilon) * (1)
+                    H_BdG[i, j] = pref * (1)
             #右下
             else:
                 # 正孔ブロック。粒子ブロックと p, beta の符号が反転した形になる。
                 if i == j:
-                    H_BdG[i, j] = -1/(2*epsilon) * (2*p - epsilon*(2*m))
+                    H_BdG[i, j] = pref * (2*p - epsilon*(2*m))
                 elif i-j == 1:
-                    beta_link = (beta_for_params(j+1/2-L, params) + beta_for_params(i+1/2-L, params)) / 2
-                    H_BdG[i, j] = -1/(2*epsilon) * (-p - 1j*beta_link)
+                    beta_link = link_beta(j-L)
+                    H_BdG[i, j] = pref * (-p - 1j*beta_link)
                 elif j-i == 1:
-                    beta_link = (beta_for_params(i+1/2-L, params) + beta_for_params(j+1/2-L, params)) / 2
-                    H_BdG[i, j] = -1/(2*epsilon) * (-p + 1j*beta_link)
+                    beta_link = link_beta(i-L)
+                    H_BdG[i, j] = pref * (-p + 1j*beta_link)
 
     if params.PBC == True:
         # 周期境界条件では j=L-1 と j=0 の間の BdG 行列要素を追加する。
         # 色名は元ノート/図の対応を残した目印で、各行は境界をまたぐ成分。
         #red
-        beta_boundary = beta_for_params(L-1, params)
-        H_BdG[0,L-1] = -1/(2*epsilon) * (p - 1j*beta_boundary) * (1)
-        H_BdG[2*L-1,L] = -1/(2*epsilon) * (p - 1j*beta_boundary) * (-1)
+        beta_boundary = link_beta(L-1)
+        H_BdG[0,L-1] = pref * (p - 1j*beta_boundary)
+        H_BdG[2*L-1,L] = pref * (-p + 1j*beta_boundary)
         #blue
-        H_BdG[L-1,0] = -1/(2*epsilon) * (p + 1j*beta_boundary) * (1)
-        H_BdG[L,2*L-1] = -1/(2*epsilon) * (p + 1j*beta_boundary) * (-1)
+        H_BdG[L-1,0] = pref * (p + 1j*beta_boundary)
+        H_BdG[L,2*L-1] = pref * (-p - 1j*beta_boundary)
         #orange
-        H_BdG[0,2*L-1] = -1/(2*epsilon) * (-1)
-        H_BdG[L-1,L] = -1/(2*epsilon) * (1)
+        H_BdG[0,2*L-1] = pref * (-1)
+        H_BdG[L-1,L] = pref * (1)
         #black
-        H_BdG[2*L-1,0] = -1/(2*epsilon) * (-1)
-        H_BdG[L,L-1] = -1/(2*epsilon) * (1)
+        H_BdG[2*L-1,0] = pref * (-1)
+        H_BdG[L,L-1] = pref * (1)
 
     return H_BdG
 
