@@ -569,80 +569,68 @@ def compute_vacuum_values(eigenvectors, params):
         cj1_dag_cj_v.append(total)
     cj1_dag_cj_v.append(0.0) #PBCなしの場合
 
-    F1_list = []
-    F2_list = []
+    # F1[b], F2[b] はリンク (b, b+1) の vacuum contraction。
+    # index L-1 は PBC の wrap リンクで、開境界ではゼロ（リンクが存在しない）。
+    # build_energy_densities() と同じく、負 index [j-1] が j=0 の左リンクになる。
+    F1_list = np.zeros(L, dtype=complex)
+    F2_list = np.zeros(L, dtype=complex)
+    for b in range(L-1):
+        F1_list[b] = sum(eigenvectors[b+1, n] * eigenvectors[b, n+L] for n in range(L))
+        F2_list[b] = sum(eigenvectors[b+1, n+L].conj() * eigenvectors[b, n+L] for n in range(L))
+    if PBC:
+        F1_list[L-1] = sum(eigenvectors[0, n] * eigenvectors[L-1, n+L] for n in range(L))
+        F2_list[L-1] = sum(eigenvectors[0, n+L].conj() * eigenvectors[L-1, n+L] for n in range(L))
+
+    def bond_beta(b):
+        return beta_for_params((b % L) + 1/2, params)
+
+    def bond_vacuum_cores(b):
+        # Vacuum contractions corresponding to the named operator pieces in
+        # build_energy_densities().  Keeping them in the same order makes it
+        # easier to compare this subtraction with the local-density formula.
+        pair_vacuum = -F1_list[b]
+        hopping_vacuum = -F2_list[b]
+        hopping_dag_vacuum = F2_list[b].conj()
+        pair_dag_vacuum = F1_list[b].conj()
+        core_p = (
+            1j*pair_vacuum
+            + hopping_vacuum
+            + hopping_dag_vacuum
+            - 1j*pair_dag_vacuum
+        )
+        core_m = (
+            -1j*pair_vacuum
+            + hopping_vacuum
+            + hopping_dag_vacuum
+            + 1j*pair_dag_vacuum
+        )
+        cross = 1j*hopping_vacuum - 1j*hopping_dag_vacuum
+        return core_p, core_m, cross
 
     for j in range(L):
-        # F1, F2 は隣接 site 間の vacuum contraction。
-        # local energy density は j-1, j の bond 平均を使うため、履歴として list に保存する。
-        Hp_v_j = 0
-        Hm_v_j = 0
-        H_pm_v_j = 0
-        F1 = 0
-        F2 = 0
-        for n in range(L):
-            # PBC では最後の bond が site 0 に戻る。開境界では最後の bond は存在しない。
-            if PBC == True and j == L-1:
-                F1 += eigenvectors[0,n] * eigenvectors[L-1,n+L]
-                F2 += eigenvectors[0,n+L].conj() * eigenvectors[L-1,n+L]
-            elif not PBC and j == L-1:
-                F1 += 0
-                F2 += 0
-            else:
-                # 通常の内部 bond では site j と j+1 の contraction を足す。
-                F1 += eigenvectors[j+1,n] * eigenvectors[j,n+L]
-                F2 += eigenvectors[j+1,n+L].conj() * eigenvectors[j,n+L]
-        F1_list.append(F1)
-        F2_list.append(F2)
-        if j == 0:
-            # Ensure complex type so .conj() exists for the Hermiticity check below
-            # j=0 は左側 bond がないため、まずゼロの complex 値として扱う。
-            Hp_v_j = 0+0j
-            Hm_v_j = 0+0j
-            H_pm_v_j = 0+0j
-        else:
-            beta_half = beta_for_params(j+1/2, params)
-            F1_avg = (F1_list[-1] + F1_list[-2]) / 2
-            F2_avg = (F2_list[-1] + F2_list[-2]) / 2
+        beta_left = bond_beta(j - 1)
+        beta_right = bond_beta(j)
+        core_p_left, core_m_left, cross_left = bond_vacuum_cores(j - 1)
+        core_p_right, core_m_right, cross_right = bond_vacuum_cores(j)
 
-            # Vacuum contractions corresponding to the named operator pieces in
-            # build_energy_densities().  Keeping them in the same order makes it
-            # easier to compare this subtraction with the local-density formula.
-            pair_vacuum = -F1_avg
-            hopping_vacuum = -F2_avg
-            hopping_dag_vacuum = F2_avg.conj()
-            pair_dag_vacuum = F1_avg.conj()
-            H_p_vacuum_core = (
-                1j*pair_vacuum
-                + hopping_vacuum
-                + hopping_dag_vacuum
-                - 1j*pair_dag_vacuum
-            )
-            H_m_vacuum_core = (
-                -1j*pair_vacuum
-                + hopping_vacuum
-                + hopping_dag_vacuum
-                + 1j*pair_dag_vacuum
-            )
-            H_pm_hopping_vacuum_core = 1j * (-F2_avg - F2_avg.conj())
-            mass_density_vacuum_core = -2j * c_dag_c_v[j]
-
-            Hp_v_j = -1/(2*epsilon) * 1j * (1 + beta_half) * 1/2 * H_p_vacuum_core
-            Hm_v_j = -1/(2*epsilon) * 1j * (-1 + beta_half) * 1/2 * H_m_vacuum_core
-            H_pm_v_j = -1j/(2*epsilon) * (
-                p * H_pm_hopping_vacuum_core
-                - (p - epsilon*m) * mass_density_vacuum_core
-            )
+        # build_energy_densities() と同一のリンク係数・端点規則・規格化。
+        Hp_v_j = -1j/(8*epsilon**2) * (
+            (1 + beta_left) * core_p_left + (1 + beta_right) * core_p_right
+        )
+        Hm_v_j = 1j/(8*epsilon**2) * (
+            (1 - beta_left) * core_m_left + (1 - beta_right) * core_m_right
+        )
+        mass_density_vacuum_core = -2j * c_dag_c_v[j]
+        H_pm_v_j = (
+            -1j/(4*epsilon**2) * p * (cross_left + cross_right)
+            - 1j/(2*epsilon**2) * (-(p - epsilon*m)) * mass_density_vacuum_core
+            - (p - epsilon*m)/(2*epsilon**2)
+        )
         assert abs(Hp_v_j - np.conj(Hp_v_j)) < 10**-5, "Hp_v_j(j=" + str(j) + ") is not Hermitian!"
         assert abs(Hm_v_j - np.conj(Hm_v_j)) < 10**-5, "Hm_v_j(j=" + str(j) + ") is not Hermitian!"
         Hp_v.append(Hp_v_j)
         Hm_v.append(Hm_v_j)
         Hpm_v.append(H_pm_v_j)
-        if not PBC:
-            if j == L-1:
-                Hp_v[-1] = 0+0j
-                Hm_v[-1] = 0+0j
-                Hpm_v[-1] = 0+0j
 
     return {
         "H_p": Hp_v,
