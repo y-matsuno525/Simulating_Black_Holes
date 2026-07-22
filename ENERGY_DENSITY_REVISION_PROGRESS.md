@@ -101,16 +101,16 @@ by zero in the operator definition if `H = sum_j h_j` is to hold exactly.
 
 ## Phase 2: tests
 
-- [ ] Test the left and right beta coefficients directly for a nonuniform
+- [x] Test the left and right beta coefficients directly for a nonuniform
       profile.
-- [ ] Test the plus, minus, and mixed local operators for Hermiticity.
-- [ ] Test open-boundary endpoint contributions.
-- [ ] Test the sum rule `epsilon * sum_j H_j = H` in a small full-Fock-space
+- [x] Test the plus, minus, and mixed local operators for Hermiticity.
+- [x] Test open-boundary endpoint contributions.
+- [x] Test the sum rule `epsilon * sum_j H_j = H` in a small full-Fock-space
       system, allowing only the explicitly known constant term.
-- [ ] Test that vacuum subtraction uses the same revised density operator.
-- [ ] Test that multiplying a complete density profile by a positive constant
+- [x] Test that vacuum subtraction uses the same revised density operator.
+- [x] Test that multiplying a complete density profile by a positive constant
       does not change the measured packet center or width.
-- [ ] Run `python -m unittest discover -s tests`.
+- [x] Run `python -m unittest discover -s tests` (31 tests OK).
 
 ## Phase 3: numerical comparison
 
@@ -176,4 +176,5 @@ comparisons pass.
 | 2026-07-23 | Fixed the paper-facing mixed-term notation | Checked Eqs. (40), (43), and the existing Fig. 7 caption | Use `H^{int}` in the manuscript and figures; retain internal key `H_pm` |
 | 2026-07-23 | Checkpoint commit `70c2cdc` on branch `claude/energy-density-revision`; imported `main_revised.tex` into `paper/` | `python -m unittest discover -s tests` (22 tests) | OK |
 | 2026-07-23 | Rewrote `build_energy_densities()`: complete bond energies with `beta_{j-1/2}`/`beta_{j+1/2}`, half-bond site assignment, one-sided open-boundary endpoints, `1/epsilon^2` continuum normalization, explicit onsite constant `-(p-eps*m)/(2 eps^2)` in `H_pm` | Old regression suite (22 tests) | OK; commit `56c82f3`; vacuum subtraction updated in the next commit |
-| 2026-07-23 | Rewrote `compute_vacuum_values()` with per-bond contractions `F1[b]`, `F2[b]` and the same link betas, endpoint rule, and `1/epsilon^2` normalization as the density operators | Full suite incl. new Fock-space tests (31 tests) | OK |
+| 2026-07-23 | Rewrote `compute_vacuum_values()` with per-bond contractions `F1[b]`, `F2[b]` and the same link betas, endpoint rule, and `1/epsilon^2` normalization as the density operators | Full suite incl. new Fock-space tests (31 tests) | OK; commit `ab937b7` |
+| 2026-07-23 | Added `tests/test_energy_density.py`: full-Fock-space (Jordan-Wigner, L=6) comparison of the coded densities and vacuum values against literal Eqs. (41)-(43); sum rule `eps*sum_j H_j = H` incl. the onsite constant; left/right link betas; one-sided endpoints; Hermiticity; scaling invariance of center/width | `python -m unittest discover -s tests` (31 tests) | OK |
