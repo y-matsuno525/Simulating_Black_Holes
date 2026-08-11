@@ -851,6 +851,40 @@ density,
   \ket{\mathrm{vac}}.
   \label{eq:branch_resolved_energy}
 \end{equation}
+To quantify the spatial width of this generally signed,
+vacuum-subtracted profile, we use its absolute value as a positive
+localization weight and define
+\begin{equation}
+  \begin{aligned}
+    w_{j,s}^{(\mathcal E)}(t)
+    & =
+    \frac{|\delta\mathcal E_{j,s}(t)|}
+         {\sum_l|\delta\mathcal E_{l,s}(t)|},
+    &
+    \bar j_{\mathcal E,s}(t)
+    & =
+    \sum_j j\,w_{j,s}^{(\mathcal E)}(t),
+    \\
+    \sigma_{\mathcal E,s}(t)
+    & =
+    \varepsilon
+    \left[
+      \sum_j
+      \bigl(j-\bar j_{\mathcal E,s}(t)\bigr)^2
+      w_{j,s}^{(\mathcal E)}(t)
+    \right]^{1/2},
+    &
+    \delta\sigma_{\mathcal E,s}(t)
+    & =
+    \sigma_{\mathcal E,s}(t)-\sigma_{\mathcal E,s}(0).
+  \end{aligned}
+  \label{eq:energy_weighted_width}
+\end{equation}
+The factor of \(\varepsilon=\ell/L\) converts the standard deviation
+from lattice-site units to the physical spatial coordinate. In the
+surface-gravity analysis below we use the \(s=-\) component and
+abbreviate \(\delta\sigma_{\mathcal E,-}(t)\) as
+\(\delta\sigma_{\mathcal E}(t)\).
 Thus, for an initial $a^+$ ($a^-$) wave packet, we plot the
 $\mathcal{H}_j^+$ ($\mathcal{H}_j^-$) contribution. This
 branch-resolved quantity isolates the component associated with the
@@ -984,20 +1018,20 @@ This agreement supports the interpretation that the oscillatory behavior in Fig.
 \end{figure*}
 
 We next extract the surface gravity of the effective horizon from the near-horizon wave-packet dynamics.
-For a left-moving wave packet localized in the exterior region near the event horizon, the linearized near-horizon null-geodesic equation gives the approximate growth of the standard deviation
+For a left-moving wave packet localized in the exterior region near the event horizon, the linearized near-horizon null-geodesic equation gives the approximate growth of the energy-density-weighted standard deviation defined in Eq.~\eqref{eq:energy_weighted_width},
 \begin{align}
-    \delta\sigma(t) \propto e^{\kappa t}-1,
+    \delta\sigma_{\mathcal E}(t) \propto e^{\kappa t}-1,
     \label{eq:sigma_kappa}
 \end{align}
 where $\kappa=|\beta'(x_h)|$ is the surface gravity.
 This approximate relation follows by linearizing the left-moving null trajectory $dx/dt=\beta(x)-1$ near the horizon, where $\beta(x_h)=1$, giving $d(x-x_h)/dt\simeq\kappa(x-x_h)$ and hence exponential stretching of the wave packet.
-It implies that the surface gravity can be read off from the exponential growth rate of $\delta\sigma$ as long as the wave packet remains in the near-horizon regime.
+It implies that the surface gravity can be read off from the exponential growth rate of $\delta\sigma_{\mathcal E}$ as long as the wave packet remains in the near-horizon regime.
 In practice, we fit the numerical data to $a(e^{\kappa_{\rm fit}t}-1)$, where $a$ is a prefactor and $\kappa_{\rm fit}$ is the fitted growth rate.
 
 For the surface-gravity extraction (Fig.~\ref{fig:sg}), we use $A=1$, $B=1$, $C=1$, $x_0=\pi$ (so $x_h=x_0$, $\kappa=|\beta'(x_h)|=1$, and $j_h=0.5L$), $j_0=245$, $\sigma=0.003L$, and fit the data over the time interval $t\in[0,1]$.
 \begin{figure*}[tbp]
 \includegraphics[width=\textwidth]{figure/sg.png}
-\caption{Extraction of surface gravity from wave-packet broadening ($L=500$, $A=B=C=1$, $x_0=\ell /2$, $j_0=245$, $\sigma=0.003L$, with the fit performed over $t\in[0,1]$). Blue dots show the numerical simulation results, and red curves show the analytical near-horizon scaling $a(e^{\kappa t}-1)$ with $\kappa=1$; the prefactor $a$ fixes the vertical scale. The fitted growth rates are obtained separately from $a(e^{\kappa_{\rm fit}t}-1)$. (a) Result for $p=0$, with $|\kappa_{\rm fit}-\kappa|/\kappa\approx3.3\%$. (b) Result for $p=1$, with $|\kappa_{\rm fit}-\kappa|/\kappa\approx4.9\%$ due to simultaneous wave packet dispersion. These percentages quantify the error in the fitted surface gravity, not the pointwise deviation of the red analytical curves. The vertical axis $\delta\sigma\equiv\sigma(t)-\sigma(0)$ denotes the change in the wave-packet standard deviation.}
+\caption{Extraction of surface gravity from wave-packet broadening ($L=500$, $A=B=C=1$, $x_0=\ell /2$, $j_0=245$, $\sigma=0.003L$, with the fit performed over $t\in[0,1]$). Blue dots show the numerical energy-density-weighted width $\delta\sigma_{\mathcal E}(t)$ defined in Eq.~\eqref{eq:energy_weighted_width}, and red curves show the analytical near-horizon scaling $a(e^{\kappa t}-1)$ with $\kappa=1$; the prefactor $a$ fixes the vertical scale. The fitted growth rates are obtained separately from $a(e^{\kappa_{\rm fit}t}-1)$. (a) Result for $p=0$, with $|\kappa_{\rm fit}-\kappa|/\kappa\approx3.3\%$. (b) Result for $p=1$, with $|\kappa_{\rm fit}-\kappa|/\kappa\approx4.9\%$ due to simultaneous wave packet dispersion. These percentages quantify the error in the fitted surface gravity, not the pointwise deviation of the red analytical curves.}
 \label{fig:sg}
 \end{figure*}
 Fig.~\ref{fig:sg} compares the numerical data with the analytical near-horizon form for $\kappa=1$, while the quoted $\kappa_{\rm fit}$ values are obtained by allowing the exponential growth rate to vary.

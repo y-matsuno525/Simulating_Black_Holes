@@ -6,6 +6,7 @@ from paper_figures.make_fig3a_fft_map import positive_fft
 from paper_figures.make_beta12_dispersion import doubler_k
 from paper_figures.make_doubler_fft import doubler_k as fig4_doubler_k
 from paper_figures.make_fig6b_scaling import DEFAULT_MAX_L, load_scaling_data
+from paper_figures.make_surface_gravity import lattice_width_to_physical
 from paper_figures.measure_fig6b_scaling import load_results as load_measured_fig6b_results
 from paper_figures.reproduce_panel import (
     FIGURE_GROUPS,
@@ -157,6 +158,11 @@ class PaperReproductionTests(unittest.TestCase):
         self.assertEqual(Ls.tolist(), [100, 200, 300, 400, 500, 600, 700, 800])
         self.assertAlmostEqual(float(times[-3]), 3.24)
         self.assertAlmostEqual(float(times[-1]), 3.5025)
+
+    def test_surface_gravity_width_uses_ell_over_L_once(self):
+        lattice_width = np.array([0.0, 1.0, 2.5])
+        physical_width = lattice_width_to_physical(lattice_width, ell=2 * np.pi, L=500)
+        np.testing.assert_allclose(physical_width, lattice_width * (2 * np.pi / 500))
 
     def test_spacetime_panels_share_reference_line_style(self):
         keys = ["fig2a", "fig2b", "fig2c", "fig2d", "fig3a", "fig3b", "fig3c", "fig3d", "fig6a", "fig7a", "fig7b", "fig7c"]

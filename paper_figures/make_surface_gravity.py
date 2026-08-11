@@ -17,10 +17,10 @@ import sys
 import numpy as np
 
 try:
-    from .common import REPO, PAPER_DATA, EPS_DEFAULT, ELL_DEFAULT, exp_fit, ensure_fig_dir
+    from .common import REPO, PAPER_DATA, ELL_DEFAULT, exp_fit, ensure_fig_dir
     from .style import configure_figure5_style
 except ImportError:
-    from common import REPO, PAPER_DATA, EPS_DEFAULT, ELL_DEFAULT, exp_fit, ensure_fig_dir
+    from common import REPO, PAPER_DATA, ELL_DEFAULT, exp_fit, ensure_fig_dir
     from style import configure_figure5_style
 
 
@@ -98,17 +98,22 @@ def recompute_surface_gravity_data() -> None:
         print(f"[sg] wrote {dst}")
 
 
-def _panel(ax, sigma_path, eps, ell, panel_tag):
+def lattice_width_to_physical(delta_sigma_lattice, *, ell, L):
+    """Convert a width measured in lattice sites to the physical x coordinate."""
+    return np.asarray(delta_sigma_lattice, dtype=float) * (ell / L)
+
+
+def _panel(ax, sigma_path, *, ell, L, panel_tag):
     data = np.loadtxt(sigma_path)
     times = data[:, 0]
-    sig = data[:, 1] * eps
+    sig = lattice_width_to_physical(data[:, 1], ell=ell, L=L)
     A, B, t_fine, _ = exp_fit(times, sig)
     ideal = A * np.exp(t_fine) - A
     kappa = B
     rel_err = abs(kappa - 1.0) * 100.0
 
-    ax.plot(times, sig * ell, "o", color="blue", ms=3, label="Numerical simulation")
-    ax.plot(t_fine, ideal * ell, "-", color="red", lw=2.5, label="Analytical prediction")
+    ax.plot(times, sig, "o", color="blue", ms=3, label="Numerical simulation")
+    ax.plot(t_fine, ideal, "-", color="red", lw=2.5, label="Analytical prediction")
     ax.set_xlabel(r"$t$")
     ax.set_ylabel(r"$\delta\sigma_{\mathcal{E}}(t)$", rotation=0, labelpad=22)
     ax.grid(True, alpha=0.3)
@@ -140,20 +145,22 @@ def main(argv: list[str] | None = None):
 
     fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.0), constrained_layout=True)
     if p0.exists():
-        k0 = _panel(axes[0], p0, EPS_DEFAULT, ELL_DEFAULT, "(a)")
+        k0 = _panel(axes[0], p0, ell=ELL_DEFAULT, L=SG_SETTINGS["L"], panel_tag="(a)")
         print(f"[sg] p=0 kappa_fit = {k0:.4f}")
     else:
         axes[0].set_title("(a) p=0 (data missing)")
     if p1.exists():
-        k1 = _panel(axes[1], p1, EPS_DEFAULT, ELL_DEFAULT, "(b)")
+        k1 = _panel(axes[1], p1, ell=ELL_DEFAULT, L=SG_SETTINGS["L"], panel_tag="(b)")
         print(f"[sg] p=1 kappa_fit = {k1:.4f}")
     else:
         axes[1].set_title("(b) p=1 (data missing)")
 
-    out = ensure_fig_dir() / "sg.png"
-    fig.savefig(out, dpi=150)
+    out_base = ensure_fig_dir() / "sg"
+    for ext in ("pdf", "png"):
+        out = out_base.with_suffix(f".{ext}")
+        fig.savefig(out, dpi=600 if ext == "png" else None, bbox_inches="tight")
+        print(f"[sg] saved -> {out}")
     plt.close(fig)
-    print(f"[sg] saved -> {out}")
 
 
 if __name__ == "__main__":
