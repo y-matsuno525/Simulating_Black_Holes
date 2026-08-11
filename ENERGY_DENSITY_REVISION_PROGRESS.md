@@ -110,7 +110,9 @@ by zero in the operator definition if `H = sum_j h_j` is to hold exactly.
 - [x] Test that vacuum subtraction uses the same revised density operator.
 - [x] Test that multiplying a complete density profile by a positive constant
       does not change the measured packet center or width.
-- [x] Run `python -m unittest discover -s tests` (31 tests OK).
+- [x] Test that the Fig. 5 lattice-site width is converted to physical units
+      by exactly one factor of `ell/L`.
+- [x] Run `python -m unittest discover -s tests` (32 tests OK).
 
 ## Phase 3: numerical comparison
 
@@ -197,6 +199,25 @@ python paper_figures\reproduce_panel.py FIG7 --rerun
 Run the full figure set only after the representative Fig. 2(c) and Fig. 6(a)
 comparisons pass.
 
+## Phase 6: final figure readability and Fig. 5 width definition
+
+- [x] Regenerate Figs. 4--6 as two-panel, full-text-width figures with
+      11 pt axis labels, 9.5 pt ticks, 9 pt legends, and 11 pt panel labels.
+- [x] Regenerate Fig. 7 as equal-size panels in a centered 2+1 layout.
+- [x] Use manuscript notation in the figures: `delta sigma_E(t)` in Fig. 5
+      and `T_lat` in Fig. 6(b).
+- [x] Define the absolute-energy-weighted center and width in
+      `main_revised.tex` (Eq. `energy_weighted_width`) and state that Fig. 5
+      uses the minus branch.
+- [x] Convert the saved Fig. 5 widths from lattice-site units using only
+      `ell/L`; confirm that the constant rescaling leaves
+      `kappa_fit = 1.0332` and `0.9514` unchanged.
+- [x] Generate PNG and PDF versions of Figs. 4--7 from cached numerical data.
+- [x] Build and render the 11-page two-column manuscript; visually verify
+      Figs. 4--7 and the new width equation with no clipping or overlap.
+      REVTeX still emits deferred-float warnings, but the rendered figures
+      are correctly ordered before the references.
+
 ## Progress log
 
 | Date | Change | Verification | Result |
@@ -211,3 +232,4 @@ comparisons pass.
 | 2026-07-23 | Representative panels rerun with the revised density: FIG2c and FIG6a; old runs preserved as baselines | Comparison script (bulk ratio `1/eps`, conserved `eps*sum_j`, center/std/peak) | FIG2c: ratio 47.7465, integral 3.9395 conserved, center/std shifts <0.1 site. FIG6a: integral 1.79288 conserved, stagnation at `j_h~212.8`; commit `6b6db9f` |
 | 2026-07-23 | Full figure regeneration: FIG2a/b/d, FIG3a-d, FIG4(b), FIG5 (recomputed sigma data), FIG6 composite, FIG7; verified composites copied to `paper/figure/` (`p=0_BH.png`, `p=1_BH.png`, `WH_p=0.png`, `WH_p=1.png`, `sg.png`, `doubler_fft.png`) | Old/new comparisons per panel; visual inspection of FIG6/FIG7 | Trajectories/peaks unchanged (<0.5 site); `kappa_fit`: p=0 1.0332 (3.3%), p=1 0.9514 (4.9%); commit `c10beb8` |
 | 2026-07-23 | Manuscript sync: removed duplicated dynamics section/label, `delta E` caption notation, `H^{int}` in Fig. 7(c), Fig. 5 errors 3.3%/4.9%, merged `books.bib`; built with pdflatex+bibtex (10 pages, 0 undefined refs); verified tex synced back to Downloads | LaTeX build log inspection | OK |
+| 2026-08-11 | Enlarged and rearranged Figs. 4--7; documented the Fig. 5 energy-weighted width and corrected its physical-unit conversion; moved the Fig. 7 float declaration so it appears before the references | 32 unit tests; PNG/PDF figure regeneration; pdflatex+bibtex build and page rendering | 11 pages, 0 undefined refs, no new equation overflow, visual QA passed |

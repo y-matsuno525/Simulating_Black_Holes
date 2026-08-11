@@ -860,7 +860,7 @@ localization weight and define
     & =
     \frac{|\delta\mathcal E_{j,s}(t)|}
          {\sum_l|\delta\mathcal E_{l,s}(t)|},
-    &
+    \\
     \bar j_{\mathcal E,s}(t)
     & =
     \sum_j j\,w_{j,s}^{(\mathcal E)}(t),
@@ -873,7 +873,7 @@ localization weight and define
       \bigl(j-\bar j_{\mathcal E,s}(t)\bigr)^2
       w_{j,s}^{(\mathcal E)}(t)
     \right]^{1/2},
-    &
+    \\
     \delta\sigma_{\mathcal E,s}(t)
     & =
     \sigma_{\mathcal E,s}(t)-\sigma_{\mathcal E,s}(0).
@@ -1050,6 +1050,11 @@ For the white-hole dynamics, we use $A=C=-0.6$, $B=3$, $x_0=2\ell/3$ (white-hole
 \caption{Wave packet dynamics in the white-hole geometry for $p=0$. (a) Space-time diagram of the vacuum-subtracted energy density $\delta\mathcal{E}_{j,+}$ [Eq.~\eqref{eq:branch_resolved_energy}] for $L=300$, $j_0=0.2L$, and $\sigma=0.05L$, with $\beta$ profile parameters $A=C=-0.6$, $B=3$, and $x_0=2\ell/3$ (white-hole horizon at $j_h\approx213$). The wave packet is compressed toward the white-hole horizon (black dotted line) and eventually reflected due to finite lattice resolution. (b) Lattice stagnation time $T_{\mathrm{lat}}$ versus $\ln L$ for various system sizes, using $A=C=-0.6$, $B=3$, $x_0=2\ell/3$, $j_0=0.2L$, and $\sigma=0.05L$. Blue dots show numerical simulation results; their approximately linear dependence on $\ln L$ is consistent with the logarithmic scaling of Eq.~\eqref{eq:T_logL}.}
 \label{fig:wh_p0}
 \end{figure*}
+\begin{figure*}[t!]
+\includegraphics[width=\textwidth]{figure/WH_p=1.png}
+\caption{White-hole dynamics for $p=1$ ($L=300$, $j_0=0.2L$, $\sigma=0.05L$, with the same $\beta$ profile as Fig.~\ref{fig:wh_p0}(a), $A=C=-0.6$, $B=3$, $x_0=2\ell/3$, and $j_h\approx213$). (a) Space-time diagram of the vacuum-subtracted energy density $\delta\mathcal{E}_{j,+}$. (b) Space-time diagram of $\delta\mathcal{E}_{j,-}$. (c) Space-time diagram of the mixed contribution $\delta\mathcal{E}_{j,\mathrm{int}}$ built from $\mathcal{H}_j^{\mathrm{int}}$. Unlike the $p=0$ case, the coupling between the right- and left-moving components allows partial transmission across the white-hole horizon (black dotted line).}
+\label{fig:wh_p1}
+\end{figure*}
 For $p = 0$, as shown in Fig.~\ref{fig:wh_p0}, the wave packet is initially compressed at the white-hole horizon, yielding behavior consistent with the ideal analytical expectation. However, after a certain time, the wave packet collapses and is reflected. This behavior is attributed to a finite-size effect arising when the wave-packet standard deviation becomes smaller than the lattice spacing.
 For the stagnation-time scaling in Fig.~\ref{fig:wh_p0}(b), we use the same profile parameters, $A=C=-0.6$, $B=3$, and $x_0=2\ell/3$, with $j_0=0.2L$ and $\sigma=0.05L$.
 Near the white-hole horizon, the same linearized null-geodesic argument gives an exponential compression of the wave-packet standard deviation, $\sigma(t)\propto\sigma_0 e^{-\kappa t}$.
@@ -1071,11 +1076,6 @@ The approximately linear dependence of the data on $\ln L$ in Fig.~\ref{fig:wh_p
 This comparison tests only the logarithmic dependence, not its coefficient: $T_{\mathrm{lat}}$ is defined operationally from the nonlinear lattice collapse and reflection, so its slope need not equal the continuum value $1/\kappa$.
 Therefore, we conclude that the reflection of the wave packet is caused by a finite-size effect associated with its standard deviation becoming smaller than the lattice spacing.
 
-\begin{figure*}[tbp]
-\includegraphics[width=\textwidth]{figure/WH_p=1.png}
-\caption{White-hole dynamics for $p=1$ ($L=300$, $j_0=0.2L$, $\sigma=0.05L$, with the same $\beta$ profile as Fig.~\ref{fig:wh_p0}(a), $A=C=-0.6$, $B=3$, $x_0=2\ell/3$, and $j_h\approx213$). (a) Space-time diagram of the vacuum-subtracted energy density $\delta\mathcal{E}_{j,+}$. (b) Space-time diagram of $\delta\mathcal{E}_{j,-}$. (c) Space-time diagram of the mixed contribution $\delta\mathcal{E}_{j,\mathrm{int}}$ built from $\mathcal{H}_j^{\mathrm{int}}$. Unlike the $p=0$ case, the coupling between the right- and left-moving components allows partial transmission across the white-hole horizon (black dotted line).}
-\label{fig:wh_p1}
-\end{figure*}
 For $p=1$, the wave-packet dynamics differs from the $p=0$ case.
 As shown in Fig.~\ref{fig:wh_p1}, part of the wave packet crosses the white-hole horizon instead of being simply reflected.
 This behavior is absent for $p=0$, indicating that the coupling between the right- and left-moving modes plays an important role.
