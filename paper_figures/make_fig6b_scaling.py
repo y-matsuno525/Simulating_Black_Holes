@@ -58,10 +58,10 @@ def draw_scaling_panel(ax, *, max_l: float | None = DEFAULT_MAX_L):
 
     ax.plot(x, times, "o", ms=3.8, color="#1f77b4", label="Numerical simulation")
     ax.set_xlabel(r"$\ln L$")
-    ax.set_ylabel(r"$T$", rotation=0, labelpad=10)
+    ax.set_ylabel(r"$T_{\mathrm{lat}}$", rotation=0, labelpad=14)
     ax.grid(True, color="0.70", lw=0.45, alpha=0.7)
     ax.legend(loc="upper left", frameon=True, handlelength=1.8, borderpad=0.4)
-    ax.text(-0.15, 1.03, "(b)", transform=ax.transAxes, fontsize=10)
+    ax.text(-0.15, 1.03, "(b)", transform=ax.transAxes, fontsize=11)
 
     y_span = max(float(times.max() - times.min()), 1.0)
     ax.set_xlim(float(x.min() - 0.05 * (x.max() - x.min())), float(x.max() + 0.05 * (x.max() - x.min())))

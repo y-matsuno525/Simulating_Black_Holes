@@ -971,8 +971,8 @@ Fig.~\ref{fig:doubler_fft}(a) shows the low-energy doubler modes that appear for
 On the other hand, the oscillations in Figs.~\ref{fig:bh_p1}(c,d) are already present from the initial time.
 Since these wave packets are initialized inside the black hole, they already have overlap with the doubler branch indicated in Fig.~\ref{fig:doubler_fft}(a).
 Although the $p=0$ model also contains a doubler branch near $k=\pi$, the FFT analysis shows a larger doubler-mode peak for $p=1$ in the black-hole interior, explaining the more pronounced oscillations in Figs.~\ref{fig:bh_p1}(c,d).
-\begin{figure}[tbp]
-\includegraphics[width=\linewidth]{figure/doubler_fft.png}
+\begin{figure*}[tbp]
+\includegraphics[width=\textwidth]{figure/doubler_fft.png}
 \caption{Excitation of doubler modes in the oscillatory wave-packet dynamics for $p=1$.
 (a) Local dispersion relation at $\beta=1.2$, representative of the black-hole interior.
 The red circles mark the low-energy crossings at $k=\pm k_d$, corresponding to the doubler modes, where $k_d\simeq1.171$.
@@ -981,7 +981,7 @@ The black dotted line indicates the doubler-mode wave number $k_d$ predicted fro
 The peak near $k=0$ corresponds to the low-momentum quasiparticle component, while the secondary peak grows near $k_d$ as the packet enters the black-hole interior.
 This agreement supports the interpretation that the oscillatory behavior in Fig.~\ref{fig:bh_p1} originates from the excitation of doubler modes.}
 \label{fig:doubler_fft}
-\end{figure}
+\end{figure*}
 
 We next extract the surface gravity of the effective horizon from the near-horizon wave-packet dynamics.
 For a left-moving wave packet localized in the exterior region near the event horizon, the linearized near-horizon null-geodesic equation gives the approximate growth of the standard deviation
@@ -995,11 +995,11 @@ It implies that the surface gravity can be read off from the exponential growth 
 In practice, we fit the numerical data to $a(e^{\kappa_{\rm fit}t}-1)$, where $a$ is a prefactor and $\kappa_{\rm fit}$ is the fitted growth rate.
 
 For the surface-gravity extraction (Fig.~\ref{fig:sg}), we use $A=1$, $B=1$, $C=1$, $x_0=\pi$ (so $x_h=x_0$, $\kappa=|\beta'(x_h)|=1$, and $j_h=0.5L$), $j_0=245$, $\sigma=0.003L$, and fit the data over the time interval $t\in[0,1]$.
-\begin{figure}[tbp]
-\includegraphics[width=\linewidth]{figure/sg.png}
+\begin{figure*}[tbp]
+\includegraphics[width=\textwidth]{figure/sg.png}
 \caption{Extraction of surface gravity from wave-packet broadening ($L=500$, $A=B=C=1$, $x_0=\ell /2$, $j_0=245$, $\sigma=0.003L$, with the fit performed over $t\in[0,1]$). Blue dots show the numerical simulation results, and red curves show the analytical near-horizon scaling $a(e^{\kappa t}-1)$ with $\kappa=1$; the prefactor $a$ fixes the vertical scale. The fitted growth rates are obtained separately from $a(e^{\kappa_{\rm fit}t}-1)$. (a) Result for $p=0$, with $|\kappa_{\rm fit}-\kappa|/\kappa\approx3.3\%$. (b) Result for $p=1$, with $|\kappa_{\rm fit}-\kappa|/\kappa\approx4.9\%$ due to simultaneous wave packet dispersion. These percentages quantify the error in the fitted surface gravity, not the pointwise deviation of the red analytical curves. The vertical axis $\delta\sigma\equiv\sigma(t)-\sigma(0)$ denotes the change in the wave-packet standard deviation.}
 \label{fig:sg}
-\end{figure}
+\end{figure*}
 Fig.~\ref{fig:sg} compares the numerical data with the analytical near-horizon form for $\kappa=1$, while the quoted $\kappa_{\rm fit}$ values are obtained by allowing the exponential growth rate to vary.
 As shown in Fig.~\ref{fig:sg}(a), for $p=0$, the fitted growth rate agrees with the analytical surface gravity $\kappa=1$ within a relative error of approximately 3.3\%.
 Small deviations from the analytical near-horizon curve at later times can be attributed to the breakdown of the approximation in Eq.~\eqref{eq:sigma_kappa} as the wave packet moves away from the event horizon.
@@ -1011,11 +1011,11 @@ This discrepancy can be attributed to deformation of the wave packet as it broad
 \subsection{White Hole}
 In this section, we present the results of numerical simulations of particle dynamics in a white-hole spacetime. We consider the case in which a wave packet is incident from the exterior toward the interior of the white hole. We also discuss the finite-size effects that arise in this setup.
 For the white-hole dynamics, we use $A=C=-0.6$, $B=3$, $x_0=2\ell/3$ (white-hole horizon at $j_h\approx213$ for $L=300$), with $j_0=0.2L$ and $\sigma=0.05L$.
-\begin{figure}[tbp]
-\includegraphics[width=\linewidth]{figure/WH_p=0.png}
+\begin{figure*}[tbp]
+\includegraphics[width=\textwidth]{figure/WH_p=0.png}
 \caption{Wave packet dynamics in the white-hole geometry for $p=0$. (a) Space-time diagram of the vacuum-subtracted energy density $\delta\mathcal{E}_{j,+}$ [Eq.~\eqref{eq:branch_resolved_energy}] for $L=300$, $j_0=0.2L$, and $\sigma=0.05L$, with $\beta$ profile parameters $A=C=-0.6$, $B=3$, and $x_0=2\ell/3$ (white-hole horizon at $j_h\approx213$). The wave packet is compressed toward the white-hole horizon (black dotted line) and eventually reflected due to finite lattice resolution. (b) Lattice stagnation time $T_{\mathrm{lat}}$ versus $\ln L$ for various system sizes, using $A=C=-0.6$, $B=3$, $x_0=2\ell/3$, $j_0=0.2L$, and $\sigma=0.05L$. Blue dots show numerical simulation results; their approximately linear dependence on $\ln L$ is consistent with the logarithmic scaling of Eq.~\eqref{eq:T_logL}.}
 \label{fig:wh_p0}
-\end{figure}
+\end{figure*}
 For $p = 0$, as shown in Fig.~\ref{fig:wh_p0}, the wave packet is initially compressed at the white-hole horizon, yielding behavior consistent with the ideal analytical expectation. However, after a certain time, the wave packet collapses and is reflected. This behavior is attributed to a finite-size effect arising when the wave-packet standard deviation becomes smaller than the lattice spacing.
 For the stagnation-time scaling in Fig.~\ref{fig:wh_p0}(b), we use the same profile parameters, $A=C=-0.6$, $B=3$, and $x_0=2\ell/3$, with $j_0=0.2L$ and $\sigma=0.05L$.
 Near the white-hole horizon, the same linearized null-geodesic argument gives an exponential compression of the wave-packet standard deviation, $\sigma(t)\propto\sigma_0 e^{-\kappa t}$.
@@ -1037,11 +1037,11 @@ The approximately linear dependence of the data on $\ln L$ in Fig.~\ref{fig:wh_p
 This comparison tests only the logarithmic dependence, not its coefficient: $T_{\mathrm{lat}}$ is defined operationally from the nonlinear lattice collapse and reflection, so its slope need not equal the continuum value $1/\kappa$.
 Therefore, we conclude that the reflection of the wave packet is caused by a finite-size effect associated with its standard deviation becoming smaller than the lattice spacing.
 
-\begin{figure}[tbp]
-\includegraphics[width=\linewidth]{figure/WH_p=1.png}
+\begin{figure*}[tbp]
+\includegraphics[width=\textwidth]{figure/WH_p=1.png}
 \caption{White-hole dynamics for $p=1$ ($L=300$, $j_0=0.2L$, $\sigma=0.05L$, with the same $\beta$ profile as Fig.~\ref{fig:wh_p0}(a), $A=C=-0.6$, $B=3$, $x_0=2\ell/3$, and $j_h\approx213$). (a) Space-time diagram of the vacuum-subtracted energy density $\delta\mathcal{E}_{j,+}$. (b) Space-time diagram of $\delta\mathcal{E}_{j,-}$. (c) Space-time diagram of the mixed contribution $\delta\mathcal{E}_{j,\mathrm{int}}$ built from $\mathcal{H}_j^{\mathrm{int}}$. Unlike the $p=0$ case, the coupling between the right- and left-moving components allows partial transmission across the white-hole horizon (black dotted line).}
 \label{fig:wh_p1}
-\end{figure}
+\end{figure*}
 For $p=1$, the wave-packet dynamics differs from the $p=0$ case.
 As shown in Fig.~\ref{fig:wh_p1}, part of the wave packet crosses the white-hole horizon instead of being simply reflected.
 This behavior is absent for $p=0$, indicating that the coupling between the right- and left-moving modes plays an important role.

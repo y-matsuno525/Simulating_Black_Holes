@@ -424,7 +424,7 @@ def draw_panel(fig, ax, spec: PanelSpec):
     ax.set_ylim(0, t_max)
     ax.set_xlabel(r"$j$")
     ax.set_ylabel(r"$t$", rotation=0, labelpad=8)
-    ax.text(-0.17, 1.03, f"({spec.tag})", transform=ax.transAxes, fontsize=10)
+    ax.text(-0.12, 1.03, f"({spec.tag})", transform=ax.transAxes, fontsize=11)
 
     cbar = fig.colorbar(im, ax=ax, pad=0.025)
     cbar.set_label(spec.label, rotation=0, labelpad=10)
@@ -464,13 +464,33 @@ def plot_composite(specs: list[PanelSpec]) -> Path | None:
 
     configure_matplotlib()
     figure_id = specs[0].figure_id
-    fig, axes = plt.subplots(
-        1,
-        len(specs),
-        figsize=(3.05 * len(specs), 2.55),
-        constrained_layout=True,
-    )
-    axes = np.atleast_1d(axes)
+    if figure_id == "FIG7":
+        fig = plt.figure(figsize=(7.0, 5.8))
+        grid = fig.add_gridspec(
+            2,
+            4,
+            left=0.08,
+            right=0.95,
+            bottom=0.08,
+            top=0.96,
+            wspace=0.75,
+            hspace=0.62,
+        )
+        axes = np.array(
+            [
+                fig.add_subplot(grid[0, 0:2]),
+                fig.add_subplot(grid[0, 2:4]),
+                fig.add_subplot(grid[1, 1:3]),
+            ]
+        )
+    else:
+        fig, axes = plt.subplots(
+            1,
+            len(specs),
+            figsize=(3.05 * len(specs), 2.55),
+            constrained_layout=True,
+        )
+        axes = np.atleast_1d(axes)
     for ax, spec in zip(axes, specs):
         draw_panel(fig, ax, spec)
 
@@ -499,7 +519,7 @@ def plot_fig6_composite() -> Path:
         from make_fig6b_scaling import draw_scaling_panel
 
     configure_matplotlib()
-    fig, axes = plt.subplots(1, 2, figsize=(6.7, 2.55), constrained_layout=True)
+    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.0), constrained_layout=True)
     draw_panel(fig, axes[0], PANEL_SPECS["fig6a"])
     draw_scaling_panel(axes[1])
 

@@ -98,7 +98,7 @@ def recompute_surface_gravity_data() -> None:
         print(f"[sg] wrote {dst}")
 
 
-def _panel(ax, sigma_path, eps, ell):
+def _panel(ax, sigma_path, eps, ell, panel_tag):
     data = np.loadtxt(sigma_path)
     times = data[:, 0]
     sig = data[:, 1] * eps
@@ -110,9 +110,10 @@ def _panel(ax, sigma_path, eps, ell):
     ax.plot(times, sig * ell, "o", color="blue", ms=3, label="Numerical simulation")
     ax.plot(t_fine, ideal * ell, "-", color="red", lw=2.5, label="Analytical prediction")
     ax.set_xlabel(r"$t$")
-    ax.set_ylabel(r"$\delta\sigma$", rotation=0, labelpad=12)
+    ax.set_ylabel(r"$\delta\sigma_{\mathcal{E}}(t)$", rotation=0, labelpad=22)
     ax.grid(True, alpha=0.3)
-    ax.legend(fontsize=8, loc="upper left")
+    ax.legend(loc="upper left")
+    ax.text(-0.13, 1.04, panel_tag, transform=ax.transAxes, fontsize=11)
     return kappa
 
 
@@ -137,14 +138,14 @@ def main(argv: list[str] | None = None):
     p0 = PAPER_DATA / "H_m_sigmas_p0.txt"
     p1 = PAPER_DATA / "H_m_sigmas_p1.txt"
 
-    fig, axes = plt.subplots(1, 2, figsize=(9, 3.6), constrained_layout=True)
+    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.0), constrained_layout=True)
     if p0.exists():
-        k0 = _panel(axes[0], p0, EPS_DEFAULT, ELL_DEFAULT)
+        k0 = _panel(axes[0], p0, EPS_DEFAULT, ELL_DEFAULT, "(a)")
         print(f"[sg] p=0 kappa_fit = {k0:.4f}")
     else:
         axes[0].set_title("(a) p=0 (data missing)")
     if p1.exists():
-        k1 = _panel(axes[1], p1, EPS_DEFAULT, ELL_DEFAULT)
+        k1 = _panel(axes[1], p1, EPS_DEFAULT, ELL_DEFAULT, "(b)")
         print(f"[sg] p=1 kappa_fit = {k1:.4f}")
     else:
         axes[1].set_title("(b) p=1 (data missing)")
