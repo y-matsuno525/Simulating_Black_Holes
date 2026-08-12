@@ -1,4 +1,4 @@
-"""Plot Fig. 6(b) stagnation-time scaling from digitized manuscript data."""
+"""Plot Fig. 6(b) stagnation-time scaling from measured lattice data."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ except ImportError:
     from style import configure_figure5_style
 
 
-DATA = REPO / "paper_figures" / "reference_data" / "T_lat_digitized.csv"
+DATA = REPO / "paper_figures" / "measured_data" / "T_lat_measured_L800.csv"
 OUT_DIR = REPO / "paper_figures" / "generated" / "panels" / "FIG6"
 DEFAULT_MAX_L: float | None = None
 
@@ -76,7 +76,7 @@ def main(argv: list[str] | None = None) -> None:
         dest="max_l",
         type=float,
         default=0.0,
-        help="Largest stored L value to plot. Use 0 to include all digitized data.",
+        help="Largest stored L value to plot. Use 0 to include all measured data.",
     )
     args = parser.parse_args([] if argv is None else argv)
     max_l = None if args.max_l == 0 else args.max_l
@@ -109,7 +109,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     limit_note = "all stored L" if max_l is None else f"L <= {max_l:g}"
     print(f"[paper] saved FIG6(b) -> {out_base.with_suffix('.png')} ({limit_note})")
-    print(f"[paper] FIG6(b) plotted {len(Ls)} digitized points")
+    print(f"[paper] FIG6(b) plotted {len(Ls)} measured points")
 
 
 if __name__ == "__main__":

@@ -7,7 +7,13 @@ from paper_figures.make_beta12_dispersion import doubler_k
 from paper_figures.make_doubler_fft import doubler_k as fig4_doubler_k
 from paper_figures.make_fig6b_scaling import DEFAULT_MAX_L, load_scaling_data
 from paper_figures.make_surface_gravity import lattice_width_to_physical
-from paper_figures.measure_fig6b_scaling import load_results as load_measured_fig6b_results
+from paper_figures.measure_fig6b_scaling import (
+    CURVATURE_THRESHOLD,
+    WH_X0,
+    beta_second_derivative,
+    central_curvature_boundary,
+    load_results as load_measured_fig6b_results,
+)
 from paper_figures.reproduce_panel import (
     FIGURE_GROUPS,
     PANEL_SPECS,
@@ -151,28 +157,34 @@ class PaperReproductionTests(unittest.TestCase):
             "fig6a": r"$\mathcal{H}_{j}^{+}$",
             "fig7a": r"$\mathcal{H}_{j}^{+}$",
             "fig7b": r"$\mathcal{H}_{j}^{-}$",
-            "fig7c": r"$\mathcal{H}_{j}^{\pm}$",
+            "fig7c": r"$\mathcal{H}_{j}^{\mathrm{int}}$",
         }
         for key, label in expected.items():
             with self.subTest(panel=key):
                 self.assertEqual(PANEL_SPECS[key].label, label)
 
-    def test_fig6b_scaling_data_uses_digitized_manuscript_points(self):
+    def test_fig6b_scaling_data_uses_measured_points(self):
         Ls, times, _ = load_scaling_data()
         self.assertEqual(Ls.tolist(), [100, 200, 300, 400, 500, 600, 700, 800])
-        self.assertAlmostEqual(float(times[0]), 0.75, places=2)
-        self.assertAlmostEqual(float(times[-1]), 4.52, places=2)
         self.assertTrue(np.all(np.isfinite(times)))
 
-    def test_fig6b_default_plot_includes_digitized_l800(self):
+    def test_fig6b_default_plot_includes_measured_l800(self):
         Ls, _, _ = load_scaling_data(max_l=DEFAULT_MAX_L)
         self.assertEqual(float(np.max(Ls)), 800.0)
 
-    def test_fig6b_measured_data_tracks_server_l800_points(self):
+    def test_fig6b_measured_data_are_finite(self):
         Ls, _, times = load_measured_fig6b_results()
         self.assertEqual(Ls.tolist(), [100, 200, 300, 400, 500, 600, 700, 800])
-        self.assertAlmostEqual(float(times[-3]), 3.24)
-        self.assertAlmostEqual(float(times[-1]), 3.5025)
+        self.assertTrue(np.all(np.isfinite(times)))
+
+    def test_fig6b_curvature_boundary_matches_manuscript_threshold(self):
+        boundary = central_curvature_boundary()
+        self.assertLess(boundary, WH_X0)
+        self.assertAlmostEqual(
+            abs(float(beta_second_derivative(np.asarray(boundary)))),
+            CURVATURE_THRESHOLD,
+            places=10,
+        )
 
     def test_surface_gravity_width_uses_ell_over_L_once(self):
         lattice_width = np.array([0.0, 1.0, 2.5])

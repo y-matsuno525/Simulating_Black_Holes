@@ -286,7 +286,7 @@ PANEL_SPECS: dict[str, PanelSpec] = {
     ),
     "fig7c": _wh_panel(
         "FIG7c", "FIG7", "c", p=1, observable="H_pm",
-        label=r"$\mathcal{H}_{j}^{\pm}$", t_plot=8.0,
+        label=r"$\mathcal{H}_{j}^{\mathrm{int}}$", t_plot=8.0,
         title=r"FIG7(c) $p=1$, $\mathcal{H}^{\mathrm{int}}$",
         run_id="FIG7",
     ),

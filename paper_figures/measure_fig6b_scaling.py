@@ -1,12 +1,4 @@
-"""Diagnostic measurement of Fig. 6(b) stagnation-time scaling.
-
-This is the calculation-based counterpart to ``make_fig6b_scaling.py``, which
-plots the digitized manuscript points used for the paper figure.  This script
-instead recomputes an operational ``T_lat`` from newly generated lattice output,
-so its ``FIG6b_measured_*`` files are diagnostic checks rather than manuscript
-reproduction figures.  The default run list is capped at L=500 to avoid the
-expensive L=800 calculation.
-"""
+"""Measure Fig. 6(b) stagnation-time scaling from lattice simulations."""
 
 from __future__ import annotations
 
@@ -72,7 +64,7 @@ def build_config(L: int) -> dict:
         "surface_gravity_beta": False,
         "beta_amplitude": 0.6,
         "beta_width": 1.0,
-        "beta_center_fraction": 0.7,
+        "beta_center_fraction": 2 / 3,
         "j0_fraction": 0.2,
         "sigma_fraction": 0.05,
         "t_i": 0.0,
@@ -91,27 +83,74 @@ def build_config(L: int) -> dict:
 def run_one(L: int, *, rerun: bool) -> dict:
     config = build_config(L)
     out_dir = Path(config["output_dir"])
-    summary_path = out_dir / "summary.json"
+    summary_path = out_dir / "measurement_summary.json"
     if summary_path.exists() and not rerun:
         with summary_path.open() as f:
             summary = json.load(f)
-        print(f"[fig6b-measure] using cached L={L}: T_lat={summary.get('stagnation_time')}")
+        print(f"[fig6b-measure] using cached L={L}: T_lat={summary.get('T_lat')}")
         return summary
 
-    from config import ANIMATION_CONFIGS, DENSITY_PLOT_CONFIGS
-    from simulation import configure, run_simulation
-
-    print(
-        "[fig6b-measure] running "
-        f"L={L}, dt={config['dt']:.6g}, steps={(config['t_f'] - config['t_i']) / config['dt']:.0f}"
-    )
-    configure(config, DENSITY_PLOT_CONFIGS, ANIMATION_CONFIGS)
-    run_simulation()
-    with summary_path.open() as f:
-        summary = json.load(f)
-    print(f"[fig6b-measure] finished L={L}: T_lat={summary.get('stagnation_time')}")
+    print(f"[fig6b-measure] running lightweight L={L}, steps={len(config['times'])}")
+    times, values = compute_h_p_profiles(config)
+    summary = measure_profiles(L, times, values)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with summary_path.open("w") as f:
+        json.dump(summary, f, indent=2)
+    print(f"[fig6b-measure] finished L={L}: T_lat={summary['T_lat']:.6g}")
     gc.collect()
     return summary
+
+
+def compute_h_p_profiles(config: dict) -> tuple[np.ndarray, np.ndarray]:
+    """Evaluate the vacuum-subtracted H_+ profile without storing local matrices."""
+    from config import ANIMATION_CONFIGS, DENSITY_PLOT_CONFIGS
+    import simulation
+
+    simulation.configure(config, DENSITY_PLOT_CONFIGS, ANIMATION_CONFIGS)
+    L = int(config["L"])
+    epsilon = float(config["epsilon"])
+    params = simulation.PARAMS
+
+    h_bdg = simulation.build_bdg_matrix(params)
+    eigenvalues, eigenvectors = simulation.diagonalize_bdg_matrix(h_bdg, L)
+    eigenvectors = simulation.enforce_particle_hole_symmetry(eigenvectors, L)
+    psi0, _ = simulation.build_initial_state(
+        L,
+        eigenvectors,
+        config["j0"],
+        config["sigma"],
+        config["PBC"],
+        config["initial_direction_sign"],
+    )
+
+    times = np.asarray(config["times"], dtype=float)
+    amplitudes = np.exp(-1j * times[:, None] * eigenvalues[None, :L]) * psi0[:, 0][None, :]
+    particle = amplitudes @ eigenvectors[:L, :L].T
+    hole_bra = amplitudes.conj() @ eigenvectors[:L, L:].T
+
+    pair = np.zeros((len(times), L), dtype=complex)
+    hopping = np.zeros_like(pair)
+    pair[:, : L - 1] = (
+        hole_bra[:, 1:] * particle[:, :-1]
+        - hole_bra[:, :-1] * particle[:, 1:]
+    )
+    hopping[:, : L - 1] = (
+        particle[:, 1:].conj() * particle[:, :-1]
+        - hole_bra[:, :-1] * hole_bra[:, 1:].conj()
+    )
+
+    core = -1j * pair - hopping + hopping.conj() - 1j * pair.conj()
+    beta_right = np.asarray(
+        [simulation.beta_for_params(b + 0.5, params) for b in range(L)],
+        dtype=float,
+    )
+    core_left = np.roll(core, 1, axis=1)
+    beta_left = np.roll(beta_right, 1)
+    values = -1j / (8 * epsilon**2) * (
+        (1 + beta_left[None, :]) * core_left
+        + (1 + beta_right[None, :]) * core
+    )
+    return times, np.real_if_close(values, tol=1000).real
 
 
 def _load_existing_rows() -> dict[int, list[float]]:
@@ -150,7 +189,7 @@ def write_results(summaries: list[dict]) -> Path:
     merged_rows = _load_existing_rows()
     rows = []
     for item in summaries:
-        measured = postprocess_run(int(item["L"]))
+        measured = item if "T_lat" in item else postprocess_run(int(item["L"]))
         row = [
             item["L"],
             np.log(float(item["L"])),
@@ -194,6 +233,29 @@ def beta_second_derivative(x: np.ndarray) -> np.ndarray:
     return -2.0 * WH_A * WH_B**2 * sech2 * np.tanh(u)
 
 
+def central_curvature_boundary() -> float:
+    """Return the left boundary of the central |beta''| < threshold region."""
+    lo = WH_X0 - 1.0 / WH_B
+    hi = WH_X0
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        if abs(float(beta_second_derivative(np.asarray(mid)))) < CURVATURE_THRESHOLD:
+            hi = mid
+        else:
+            lo = mid
+    return 0.5 * (lo + hi)
+
+
+def interpolated_crossing_time(times: np.ndarray, positions: np.ndarray, boundary: float) -> float:
+    """Interpolate the first rightward crossing of a spatial boundary."""
+    for idx in range(1, len(times)):
+        x0, x1 = float(positions[idx - 1]), float(positions[idx])
+        if x0 < boundary <= x1:
+            fraction = (boundary - x0) / (x1 - x0)
+            return float(times[idx - 1] + fraction * (times[idx] - times[idx - 1]))
+    raise RuntimeError(f"wave-packet mean never crosses x={boundary:.8g}")
+
+
 def postprocess_run(L: int) -> dict:
     csv = RUN_ROOT / f"L{int(L)}" / "H_p_val.csv"
     if not csv.exists():
@@ -202,6 +264,11 @@ def postprocess_run(L: int) -> dict:
     raw = np.loadtxt(csv, delimiter=",", skiprows=1, dtype=complex)
     times = np.real(raw[:, 0])
     values = np.real(raw[:, 1:])
+    return measure_profiles(L, times, values)
+
+
+def measure_profiles(L: int, times: np.ndarray, values: np.ndarray) -> dict:
+    """Measure t_in, t_min, and T_lat from an H_+ profile time series."""
     weights = np.abs(values)
     sites = np.arange(int(L), dtype=float)
     norm = weights.sum(axis=1)
@@ -215,24 +282,12 @@ def postprocess_run(L: int) -> dict:
     xbar = mean_j * ELL_DEFAULT / float(L)
     curvature = np.abs(beta_second_derivative(xbar))
 
-    in_compression = curvature > CURVATURE_THRESHOLD
-    if not np.any(in_compression):
+    entered_compression = curvature >= CURVATURE_THRESHOLD
+    if not np.any(entered_compression):
         raise RuntimeError(f"|beta''(xbar)| never exceeds {CURVATURE_THRESHOLD} for L={L}")
-    t_in_idx = int(np.argmax(in_compression))
-    t_in = float(times[t_in_idx])
-
-    after_drop_idx = np.nan
-    t_in_after_drop = np.nan
-    T_after_drop = np.nan
-    seen_compression = False
-    for idx, active in enumerate(in_compression):
-        if active:
-            seen_compression = True
-        elif seen_compression:
-            after_drop_idx = idx
-            t_in_after_drop = float(times[idx])
-            T_after_drop = t_min - t_in_after_drop
-            break
+    boundary = central_curvature_boundary()
+    t_in = interpolated_crossing_time(times, xbar, boundary)
+    t_in_idx = int(np.searchsorted(times, t_in, side="left"))
 
     return {
         "L": float(L),
@@ -240,9 +295,9 @@ def postprocess_run(L: int) -> dict:
         "t_in": t_in,
         "t_min": t_min,
         "H_p_sigma_min": float(sigma_delta[t_min_idx]),
-        "t_in_after_drop": t_in_after_drop,
-        "T_lat_after_drop": T_after_drop,
-        "after_drop_idx": after_drop_idx,
+        "t_in_after_drop": t_in,
+        "T_lat_after_drop": t_min - t_in,
+        "after_drop_idx": float(t_in_idx),
     }
 
 
@@ -266,7 +321,7 @@ def draw_measured_panel(ax, path: Path = DATA_PATH):
         raise RuntimeError(f"no finite measured Fig. 6(b) points in {path}")
     ax.plot(log_l, t_lat, "o", ms=3.8, color="#1f77b4", label="Numerical simulation")
     ax.set_xlabel(r"$\ln L$")
-    ax.set_ylabel(r"$T$", rotation=0, labelpad=10)
+    ax.set_ylabel(r"$T_{\mathrm{lat}}$", rotation=0, labelpad=14)
     ax.grid(True, color="0.70", lw=0.45, alpha=0.7)
     ax.legend(loc="upper left", frameon=True, handlelength=1.8, borderpad=0.4)
     ax.text(-0.15, 1.03, "(b)", transform=ax.transAxes, fontsize=10)
@@ -332,16 +387,11 @@ def parse_l_values(raw: str | None, max_l: int) -> list[int]:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--max-L", type=int, default=500)
+    parser.add_argument("--max-L", type=int, default=800)
     parser.add_argument("--Ls", help="Comma-separated L values. Defaults to 100,200,300,400,500.")
     parser.add_argument("--rerun", action="store_true", help="Recompute even if cached summaries exist.")
     parser.add_argument("--plot-only", action="store_true", help="Only redraw figures from the measured CSV.")
     args = parser.parse_args(argv)
-    print(
-        "[fig6b-measure] diagnostic mode: this does not reproduce the manuscript "
-        "FIG6(b). Use `python paper_figures/reproduce_panel.py FIG6b` for the paper figure."
-    )
-
     if not args.plot_only:
         L_values = parse_l_values(args.Ls, args.max_L)
         if not L_values:
