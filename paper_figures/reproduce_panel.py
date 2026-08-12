@@ -519,7 +519,7 @@ def plot_fig6_composite() -> Path:
         from make_fig6b_scaling import draw_scaling_panel
 
     configure_matplotlib()
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.0), constrained_layout=True)
+    fig, axes = plt.subplots(1, 2, figsize=(6.2, 2.6), constrained_layout=True)
     draw_panel(fig, axes[0], PANEL_SPECS["fig6a"])
     draw_scaling_panel(axes[1])
 

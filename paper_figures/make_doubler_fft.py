@@ -126,7 +126,7 @@ def main() -> None:
     import matplotlib.pyplot as plt
 
     configure_figure5_style()
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.0), constrained_layout=True)
+    fig, axes = plt.subplots(1, 2, figsize=(6.2, 2.6), constrained_layout=True)
     kd = draw_dispersion_panel(axes[0])
     draw_fft_panel(axes[1], kd)
 

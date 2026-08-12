@@ -1006,7 +1006,8 @@ On the other hand, the oscillations in Figs.~\ref{fig:bh_p1}(c,d) are already pr
 Since these wave packets are initialized inside the black hole, they already have overlap with the doubler branch indicated in Fig.~\ref{fig:doubler_fft}(a).
 Although the $p=0$ model also contains a doubler branch near $k=\pi$, the FFT analysis shows a larger doubler-mode peak for $p=1$ in the black-hole interior, explaining the more pronounced oscillations in Figs.~\ref{fig:bh_p1}(c,d).
 \begin{figure*}[tbp]
-\includegraphics[width=\textwidth]{figure/doubler_fft.png}
+\centering
+\includegraphics[width=0.82\textwidth]{figure/doubler_fft.png}
 \caption{Excitation of doubler modes in the oscillatory wave-packet dynamics for $p=1$.
 (a) Local dispersion relation at $\beta=1.2$, representative of the black-hole interior.
 The red circles mark the low-energy crossings at $k=\pm k_d$, corresponding to the doubler modes, where $k_d\simeq1.171$.
@@ -1030,7 +1031,8 @@ In practice, we fit the numerical data to $a(e^{\kappa_{\rm fit}t}-1)$, where $a
 
 For the surface-gravity extraction (Fig.~\ref{fig:sg}), we use $A=1$, $B=1$, $C=1$, $x_0=\pi$ (so $x_h=x_0$, $\kappa=|\beta'(x_h)|=1$, and $j_h=0.5L$), $j_0=245$, $\sigma=0.003L$, and fit the data over the time interval $t\in[0,1]$.
 \begin{figure*}[tbp]
-\includegraphics[width=\textwidth]{figure/sg.png}
+\centering
+\includegraphics[width=0.82\textwidth]{figure/sg.png}
 \caption{Extraction of surface gravity from wave-packet broadening ($L=500$, $A=B=C=1$, $x_0=\ell /2$, $j_0=245$, $\sigma=0.003L$, with the fit performed over $t\in[0,1]$). Blue dots show the numerical energy-density-weighted width $\delta\sigma_{\mathcal E}(t)$ defined in Eq.~\eqref{eq:energy_weighted_width}, and red curves show the analytical near-horizon scaling $a(e^{\kappa t}-1)$ with $\kappa=1$; the prefactor $a$ fixes the vertical scale. The fitted growth rates are obtained separately from $a(e^{\kappa_{\rm fit}t}-1)$. (a) Result for $p=0$, with $|\kappa_{\rm fit}-\kappa|/\kappa\approx3.3\%$. (b) Result for $p=1$, with $|\kappa_{\rm fit}-\kappa|/\kappa\approx4.9\%$ due to simultaneous wave packet dispersion. These percentages quantify the error in the fitted surface gravity, not the pointwise deviation of the red analytical curves.}
 \label{fig:sg}
 \end{figure*}
@@ -1046,12 +1048,14 @@ This discrepancy can be attributed to deformation of the wave packet as it broad
 In this section, we present the results of numerical simulations of particle dynamics in a white-hole spacetime. We consider the case in which a wave packet is incident from the exterior toward the interior of the white hole. We also discuss the finite-size effects that arise in this setup.
 For the white-hole dynamics, we use $A=C=-0.6$, $B=3$, $x_0=2\ell/3$ (white-hole horizon at $j_h\approx213$ for $L=300$), with $j_0=0.2L$ and $\sigma=0.05L$.
 \begin{figure*}[tbp]
-\includegraphics[width=\textwidth]{figure/WH_p=0.png}
+\centering
+\includegraphics[width=0.82\textwidth]{figure/WH_p=0.png}
 \caption{Wave packet dynamics in the white-hole geometry for $p=0$. (a) Space-time diagram of the vacuum-subtracted energy density $\delta\mathcal{E}_{j,+}$ [Eq.~\eqref{eq:branch_resolved_energy}] for $L=300$, $j_0=0.2L$, and $\sigma=0.05L$, with $\beta$ profile parameters $A=C=-0.6$, $B=3$, and $x_0=2\ell/3$ (white-hole horizon at $j_h\approx213$). The wave packet is compressed toward the white-hole horizon (black dotted line) and eventually reflected due to finite lattice resolution. (b) Lattice stagnation time $T_{\mathrm{lat}}$ versus $\ln L$ for various system sizes, using $A=C=-0.6$, $B=3$, $x_0=2\ell/3$, $j_0=0.2L$, and $\sigma=0.05L$. Blue dots show numerical simulation results; their approximately linear dependence on $\ln L$ is consistent with the logarithmic scaling of Eq.~\eqref{eq:T_logL}.}
 \label{fig:wh_p0}
 \end{figure*}
 \begin{figure*}[t!]
-\includegraphics[width=\textwidth]{figure/WH_p=1.png}
+\centering
+\includegraphics[width=0.88\textwidth]{figure/WH_p=1.png}
 \caption{White-hole dynamics for $p=1$ ($L=300$, $j_0=0.2L$, $\sigma=0.05L$, with the same $\beta$ profile as Fig.~\ref{fig:wh_p0}(a), $A=C=-0.6$, $B=3$, $x_0=2\ell/3$, and $j_h\approx213$). (a) Space-time diagram of the vacuum-subtracted energy density $\delta\mathcal{E}_{j,+}$. (b) Space-time diagram of $\delta\mathcal{E}_{j,-}$. (c) Space-time diagram of the mixed contribution $\delta\mathcal{E}_{j,\mathrm{int}}$ built from $\mathcal{H}_j^{\mathrm{int}}$. Unlike the $p=0$ case, the coupling between the right- and left-moving components allows partial transmission across the white-hole horizon (black dotted line).}
 \label{fig:wh_p1}
 \end{figure*}

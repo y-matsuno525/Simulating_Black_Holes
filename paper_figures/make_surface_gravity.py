@@ -143,7 +143,7 @@ def main(argv: list[str] | None = None):
     p0 = PAPER_DATA / "H_m_sigmas_p0.txt"
     p1 = PAPER_DATA / "H_m_sigmas_p1.txt"
 
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.0), constrained_layout=True)
+    fig, axes = plt.subplots(1, 2, figsize=(6.2, 2.6), constrained_layout=True)
     if p0.exists():
         k0 = _panel(axes[0], p0, ell=ELL_DEFAULT, L=SG_SETTINGS["L"], panel_tag="(a)")
         print(f"[sg] p=0 kappa_fit = {k0:.4f}")
