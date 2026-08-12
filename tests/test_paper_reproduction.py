@@ -142,6 +142,21 @@ class PaperReproductionTests(unittest.TestCase):
                 self.assertEqual(cfg["run_name"], "FIG7")
                 self.assertEqual(spec.run_dir, PANEL_SPECS["fig7a"].run_dir)
 
+    def test_spacetime_panel_labels_match_original_manuscript_notation(self):
+        expected = {
+            "fig2a": r"$\mathcal{H}_{j}^{+}$",
+            "fig2b": r"$\mathcal{H}_{j}^{-}$",
+            "fig3a": r"$\mathcal{H}_{j}^{+}$",
+            "fig3b": r"$\mathcal{H}_{j}^{-}$",
+            "fig6a": r"$\mathcal{H}_{j}^{+}$",
+            "fig7a": r"$\mathcal{H}_{j}^{+}$",
+            "fig7b": r"$\mathcal{H}_{j}^{-}$",
+            "fig7c": r"$\mathcal{H}_{j}^{\pm}$",
+        }
+        for key, label in expected.items():
+            with self.subTest(panel=key):
+                self.assertEqual(PANEL_SPECS[key].label, label)
+
     def test_fig6b_scaling_data_uses_digitized_manuscript_points(self):
         Ls, times, _ = load_scaling_data()
         self.assertEqual(Ls.tolist(), [100, 200, 300, 400, 500, 600, 700, 800])

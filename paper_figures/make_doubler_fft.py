@@ -80,10 +80,10 @@ def draw_dispersion_panel(ax) -> float:
     ax.set_xlim(-np.pi, np.pi)
     ax.set_ylim(float(lower.min()) - 0.10 * scale, float(upper.max()) + 0.10 * scale)
     ax.set_xticks([-np.pi, -kd, 0.0, kd, np.pi])
-    ax.set_xticklabels([r"$-\pi$", r"$-\kappa_\ast$", r"$0$", r"$\kappa_\ast$", r"$\pi$"])
+    ax.set_xticklabels([r"$-\pi$", r"$-k_d$", r"$0$", r"$k_d$", r"$\pi$"])
     ax.set_yticks([0.0])
     ax.set_yticklabels([r"$0$"])
-    ax.set_xlabel(r"$\kappa$", fontsize=13)
+    ax.set_xlabel(r"$k$", fontsize=13)
     ax.set_ylabel(r"$E$", rotation=0, fontsize=13)
     ax.xaxis.set_label_coords(1.035, -0.035)
     ax.yaxis.set_label_coords(-0.060, 0.985)
@@ -94,7 +94,7 @@ def draw_dispersion_panel(ax) -> float:
 
 def set_positive_k_ticks(ax, kd: float) -> None:
     ax.set_xticks([0.0, 0.5, kd, 1.5, 2.0, 2.5, np.pi])
-    ax.set_xticklabels(["0", "0.5", r"$\kappa_\ast$", "1.5", "2.0", "2.5", r"$\pi$"])
+    ax.set_xticklabels(["0", "0.5", r"$k_d$", "1.5", "2.0", "2.5", r"$\pi$"])
 
 
 def draw_fft_panel(ax, kd: float) -> None:
@@ -111,7 +111,7 @@ def draw_fft_panel(ax, kd: float) -> None:
     ax.axvline(kd, color="black", lw=0.9, ls=":", zorder=0)
     ax.set_xlim(0.0, np.pi)
     ax.set_ylim(-0.015, 1.06)
-    ax.set_xlabel(r"$\kappa$")
+    ax.set_xlabel(r"$k$")
     ax.set_ylabel("Normalized amplitude")
     set_positive_k_ticks(ax, kd)
     ax.set_yticks(np.linspace(0.0, 1.0, 6))

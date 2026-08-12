@@ -115,7 +115,7 @@ def _panel(ax, sigma_path, *, ell, L, panel_tag):
     ax.plot(times, sig, "o", color="blue", ms=3, label="Numerical simulation")
     ax.plot(t_fine, ideal, "-", color="red", lw=2.5, label="Analytical prediction")
     ax.set_xlabel(r"$t$")
-    ax.set_ylabel(r"$\delta\sigma_{\mathcal{E}}(t)$", rotation=0, labelpad=22)
+    ax.set_ylabel(r"$\delta\sigma$", rotation=0, labelpad=18)
     ax.grid(True, alpha=0.3)
     ax.legend(loc="upper left")
     ax.text(-0.13, 1.04, panel_tag, transform=ax.transAxes, fontsize=11)

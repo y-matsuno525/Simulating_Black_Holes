@@ -143,9 +143,9 @@ def _bh_panel(
         tag=tag,
         observable=observable,
         label=(
-            r"$\delta\mathcal{E}_{j,+}$"
+            r"$\mathcal{H}_{j}^{+}$"
             if observable == "H_p"
-            else r"$\delta\mathcal{E}_{j,-}$"
+            else r"$\mathcal{H}_{j}^{-}$"
         ),
         caption_title=title,
         t_plot=t_plot,
@@ -267,26 +267,26 @@ PANEL_SPECS: dict[str, PanelSpec] = {
     # Fig. 6/7 white-hole panels from the manuscript captions.
     "fig6a": _wh_panel(
         "FIG6a", "FIG6", "a", p=0, observable="H_p",
-        label=r"$\delta\mathcal{E}_{j,+}$", t_plot=8.0,
+        label=r"$\mathcal{H}_{j}^{+}$", t_plot=8.0,
         title=r"FIG6(a) $p=0$ white-hole compression",
         color_norm="asinh", asinh_linear_width=3.0,
         geodesic_color="#009FB7", geodesic_linewidth=1.4,
     ),
     "fig7a": _wh_panel(
         "FIG7a", "FIG7", "a", p=1, observable="H_p",
-        label=r"$\delta\mathcal{E}_{j,+}$", t_plot=8.0,
+        label=r"$\mathcal{H}_{j}^{+}$", t_plot=8.0,
         title=r"FIG7(a) $p=1$, $\mathcal{H}^+$",
         run_id="FIG7",
     ),
     "fig7b": _wh_panel(
         "FIG7b", "FIG7", "b", p=1, observable="H_m",
-        label=r"$\delta\mathcal{E}_{j,-}$", t_plot=8.0,
+        label=r"$\mathcal{H}_{j}^{-}$", t_plot=8.0,
         title=r"FIG7(b) $p=1$, $\mathcal{H}^-$",
         run_id="FIG7",
     ),
     "fig7c": _wh_panel(
         "FIG7c", "FIG7", "c", p=1, observable="H_pm",
-        label=r"$\delta\mathcal{E}_{j,\mathrm{int}}^{(+)}$", t_plot=8.0,
+        label=r"$\mathcal{H}_{j}^{\pm}$", t_plot=8.0,
         title=r"FIG7(c) $p=1$, $\mathcal{H}^{\mathrm{int}}$",
         run_id="FIG7",
     ),
