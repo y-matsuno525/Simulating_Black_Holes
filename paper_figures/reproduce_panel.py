@@ -69,6 +69,8 @@ class PanelSpec:
     geodesic_color: str = "cyan"
     geodesic_linestyle: str | tuple = "--"
     geodesic_linewidth: float = 0.9
+    color_norm: str = "linear"
+    asinh_linear_width: float = 3.0
     show_geodesic: bool = True
     show_legend: bool = True
     run_id: str | None = None
@@ -130,6 +132,10 @@ def _bh_panel(
     j0_fraction: float,
     t_plot: float,
     title: str,
+    color_norm: str = "linear",
+    asinh_linear_width: float = 3.0,
+    geodesic_color: str = "cyan",
+    geodesic_linewidth: float = 0.9,
 ) -> PanelSpec:
     return PanelSpec(
         panel_id=panel_id,
@@ -143,6 +149,10 @@ def _bh_panel(
         ),
         caption_title=title,
         t_plot=t_plot,
+        color_norm=color_norm,
+        asinh_linear_width=asinh_linear_width,
+        geodesic_color=geodesic_color,
+        geodesic_linewidth=geodesic_linewidth,
         overrides=_run_overrides(
             panel_id=panel_id,
             p=p,
@@ -167,6 +177,10 @@ def _wh_panel(
     t_plot: float,
     title: str,
     run_id: str | None = None,
+    color_norm: str = "linear",
+    asinh_linear_width: float = 3.0,
+    geodesic_color: str = "cyan",
+    geodesic_linewidth: float = 0.9,
 ) -> PanelSpec:
     return PanelSpec(
         panel_id=panel_id,
@@ -176,6 +190,10 @@ def _wh_panel(
         label=label,
         caption_title=title,
         t_plot=t_plot,
+        color_norm=color_norm,
+        asinh_linear_width=asinh_linear_width,
+        geodesic_color=geodesic_color,
+        geodesic_linewidth=geodesic_linewidth,
         overrides=_run_overrides(
             panel_id=run_id or panel_id,
             p=p,
@@ -225,6 +243,8 @@ PANEL_SPECS: dict[str, PanelSpec] = {
         initial_direction="right", beta_center_fraction=2 / 3,
         j0_fraction=60 / 300, t_plot=4.0,
         title=r"FIG3(a) $p=1$, outside packet, $\chi^+$",
+        color_norm="asinh", asinh_linear_width=3.0,
+        geodesic_color="#009FB7", geodesic_linewidth=1.4,
     ),
     "fig3b": _bh_panel(
         "FIG3b", "FIG3", "b", p=1, observable="H_m", chirality="chi_minus",
@@ -249,6 +269,8 @@ PANEL_SPECS: dict[str, PanelSpec] = {
         "FIG6a", "FIG6", "a", p=0, observable="H_p",
         label=r"$\delta\mathcal{E}_{j,+}$", t_plot=8.0,
         title=r"FIG6(a) $p=0$ white-hole compression",
+        color_norm="asinh", asinh_linear_width=3.0,
+        geodesic_color="#009FB7", geodesic_linewidth=1.4,
     ),
     "fig7a": _wh_panel(
         "FIG7a", "FIG7", "a", p=1, observable="H_p",
@@ -343,7 +365,7 @@ def horizon_positions_from_config(spec: PanelSpec) -> list[float]:
 
 
 def load_panel_plot_data(spec: PanelSpec):
-    from matplotlib.colors import TwoSlopeNorm
+    from matplotlib.colors import AsinhNorm, TwoSlopeNorm
 
     csv = spec.run_dir / f"{spec.observable}_val.csv"
     if not csv.exists():
@@ -367,6 +389,13 @@ def load_panel_plot_data(spec: PanelSpec):
     if spec.use_abs:
         norm = None
         vmin, vmax = 0.0, scale
+    elif spec.color_norm == "asinh":
+        norm = AsinhNorm(
+            linear_width=spec.asinh_linear_width,
+            vmin=-scale,
+            vmax=scale,
+        )
+        vmin = vmax = None
     else:
         norm = TwoSlopeNorm(vmin=-scale, vcenter=0.0, vmax=scale)
         vmin = vmax = None
@@ -427,7 +456,16 @@ def draw_panel(fig, ax, spec: PanelSpec):
     ax.text(-0.12, 1.03, f"({spec.tag})", transform=ax.transAxes, fontsize=11)
 
     cbar = fig.colorbar(im, ax=ax, pad=0.025)
-    cbar.set_label(spec.label, rotation=0, labelpad=10)
+    if spec.color_norm == "asinh":
+        scale = float(np.nanmax(np.abs(data)))
+        major = 10.0 ** np.floor(np.log10(scale))
+        multipliers = (-3, -1, 0, 1, 3) if 3.0 * major <= scale else (-1, 0, 1)
+        ticks = [value * major for value in multipliers]
+        cbar.set_ticks(ticks)
+        cbar.set_ticklabels([f"{value:g}" for value in ticks])
+        cbar.set_label(spec.label, rotation=0, labelpad=16)
+    else:
+        cbar.set_label(spec.label, rotation=0, labelpad=10)
     return im
 
 

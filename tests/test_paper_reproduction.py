@@ -175,9 +175,20 @@ class PaperReproductionTests(unittest.TestCase):
                 self.assertEqual(spec.horizon_color, first.horizon_color)
                 self.assertEqual(spec.horizon_linestyle, first.horizon_linestyle)
                 self.assertEqual(spec.horizon_linewidth, first.horizon_linewidth)
-                self.assertEqual(spec.geodesic_color, first.geodesic_color)
                 self.assertEqual(spec.geodesic_linestyle, first.geodesic_linestyle)
-                self.assertEqual(spec.geodesic_linewidth, first.geodesic_linewidth)
+
+    def test_faint_trajectory_panels_use_asinh_and_emphasized_geodesics(self):
+        for key in ("fig3a", "fig6a"):
+            with self.subTest(panel=key):
+                spec = PANEL_SPECS[key]
+                self.assertEqual(spec.color_norm, "asinh")
+                self.assertEqual(spec.asinh_linear_width, 3.0)
+                self.assertEqual(spec.geodesic_color, "#009FB7")
+                self.assertEqual(spec.geodesic_linewidth, 1.4)
+
+        for key in ("fig3b", "fig3c", "fig3d", "fig7a", "fig7b", "fig7c"):
+            with self.subTest(panel=key):
+                self.assertEqual(PANEL_SPECS[key].color_norm, "linear")
 
 
 if __name__ == "__main__":
