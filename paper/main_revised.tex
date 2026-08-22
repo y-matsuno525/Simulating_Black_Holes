@@ -1,4 +1,4 @@
-\documentclass[reprint,amsmath,amssymb,aps,showkeys,superscriptaddress]{revtex4-2}
+\documentclass[reprint,amsmath,amssymb,aps,prb,floatfix,showkeys,superscriptaddress]{revtex4-2}
 
 \usepackage{graphicx}
 \usepackage{dcolumn}
@@ -6,6 +6,20 @@
 \usepackage{braket}
 \usepackage{xcolor}
 \newcommand{\red}{\textcolor{red}}
+\newcommand{\nonfloatcaption}[1]{\refstepcounter{figure}\par\smallskip\noindent\footnotesize\textbf{FIG.~\thefigure.} #1\par}
+\makeatletter
+\newenvironment{widetextnolines}{%
+  \par\ignorespaces
+  \onecolumngrid
+  \vskip10\p@
+  \prep@math@patch
+}{%
+  \par
+  \vskip6\p@
+  \twocolumngrid\global\@ignoretrue
+  \@endpetrue
+}
+\makeatother
 \newcommand{\blue}{\textcolor{blue}}
 \newcommand{\magenta}{\textcolor{magenta}}
 \newcommand{\green}{\textcolor{green}}
@@ -133,13 +147,13 @@ Painlev\'e--Gullstrand geometry in Eq.~\eqref{eq:PG_metric}, we set
 We also fix the gauge as $\zeta(t,x)=0$ and, for simplicity, restrict
 $p(t,x)$ to a spatially and temporally uniform constant $p$. 
 Under this specialization, the dictionary maps the Majorana QFT on
-the Painlev\'e--Gullstrand background onto the
-Majorana QFT onto an anisotropic $XY$ chain with a bond-dependent Dzyaloshinskii--Moriya interaction and a transverse field:
+the Painlev\'e--Gullstrand background onto an anisotropic $XY$ chain
+with a bond-dependent Dzyaloshinskii--Moriya interaction and a transverse field:
 \begin{align}
   H_{\mathrm{spin}}
   ={}&
   -\frac{1}{4\varepsilon}
-  \sum_{j=1}^{L-1}
+  \sum_{j=0}^{L-2}
   \Bigl[
     (1+p)\sigma_j^x\sigma_{j+1}^x
     -(1-p)\sigma_j^y\sigma_{j+1}^y
@@ -154,7 +168,7 @@ Majorana QFT onto an anisotropic $XY$ chain with a bond-dependent Dzyaloshinskii
   \Bigr]
   \nonumber\\
   &-\frac{p}{2\varepsilon}
-  \sum_{j=1}^{L}\sigma_j^z.
+  \sum_{j=0}^{L-1}\sigma_j^z.
   \label{eq:spin_Hamiltonian}
 \end{align}
 
@@ -186,7 +200,7 @@ open chain, this gives
   H
   ={}&
   -\frac{1}{2\varepsilon}
-  \sum_{j=1}^{L-1}
+  \sum_{j=0}^{L-2}
   \Bigg[
     c_{j+1}c_j
     +
@@ -210,7 +224,7 @@ open chain, this gives
   \nonumber\\
   &-
   \frac{p}{2\varepsilon}
-  \sum_{j=1}^{L}
+  \sum_{j=0}^{L-1}
   \left(
     1-2c_j^\dagger c_j
   \right).
@@ -283,64 +297,64 @@ Using the Fourier transformation
   c_j
   =
   \frac{1}{\sqrt{L'}}
-  \sum_{\kappa}
-  e^{i\kappa j}c_{\kappa},
+  \sum_{k}
+  e^{ikj}c_{k},
   \qquad
-  \kappa=\frac{2\pi n}{L'},
+  k=\frac{2\pi n}{L'},
   \label{eq:Fourier_transform}
 \end{equation}
-where $\kappa\in[-\pi,\pi)$ is the dimensionless lattice momentum,
+where $k\in[-\pi,\pi)$ is the dimensionless lattice momentum,
 the homogeneous Hamiltonian can be written in the
 Bogoliubov--de Gennes form
 \begin{equation}
   H
   =
   \frac{1}{2}
-  \sum_{\kappa}
-  \Psi_{\kappa}^{\dagger}
-  \mathcal{H}(\kappa)
-  \Psi_{\kappa}
+  \sum_{k}
+  \Psi_{k}^{\dagger}
+  \mathcal{H}(k)
+  \Psi_{k}
   +\mathrm{const.},
   \label{eq:BdG_Hamiltonian}
 \end{equation}
 where
 \begin{equation}
-  \Psi_{\kappa}
+  \Psi_{k}
   =
   \begin{pmatrix}
-    c_{\kappa}\\
-    c_{-\kappa}^{\dagger}
+    c_{k}\\
+    c_{-k}^{\dagger}
   \end{pmatrix},
   \label{eq:Nambu_spinor}
 \end{equation}
 and
 \begin{equation}
-  \mathcal{H}(\kappa)
+  \mathcal{H}(k)
   =
   \frac{1}{\epsilon}
   \begin{pmatrix}
-    \beta\sin\kappa
-    +p(1-\cos\kappa)
-      & -i\sin\kappa
+    \beta\sin k
+    +p(1-\cos k)
+      & -i\sin k
     \\
-    i\sin\kappa
-      & \beta\sin\kappa
-        -p(1-\cos\kappa)
+    i\sin k
+      & \beta\sin k
+        -p(1-\cos k)
   \end{pmatrix}.
   \label{eq:BdG_matrix}
 \end{equation}
 The two eigenvalue branches are
 \begin{equation}
 \begin{aligned}
-  E_{\pm}(\kappa)
+  E_{\pm}(k)
   =
   \frac{1}{\epsilon}
   \Biggl[
-    \beta\sin\kappa
+    \beta\sin k
     \mathbin{\pm}
     \Bigl\{
-      \sin^{2}\kappa
-      +p^{2}(1-\cos\kappa)^{2}
+      \sin^{2}k
+      +p^{2}(1-\cos k)^{2}
     \Bigr\}^{1/2}
   \Biggr].
 \end{aligned}
@@ -349,35 +363,35 @@ The two eigenvalue branches are
 
 To take the continuum limit, we introduce the physical momentum
 \begin{equation}
-  k=\frac{\kappa}{\epsilon}
+  q=\frac{k}{\epsilon}
   \label{eq:physical_momentum}
 \end{equation}
-and let $\epsilon\to0$ at fixed $k$, so that
-$\kappa=\epsilon k\to0$. The dispersion then becomes
+and let $\epsilon\to0$ at fixed $q$, so that
+$k=\epsilon q\to0$. The dispersion then becomes
 \begin{equation}
-  E_{\pm}(\epsilon k)
+  E_{\pm}(\epsilon q)
   =
-  \beta k
-  \pm |k|
-  +O\!\left(\epsilon^{2}|k|^{3}\right).
+  \beta q
+  \pm |q|
+  +O\!\left(\epsilon^{2}|q|^{3}\right).
   \label{eq:continuum_dispersion_general}
 \end{equation}
-For the positive-momentum sector, $k>0$, this reduces to
+For the positive-momentum sector, $q>0$, this reduces to
 \begin{equation}
-  E_{\pm}(\epsilon k)
+  E_{\pm}(\epsilon q)
   =
-  (\beta\pm1)k
-  +O\!\left(\epsilon^{2}k^{3}\right).
+  (\beta\pm1)q
+  +O\!\left(\epsilon^{2}q^{3}\right).
   \label{eq:continuum_dispersion}
 \end{equation}
 The corresponding physical group velocities are therefore
 \begin{equation}
   v_{\pm}
   =
-  \frac{\partial E_{\pm}}{\partial k}
+  \frac{\partial E_{\pm}}{\partial q}
   =
   \epsilon
-  \frac{\partial E_{\pm}}{\partial\kappa}
+  \frac{\partial E_{\pm}}{\partial k}
   \longrightarrow
   \beta\pm1
   \qquad
@@ -421,17 +435,17 @@ hence both branches propagate toward increasing $x$.
 Although the two choices of $p$ reproduce the same low-momentum
 dispersion, their finite-momentum structures are qualitatively
 different. For $p=0$, additional zero-energy modes occur at the
-Brillouin-zone edges $\kappa=\pm\pi$, corresponding to conventional
+Brillouin-zone edges $k=\pm\pi$, corresponding to conventional
 fermion doublers. Their physical momenta are of order
-$|k|\sim\pi/\epsilon$, even though their excitation energies remain
-low. For $p>0$, the term $p(1-\cos\kappa)$ lifts the zero-energy modes at
+$|q|\sim\pi/\epsilon$, even though their excitation energies remain
+low. For $p>0$, the term $p(1-\cos k)$ lifts the zero-energy modes at
 the Brillouin-zone edges. Its momentum dependence is analogous to
 that of the Wilson term introduced to remove fermion doublers in
 lattice gauge theories \cite{Wilson1974}. In the black-hole interior $|\beta|>1$, however,
 additional zero-energy crossings necessarily appear at finite lattice
-momenta $\kappa=\pm\kappa_\ast$, where
+momenta $k=\pm k_d$, where
 \begin{equation}
-  \kappa_\ast
+  k_d
   =
   \arccos\left(
     \frac{p^2-\beta^2+1}
@@ -440,8 +454,8 @@ momenta $\kappa=\pm\kappa_\ast$, where
   \label{eq:finite_momentum_crossing}
 \end{equation}
 Indeed, for $\beta>1$, the lower branch has positive energy
-immediately to the right of $\kappa=0$ but negative energy at
-$\kappa=\pi$ for any $p\neq 0$, so the periodic lattice dispersion must
+immediately to the right of $k=0$ but negative energy at
+$k=\pi$ for any $p\neq 0$, so the periodic lattice dispersion must
 cross zero at an intermediate momentum. The Wilson-like term
 therefore removes the conventional zone-edge doubler outside the
 horizon, but inside the overtilted region it shifts the unavoidable
@@ -481,8 +495,8 @@ where
   \boldsymbol{\Psi}
   =
   \bigl(
-    c_1,\ldots,c_L,
-    c_1^\dagger,\ldots,c_L^\dagger
+    c_0,\ldots,c_{L-1},
+    c_0^\dagger,\ldots,c_{L-1}^\dagger
   \bigr)^{\mathsf T}.
   \label{eq:real_space_Nambu}
 \end{equation}
@@ -570,7 +584,7 @@ In terms of these operators, the lattice Hamiltonian becomes
   H
   ={}&
   -\frac{i}{2\varepsilon}
-  \sum_{j=1}^{L-1}
+  \sum_{j=0}^{L-2}
   \Bigl[
     \left(
       1+\beta_{j+\frac12}
@@ -595,7 +609,7 @@ In terms of these operators, the lattice Hamiltonian becomes
   \nonumber\\
   &-
   \frac{i p}{\varepsilon}
-  \sum_{j=1}^{L}
+  \sum_{j=0}^{L-1}
   a_j^+a_j^- .
   \label{eq:H_in_a}
 \end{align}
@@ -702,7 +716,7 @@ superposition of either $a_j^+$ or $a_j^-$ to the BdG vacuum:
   \ket{\psi_s(0)}
   =
   \mathcal{N}_s
-  \sum_{j=1}^{L}
+  \sum_{j=0}^{L-1}
   G_j a_j^s
   \ket{\mathrm{vac}},
   \qquad
@@ -726,7 +740,7 @@ $\mathcal{N}_s$ is chosen such that
   \label{eq:initial_state_normalization}
 \end{equation}
 For $\sigma\gg1$, the momentum distribution is concentrated near
-$\kappa=0$, where the lattice dispersion approaches that of the
+$k=0$, where the lattice dispersion approaches that of the
 target continuum QFT. The use of $a_j^+$ or $a_j^-$ therefore
 selectively prepares a wave packet associated with the corresponding
 continuum null branch. For $p=0$, this separation is exact at any
@@ -764,7 +778,7 @@ Hamiltonian density as
 \begin{equation}
   H
   =
-  \varepsilon\sum_{j=1}^{L}\mathcal{H}_j,
+  \varepsilon\sum_{j=0}^{L-1}\mathcal{H}_j,
   \qquad
   \mathcal{H}_j
   =
@@ -861,12 +875,12 @@ at finite lattice spacing. Such mixing is suppressed for sufficiently
 smooth low-momentum wave packets and vanishes systematically in the
 continuum limit.
 
-Throughout the analysis below, we restrict the time evolution to the
-regime in which the wave packet remains well separated from the
-physical boundaries at $x=0$ and $x=\ell$. The dynamics is therefore
-examined only before the packet reaches either end of the chain, so
-that boundary reflections do not affect the horizon physics discussed
-below.
+Our interpretation of the horizon dynamics focuses on the interval
+before appreciable wave-packet weight reaches the physical ends of the
+chain. Some plotted intervals extend to later times in order to display
+lattice collapse, reflection, or spectral evolution; these late-time
+portions are not used for quantitative comparison with boundary-free
+continuum trajectories.
 
 \section{Wave-packet dynamics across black- and white-hole horizons}
 \label{sec:dynamics}
@@ -932,15 +946,6 @@ associated with the $a^+$ branch and satisfies
 $\beta(x_{\mathrm h})=-1$.
 
 
-\section{DYNAMICS OF PARTICLES IN BLACK- AND WHITE-HOLE GEOMETRIES}
-\label{sec:dynamics}
-Using the discrete model, we analyze the dynamics of a wave packet. Numerical simulations reveal that the wave packet follows the corresponding geodesic trajectory. In addition, we demonstrate that the surface gravity of the black hole can be extracted from the simulation results.
-
-Throughout the following analysis, we take the function $\beta$, which determines the metric, to be
-\begin{align}
-\beta(x) = A\tanh\left[B(x-x_0)\right] + C,
-\end{align}
-where $x_0$ is the inflection point of the $\tanh$ profile, and $A$, $B$, and $C$ are real constants. We denote the horizon position by $x_h$, with $j_h=Lx_h/\ell$.
 Note that $x_0$ coincides with a horizon only when $|C|=1$.
 
 \subsection{Black Hole}
@@ -962,9 +967,23 @@ Thus, the wave packet is expected to propagate only to the right.
 The numerical results show that both the right-moving mode in Fig.~\ref{fig:bh_p0}(c) and the left-moving mode in Fig.~\ref{fig:bh_p0}(d) propagate in the rightward direction.
 The initial state was chosen with $j_0=150$, and the standard deviation was set to $\sigma=0.05L$.
 
+To make weak-amplitude features visible without discarding their sign, we use a symmetric asinh mapping for the color scale in Fig.~\ref{fig:bh_p1}(a) and Fig.~\ref{fig:wh_p0}(a):
+\begin{equation}
+ C(\mathcal{H})
+ =\frac{1}{2}\left[
+ 1+
+ \frac{\operatorname{asinh}(\mathcal{H}/\mathcal{H}_0)}
+ {\operatorname{asinh}(\mathcal{H}_{\max}/\mathcal{H}_0)}
+ \right],
+ \qquad
+ \mathcal{H}_{\max}=\max_{j,t}|\mathcal{H}_j(t)|.
+ \label{eq:asinh_color_mapping}
+\end{equation}
+Here, $C\in[0,1]$ is the color coordinate and $\mathcal{H}_0$ sets the width of the approximately linear region around zero. This mapping is used only for visualization; the color-bar labels show the untransformed energy-density values.
+
 \begin{figure*}[t]
 \includegraphics[width=\linewidth]{figure/p=1_BH.png}
-\caption{Wave packet dynamics for the black-hole profile with $p=1$. System parameters are the same as in Fig.~\ref{fig:bh_p0}: in (a,b), $x_0=2\ell/3$ and $j_h\approx213$; in (c,d), $x_0=\ell/3$ and $j_h\approx113$. (a) Packet initialized outside the horizon with ingoing group velocity ($j_0=60$, $\sigma=0.05L$). A symmetric asinh normalization with linear width $\mathcal{H}_0=3$ is used for the color scale in (a) to enhance weak-amplitude features while preserving the sign of $\mathcal{H}_j^+$. (b) Packet initialized outside the horizon with outgoing group velocity ($j_0=120$, $\sigma=0.05L$). (c) Packet initialized inside the horizon with a right-moving initial spinor ($j_0=150$, $\sigma=0.05L$). (d) Packet initialized inside the horizon with a left-moving initial spinor ($j_0=150$, $\sigma=0.05L$). Black dotted lines indicate the event horizon, and cyan curves indicate the corresponding null geodesics $dx/dt=\beta(x)\pm1$. Interior oscillations in (c,d) are more pronounced than in the $p=0$ case owing to the stronger excitation of doubler modes, as confirmed by the $k$-space analysis of Fig.~\ref{fig:doubler_fft}.}
+\caption{Wave packet dynamics for the black-hole profile with $p=1$. System parameters are the same as in Fig.~\ref{fig:bh_p0}: in (a,b), $x_0=2\ell/3$ and $j_h\approx213$; in (c,d), $x_0=\ell/3$ and $j_h\approx113$. (a) Packet initialized outside the horizon with ingoing group velocity ($j_0=60$, $\sigma=0.05L$). The symmetric asinh color mapping in Eq.~\eqref{eq:asinh_color_mapping} is used with $\mathcal{H}_0=1$. (b) Packet initialized outside the horizon with outgoing group velocity ($j_0=120$, $\sigma=0.05L$). (c) Packet initialized inside the horizon with a right-moving initial spinor ($j_0=150$, $\sigma=0.05L$). (d) Packet initialized inside the horizon with a left-moving initial spinor ($j_0=150$, $\sigma=0.05L$). Black dotted lines indicate the event horizon, and cyan curves indicate the corresponding null geodesics $dx/dt=\beta(x)\pm1$. Interior oscillations in (c,d) are more pronounced than in the $p=0$ case owing to the stronger excitation of doubler modes, as confirmed by the $k$-space analysis of Fig.~\ref{fig:doubler_fft}.}
 \label{fig:bh_p1}
 \end{figure*}
 Next, we investigate the motion of the wave packet for the case $p=1$.
@@ -983,10 +1002,10 @@ Although the $p=0$ model also contains a doubler branch near $k=\pi$, the FFT an
 \caption{Excitation of doubler modes in the oscillatory wave-packet dynamics for $p=1$.
 (a) Local dispersion relation at $\beta=1.2$, representative of the black-hole interior.
 The red circles mark the low-energy crossings at $k=\pm k_d$, corresponding to the doubler modes, where $k_d\simeq1.171$.
-(b) Spatial FFT spectrum of the wave packet in Fig.~\ref{fig:bh_p1}(a) at successive times $t=0,3,3.5,4$, normalized by the maximum amplitude.
+(b) Spatial FFT magnitude of the mean-subtracted branch-resolved profile $\delta\mathcal{E}_{j,+}$ in Fig.~\ref{fig:bh_p1}(a) at successive times $t=0,3,3.5,4$, normalized by the maximum over the four spectra.
 The black dotted line indicates the doubler-mode wave number $k_d$ predicted from (a).
 The peak near $k=0$ corresponds to the low-momentum quasiparticle component, while the secondary peak grows near $k_d$ as the packet enters the black-hole interior.
-This agreement supports the interpretation that the oscillatory behavior in Fig.~\ref{fig:bh_p1} originates from the excitation of doubler modes.}
+The secondary peak is already present before substantial boundary overlap, supporting its identification with doubler-mode excitation; its late-time amplitude at $t=3.5$ and $4$ can also be enhanced by contact with the right boundary.}
 \label{fig:doubler_fft}
 \end{figure*}
 
@@ -999,33 +1018,33 @@ For a left-moving wave packet localized in the exterior region near the event ho
 where $\kappa=|\beta'(x_h)|$ is the surface gravity.
 This approximate relation follows by linearizing the left-moving null trajectory $dx/dt=\beta(x)-1$ near the horizon, where $\beta(x_h)=1$, giving $d(x-x_h)/dt\simeq\kappa(x-x_h)$ and hence exponential stretching of the wave packet.
 It implies that the surface gravity can be read off from the exponential growth rate of $\delta\sigma$ as long as the wave packet remains in the near-horizon regime.
-Here, the wave-packet width $\sigma(t)$ is calculated as the standard deviation of the spatial wave-packet distribution, and $\delta\sigma(t)=\sigma(t)-\sigma(0)$.
+Here, the wave-packet width $\sigma(t)$ is calculated as the standard deviation of the spatial profile. Numerically, the nonnegative weights are obtained from the absolute value of the vacuum-subtracted $\mathcal{H}_j^-$ profile, and the width in lattice-site units is converted to physical length by multiplication by $\varepsilon=\ell/L$. We define $\delta\sigma(t)=\sigma(t)-\sigma(0)$.
 In practice, we fit the numerical data to $a(e^{\kappa_{\rm fit}t}-1)$, where $a$ is a prefactor and $\kappa_{\rm fit}$ is the fitted growth rate.
 
 For the surface-gravity extraction (Fig.~\ref{fig:sg}), we use $A=1$, $B=1$, $C=1$, $x_0=\pi$ (so $x_h=x_0$, $\kappa=|\beta'(x_h)|=1$, and $j_h=0.5L$), $j_0=245$, $\sigma=0.003L$, and fit the data over the time interval $t\in[0,1]$.
 \begin{figure*}[tbp]
 \centering
 \includegraphics[width=0.82\textwidth]{figure/sg.png}
-\caption{Extraction of surface gravity from wave-packet broadening ($L=500$, $A=B=C=1$, $x_0=\ell /2$, $j_0=245$, $\sigma=0.003L$, with the fit performed over $t\in[0,1]$). Blue dots show the numerical simulation results, and red curves show the analytical near-horizon scaling $a(e^{\kappa t}-1)$ with $\kappa=1$; the prefactor $a$ fixes the vertical scale. The fitted growth rates are obtained separately from $a(e^{\kappa_{\rm fit}t}-1)$. (a) Result for $p=0$, with $|\kappa_{\rm fit}-\kappa|/\kappa\approx0.3\%$. (b) Result for $p=1$, with $|\kappa_{\rm fit}-\kappa|/\kappa\approx9.6\%$ due to simultaneous wave packet dispersion. These percentages quantify the error in the fitted surface gravity, not the pointwise deviation of the red analytical curves. The vertical axis $\delta\sigma\equiv\sigma(t)-\sigma(0)$ denotes the change in the wave-packet standard deviation.}
+\caption{Extraction of surface gravity from wave-packet broadening ($L=500$, $A=B=C=1$, $x_0=\ell /2$, $j_0=245$, $\sigma=0.003L$, with the fit performed over $t\in[0,1]$). Blue dots show the numerical simulation results, and red curves show the analytical near-horizon scaling $a(e^{\kappa t}-1)$ with $\kappa=1$; the prefactor $a$ fixes the vertical scale. The fitted growth rates are obtained separately from $a(e^{\kappa_{\rm fit}t}-1)$. (a) Result for $p=0$, with $|\kappa_{\rm fit}-\kappa|/\kappa\approx3.3\%$. (b) Result for $p=1$, with $|\kappa_{\rm fit}-\kappa|/\kappa\approx4.9\%$ due to simultaneous wave packet dispersion. These percentages quantify the error in the fitted surface gravity, not the pointwise deviation of the red analytical curves. The vertical axis $\delta\sigma\equiv\sigma(t)-\sigma(0)$ denotes the change in the wave-packet standard deviation.}
 \label{fig:sg}
 \end{figure*}
 Fig.~\ref{fig:sg} compares the numerical data with the analytical near-horizon form for $\kappa=1$, while the quoted $\kappa_{\rm fit}$ values are obtained by allowing the exponential growth rate to vary.
-As shown in Fig.~\ref{fig:sg}(a), for $p=0$, the fitted growth rate agrees with the analytical surface gravity $\kappa=1$ within a relative error of approximately 0.3\%.
+As shown in Fig.~\ref{fig:sg}(a), for $p=0$, the fitted growth rate agrees with the analytical surface gravity $\kappa=1$ within a relative error of approximately 3.3\%.
 Small deviations from the analytical near-horizon curve at later times can be attributed to the breakdown of the approximation in Eq.~\eqref{eq:sigma_kappa} as the wave packet moves away from the event horizon.
 
 In contrast, for $p=1$, the discrepancy is larger than in the $p=0$ case.
-The relative error of the fitted growth rate with respect to the analytical value is about 9.6\%.
+The relative error of the fitted growth rate with respect to the analytical value is about 4.9\%.
 This discrepancy can be attributed to deformation of the wave packet as it broadens, which causes deviations from the simple exponential behavior.
 
 \subsection{White Hole}
-In this section, we present the results of numerical simulations of particle dynamics in a white-hole spacetime. We consider the case in which a wave packet is incident from the exterior toward the interior of the white hole. We also discuss the finite-size effects that arise in this setup.
-For the white-hole dynamics, we use $A=C=-0.6$, $B=3$, $x_0=2\ell/3$ (white-hole horizon at $j_h\approx213$ for $L=300$), with $j_0=0.2L$ and $\sigma=0.05L$.
-\begin{figure*}[tbp]
+\begin{figure*}[t]
 \centering
 \includegraphics[width=0.82\textwidth]{figure/WH_p=0.png}
-\caption{Wave packet dynamics in the white-hole geometry for $p=0$. (a) Space-time diagram of $\mathcal{H}_j^+$ for $L=300$, $j_0=0.2L$, and $\sigma=0.05L$, with $\beta$ profile parameters $A=C=-0.6$, $B=3$, and $x_0=2\ell/3$ (white-hole horizon at $j_h\approx213$). A symmetric asinh normalization with linear width $\mathcal{H}_0=3$ is used for the color scale to enhance weak-amplitude features while preserving the sign of $\mathcal{H}_j^+$. The wave packet is compressed toward the white-hole horizon (black dotted line) and eventually reflected due to finite lattice resolution. (b) Lattice stagnation time $T_{\mathrm{lat}}$ versus $\ln L$ for various system sizes, using $A=C=-0.6$, $B=3$, $x_0=2\ell/3$, $j_0=0.2L$, and $\sigma=0.05L$. Blue dots show numerical simulation results; their approximately linear dependence on $\ln L$ is consistent with the logarithmic scaling of Eq.~\eqref{eq:T_logL}.}
+\caption{Wave packet dynamics in the white-hole geometry for $p=0$. (a) Space-time diagram of $\mathcal{H}_j^+$ for $L=300$, $j_0=0.2L$, and $\sigma=0.05L$, with $\beta$ profile parameters $A=C=-0.6$, $B=3$, and $x_0=2\ell/3$ (white-hole horizon at $j_h\approx213$). The symmetric asinh color mapping in Eq.~\eqref{eq:asinh_color_mapping} is used with $\mathcal{H}_0=3$. The wave packet is compressed toward the white-hole horizon (black dotted line) and eventually reflected due to finite lattice resolution. (b) Lattice stagnation time $T_{\mathrm{lat}}$ versus $\ln L$ for various system sizes, using $A=C=-0.6$, $B=3$, $x_0=2\ell/3$, $j_0=0.2L$, and $\sigma=0.05L$. Blue dots show numerical simulation results; their approximately linear dependence on $\ln L$ is consistent with the logarithmic scaling of Eq.~\eqref{eq:T_logL}.}
 \label{fig:wh_p0}
 \end{figure*}
+In this section, we present the results of numerical simulations of particle dynamics in a white-hole spacetime. We consider the case in which a wave packet is incident from the exterior toward the interior of the white hole. We also discuss the finite-size effects that arise in this setup.
+For the white-hole dynamics, we use $A=C=-0.6$, $B=3$, $x_0=2\ell/3$ (white-hole horizon at $j_h\approx213$ for $L=300$), with $j_0=0.2L$ and $\sigma=0.05L$.
 For $p = 0$, as shown in Fig.~\ref{fig:wh_p0}, the wave packet is initially compressed at the white-hole horizon, yielding behavior consistent with the ideal analytical expectation. However, after a certain time, the wave packet collapses and is reflected. This behavior is attributed to a finite-size effect arising when the wave-packet standard deviation becomes smaller than the lattice spacing.
 For the stagnation-time scaling in Fig.~\ref{fig:wh_p0}(b), we use the same profile parameters, $A=C=-0.6$, $B=3$, and $x_0=2\ell/3$, with $j_0=0.2L$ and $\sigma=0.05L$.
 Near the white-hole horizon, the same linearized null-geodesic argument gives an exponential compression of the wave-packet standard deviation, $\sigma(t)\propto\sigma_0 e^{-\kappa t}$.
@@ -1047,20 +1066,21 @@ The approximately linear dependence of the data on $\ln L$ in Fig.~\ref{fig:wh_p
 This comparison tests only the logarithmic dependence, not its coefficient: $T_{\mathrm{lat}}$ is defined operationally from the nonlinear lattice collapse and reflection, so its slope need not equal the continuum value $1/\kappa$.
 Therefore, we conclude that the reflection of the wave packet is caused by a finite-size effect associated with its standard deviation becoming smaller than the lattice spacing.
 
-\begin{figure*}[tbp]
+For $p=1$, the wave-packet dynamics differs from the $p=0$ case.
+As shown in Fig.~\ref{fig:wh_p1}, part of the wave packet crosses the white-hole horizon instead of being simply reflected.
+This behavior is absent for $p=0$, indicating that the coupling between the right- and left-moving modes plays an important role.
+
+\begin{figure*}[t]
 \centering
 \includegraphics[width=0.88\textwidth]{figure/WH_p=1.png}
 \caption{White-hole dynamics for $p=1$ ($L=300$, $j_0=0.2L$, $\sigma=0.05L$, with the same $\beta$ profile as Fig.~\ref{fig:wh_p0}(a), $A=C=-0.6$, $B=3$, $x_0=2\ell/3$, and $j_h\approx213$). (a) Space-time diagram of $\mathcal{H}_j^+$. (b) Space-time diagram of $\mathcal{H}_j^-$. (c) Space-time diagram of the interaction contribution $\mathcal{H}_j^{\mathrm{int}}$. Unlike the $p=0$ case, the coupling between the right- and left-moving components allows partial transmission across the white-hole horizon (black dotted line).}
 \label{fig:wh_p1}
 \end{figure*}
-For $p=1$, the wave-packet dynamics differs from the $p=0$ case.
-As shown in Fig.~\ref{fig:wh_p1}, part of the wave packet crosses the white-hole horizon instead of being simply reflected.
-This behavior is absent for $p=0$, indicating that the coupling between the right- and left-moving modes plays an important role.
 
 \section{CONCLUSIONS}
 In this work, we have investigated particle dynamics in a one-dimensional lattice fermion model designed to simulate black-hole and white-hole spacetimes, focusing on the correspondence between lattice wave-packet trajectories and geodesics of the effective curved metric.
 
-For the black-hole geometry, Gaussian wave packets initialized both outside and inside the event horizon closely follow the corresponding geodesics for both $p=0$ and $p=1$ parameter choices. The oscillatory behavior observed inside the black hole arises from doubler modes, with the $p=1$ case exhibiting more pronounced oscillations owing to stronger overlap with, and excitation of, these modes. We also extracted the surface gravity from the exponential growth of the wave-packet standard deviation in the near-horizon regime, finding agreement within a relative error of $\sim 0.3\%$ for $p=0$ and a larger discrepancy of $\sim 9.6\%$ for $p=1$, with the latter attributed to deformation of the wave packet during broadening.
+For the black-hole geometry, Gaussian wave packets initialized both outside and inside the event horizon closely follow the corresponding geodesics for both $p=0$ and $p=1$ parameter choices. The oscillatory behavior observed inside the black hole arises from doubler modes, with the $p=1$ case exhibiting more pronounced oscillations owing to stronger overlap with, and excitation of, these modes. We also extracted the surface gravity from the exponential growth of the wave-packet standard deviation in the near-horizon regime, finding agreement within a relative error of $\sim 3.3\%$ for $p=0$ and $\sim 4.9\%$ for $p=1$, with the remaining discrepancies attributed to deformation of the wave packet during broadening.
 
 For the white-hole geometry, the wave packet is compressed toward the white-hole horizon in a manner consistent with the continuum expectation, but eventually collapses and reflects due to a finite-size effect. The lattice stagnation time is consistent with the logarithmic system-size scaling $T_{\mathrm{lat}}\propto\ln L$. For $p=1$, partial transmission across the white-hole horizon is observed, indicating that the coupling between left- and right-moving modes plays an important role.
 

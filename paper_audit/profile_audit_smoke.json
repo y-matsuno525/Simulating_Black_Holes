@@ -1,0 +1,92 @@
+{
+  "FIG2c": {
+    "effective_settings": {
+      "L": 300,
+      "ell": 6.283185307179586,
+      "p": 0.0,
+      "m": 0.0,
+      "beta_profile": "pos_horizon",
+      "beta_sign": "plus",
+      "beta_amplitude": 0.6,
+      "beta_width": 1.0,
+      "beta_center_fraction": 0.3333333333333333,
+      "centered_beta_amplitude": 1.0,
+      "centered_beta_width": 1.0,
+      "centered_beta_center_fraction": 0.5,
+      "j0": 150,
+      "sigma": 15.0,
+      "chirality": "chi_plus",
+      "initial_direction": "right",
+      "dt": 0.01
+    },
+    "observables": {
+      "H_p": {
+        "shape": [
+          99,
+          300
+        ],
+        "first_time": 0.01,
+        "last_time": 0.99,
+        "max_abs_error": 1.5839968225961343e-12,
+        "max_relative_to_peak": 3.041338955032435e-13,
+        "rms_error": 3.7467097202005273e-13
+      }
+    }
+  },
+  "FIG7": {
+    "effective_settings": {
+      "L": 300,
+      "ell": 6.283185307179586,
+      "p": 1.0,
+      "m": 0.0,
+      "beta_profile": "pos_horizon",
+      "beta_sign": "minus",
+      "beta_amplitude": 0.6,
+      "beta_width": 1.0,
+      "beta_center_fraction": 0.6666666666666666,
+      "centered_beta_amplitude": 1.0,
+      "centered_beta_width": 1.0,
+      "centered_beta_center_fraction": 0.5,
+      "j0": 60,
+      "sigma": 15.0,
+      "chirality": "chi_plus",
+      "initial_direction": "right",
+      "dt": 0.01
+    },
+    "observables": {
+      "H_p": {
+        "shape": [
+          799,
+          300
+        ],
+        "first_time": 0.01,
+        "last_time": 7.99,
+        "max_abs_error": 3.868578634519393e-13,
+        "max_relative_to_peak": 3.9832841719969385e-14,
+        "rms_error": 6.913217936203256e-14
+      },
+      "H_m": {
+        "shape": [
+          799,
+          300
+        ],
+        "first_time": 0.01,
+        "last_time": 7.99,
+        "max_abs_error": 4.865875497667149e-13,
+        "max_relative_to_peak": 3.0820345502924243e-14,
+        "rms_error": 1.0516333492981947e-13
+      },
+      "H_pm": {
+        "shape": [
+          799,
+          300
+        ],
+        "first_time": 0.01,
+        "last_time": 7.99,
+        "max_abs_error": 1.3528044771507005e-12,
+        "max_relative_to_peak": 5.3358227224597336e-14,
+        "rms_error": 3.356120404884079e-13
+      }
+    }
+  }
+}

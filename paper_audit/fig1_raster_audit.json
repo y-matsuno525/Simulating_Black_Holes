@@ -1,0 +1,68 @@
+{
+  "image": "C:\\Users\\ymats\\\u30c9\u30ad\u30e5\u30e1\u30f3\u30c8\\Simulating_Black_Holes\\paper\\figure\\dispersion.png",
+  "panels": {
+    "row0_lower_p0_beta0": {
+      "samples": 297,
+      "median_absolute_residual_pixels": 4.047776497479077,
+      "percentile95_absolute_residual_pixels": 10.983752790298977
+    },
+    "row0_upper_p0_beta0": {
+      "samples": 297,
+      "median_absolute_residual_pixels": 4.076043891027993,
+      "percentile95_absolute_residual_pixels": 11.310827627117062
+    },
+    "row0_lower_p0_beta1": {
+      "samples": 298,
+      "median_absolute_residual_pixels": 0.18025025153735896,
+      "percentile95_absolute_residual_pixels": 1.4004854661462132
+    },
+    "row0_upper_p0_beta1": {
+      "samples": 297,
+      "median_absolute_residual_pixels": 0.3327471859860509,
+      "percentile95_absolute_residual_pixels": 1.7036601941388476
+    },
+    "row0_lower_p0_beta2": {
+      "samples": 298,
+      "median_absolute_residual_pixels": 1.3554411030690758,
+      "percentile95_absolute_residual_pixels": 3.577083852897997
+    },
+    "row0_upper_p0_beta2": {
+      "samples": 295,
+      "median_absolute_residual_pixels": 1.100501488840706,
+      "percentile95_absolute_residual_pixels": 5.099719513285798
+    },
+    "row1_lower_p1_beta0": {
+      "samples": 298,
+      "median_absolute_residual_pixels": 2.63221852174334,
+      "percentile95_absolute_residual_pixels": 4.011310010322983
+    },
+    "row1_upper_p1_beta0": {
+      "samples": 298,
+      "median_absolute_residual_pixels": 2.5799436194540135,
+      "percentile95_absolute_residual_pixels": 3.647775085739542
+    },
+    "row1_lower_p1_beta1": {
+      "samples": 298,
+      "median_absolute_residual_pixels": 0.26075163471830365,
+      "percentile95_absolute_residual_pixels": 0.9745934287941135
+    },
+    "row1_upper_p1_beta1": {
+      "samples": 297,
+      "median_absolute_residual_pixels": 0.31283895163966235,
+      "percentile95_absolute_residual_pixels": 0.8871414394933934
+    },
+    "row1_lower_p1_beta2": {
+      "samples": 298,
+      "median_absolute_residual_pixels": 1.5017134802956207,
+      "percentile95_absolute_residual_pixels": 3.5716752666714
+    },
+    "row1_upper_p1_beta2": {
+      "samples": 296,
+      "median_absolute_residual_pixels": 1.359485466881182,
+      "percentile95_absolute_residual_pixels": 3.634054965491572
+    }
+  },
+  "maximum_median_absolute_residual_pixels": 4.076043891027993,
+  "pass_threshold_pixels": 5.0,
+  "passed": true
+}

@@ -205,6 +205,12 @@ def draw_variant(fig, ax, spec: PanelSpec, variant: Variant, *, add_title: bool)
         ax.set_title(variant.title + suffix, fontsize=9.5)
 
     cbar = fig.colorbar(im, ax=ax, pad=0.025, fraction=0.055, extend=extend)
+    if variant.asinh_width is not None:
+        major = 10.0 ** np.floor(np.log10(scale))
+        multipliers = (-3, -1, 0, 1, 3) if 3.0 * major <= scale else (-1, 0, 1)
+        ticks = [value * major for value in multipliers]
+        cbar.set_ticks(ticks)
+        cbar.set_ticklabels([f"{value:g}" for value in ticks])
     if add_title:
         cbar.set_label(spec.label, rotation=90, labelpad=8)
     else:
@@ -275,6 +281,38 @@ def save_three_method_comparison(panel_key: str) -> None:
     for ax, variant in zip(axes, variants, strict=True):
         draw_variant(fig, ax, spec, variant, add_title=True)
     stem = OUTPUT_DIR / f"{spec.panel_id}_three_new_methods"
+    fig.savefig(stem.with_suffix(".png"), dpi=300, bbox_inches="tight")
+    fig.savefig(stem.with_suffix(".pdf"), bbox_inches="tight")
+    plt.close(fig)
+
+
+def save_asinh_width_comparison(panel_key: str = "fig3a") -> None:
+    """Compare several asinh linear widths without changing paper figures."""
+    spec = PANEL_SPECS[panel_key]
+    widths = (0.5, 1.0, 2.0, 3.0, 5.0)
+    variants = tuple(
+        Variant(
+            f"asinh_H0_{width:g}",
+            rf"$\mathcal{{H}}_0={width:g}$",
+            dark_geodesic=True,
+            asinh_width=width,
+        )
+        for width in widths
+    )
+
+    for variant in variants:
+        fig, ax = plt.subplots(figsize=(3.35, 2.7), constrained_layout=True)
+        draw_variant(fig, ax, spec, variant, add_title=True)
+        stem = OUTPUT_DIR / f"{spec.panel_id}_{variant.key}"
+        fig.savefig(stem.with_suffix(".png"), dpi=500, bbox_inches="tight")
+        fig.savefig(stem.with_suffix(".pdf"), bbox_inches="tight")
+        plt.close(fig)
+
+    fig, axes = plt.subplots(2, 3, figsize=(10.8, 6.2), constrained_layout=True)
+    for ax, variant in zip(axes.flat, variants, strict=False):
+        draw_variant(fig, ax, spec, variant, add_title=True)
+    axes.flat[-1].axis("off")
+    stem = OUTPUT_DIR / f"{spec.panel_id}_asinh_H0_comparison"
     fig.savefig(stem.with_suffix(".png"), dpi=300, bbox_inches="tight")
     fig.savefig(stem.with_suffix(".pdf"), bbox_inches="tight")
     plt.close(fig)

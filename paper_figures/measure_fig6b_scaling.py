@@ -94,11 +94,25 @@ def run_one(L: int, *, rerun: bool) -> dict:
     times, values = compute_h_p_profiles(config)
     summary = measure_profiles(L, times, values)
     out_dir.mkdir(parents=True, exist_ok=True)
+    with (out_dir / "config.json").open("w", encoding="utf-8") as f:
+        json.dump(_json_value(config), f, indent=2)
     with summary_path.open("w") as f:
         json.dump(summary, f, indent=2)
     print(f"[fig6b-measure] finished L={L}: T_lat={summary['T_lat']:.6g}")
     gc.collect()
     return summary
+
+
+def _json_value(value):
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, dict):
+        return {key: _json_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_value(item) for item in value]
+    return value
 
 
 def compute_h_p_profiles(config: dict) -> tuple[np.ndarray, np.ndarray]:

@@ -1232,6 +1232,9 @@ def save_geodesic_dat():
         y0=[x_start],
         dense_output=True,
         events=events,
+        rtol=1e-10,
+        atol=1e-12,
+        max_step=min(0.01, max((t_f - t_i) / 1000.0, 1e-6)),
     )
     t_stop = sol.t[-1]
     ts = np.linspace(t_i, t_stop, geodesic_points)

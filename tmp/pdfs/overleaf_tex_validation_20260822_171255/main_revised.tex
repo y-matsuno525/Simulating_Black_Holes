@@ -1,0 +1,1726 @@
+\documentclass[reprint,amsmath,amssymb,aps,prb,showkeys,superscriptaddress]{revtex4-2}
+
+\usepackage{graphicx}
+\usepackage{dcolumn}
+\usepackage{bm}% bold math
+\usepackage{braket}
+\usepackage{xcolor}
+
+% Preview layout: keep at most one double-column figure at the top of a page
+% so that the corresponding manuscript text can continue below it.
+\setcounter{dbltopnumber}{1}
+\newlength{\whiteholepanelheight}
+\newcommand{\red}{\textcolor{red}}
+\newcommand{\blue}{\textcolor{blue}}
+\newcommand{\magenta}{\textcolor{magenta}}
+\newcommand{\green}{\textcolor{green}}
+\begin{document}
+
+\title{Particle Dynamics in Digital Black-Hole Spacetimes}
+
+\author{Yuki Matsuno}
+ \affiliation{Department of Physics, College of Humanities and Sciences, Nihon University, Sakura-josui,
+ Tokyo 156-8550, Japan}
+\author{Shunichiro Kinoshita}
+ \email{kinoshita@neptune.kanazawa-it.ac.jp}
+ \affiliation{Mathematics, Science, Data Science and AI Program, Kanazawa Institute of Technology, Nonoichi, Ishikawa 921-8501, Japan} 
+ \author{Keiju Murata}
+ \email{murata.keiju@nihon-u.ac.jp}
+  \affiliation{Department of Physics, College of Humanities and Sciences, Nihon University, Sakura-josui,
+ Tokyo 156-8550, Japan}
+ \affiliation{Global R\&D Center for Business by Quantum-AI Technology (G-QuAT),
+National Institute of Advanced Industrial Science and Technology (AIST),
+1-1-1 Umezono, Tsukuba, Ibaraki 305-8568, Japan}
+ \author{Daisuke Yamamoto}
+ \email{yamamoto.daisuke21@nihon-u.ac.jp}
+ \affiliation{Department of Physics, College of Humanities and Sciences, Nihon University, Sakura-josui,
+ Tokyo 156-8550, Japan}
+\affiliation{Global R\&D Center for Business by Quantum-AI Technology (G-QuAT),
+National Institute of Advanced Industrial Science and Technology (AIST),
+1-1-1 Umezono, Tsukuba, Ibaraki 305-8568, Japan}
+\affiliation{RIKEN Center for Quantum Computing (RQC), Wako, Saitama 351-0198, Japan}
+
+\begin{abstract}
+We study particle dynamics in a one-dimensional lattice Majorana-fermion model designed to emulate black-hole and white-hole spacetimes. By encoding the effective metric into position-dependent lattice couplings, we analyze the low-momentum dispersion relation and the associated effective light-cone structure. Using real-space Bogoliubov--de Gennes diagonalization and wave-packet time evolution, we show that packet trajectories agree with the corresponding geodesic motion for black-hole profiles. We also extract the surface gravity from the near-horizon growth of the wave-packet standard deviation and compare the numerical result with the analytical scaling. For the white-hole geometry, we show that wave-packet compression leads to finite-size reflection, with a stagnation time that scales logarithmically with the system size. We further clarify lattice-specific effects, including doubler-induced oscillations inside the black hole and partial transmission in the white-hole geometry. These results support lattice fermion models as practical platforms for quantum simulation of black-hole spacetime particle dynamics while clarifying the lattice artifacts that limit their range of validity.
+\end{abstract}
+
+\maketitle
+
+\section{INTRODUCTION}
+Quantum simulation provides a route to realizing and probing quantum theories by encoding their dynamics in controllable many-body systems \cite{Feynman1982,Lloyd1996}. A particularly compelling target is quantum field theory (QFT) in curved spacetime, which describes quantum fields propagating on prescribed gravitational backgrounds and predicts fundamental phenomena such as cosmological particle creation, the Unruh effect, and Hawking radiation \cite{Parker1968,Parker1969,1973PhRvD...7.2850F,1974Natur.248...30H,Hawking1975,1975JPhA....8..609D,Unruh1976}. These phenomena lie at the interface of quantum theory and gravitation, yet their direct observation remains exceptionally challenging. This has motivated the development of experimentally accessible platforms in which curved-spacetime QFTs and their characteristic dynamics can be investigated under controlled conditions.
+
+A major route toward this goal has been analog gravity, pioneered by Unruh’s demonstration that sound waves in a transonic fluid obey equations equivalent to those of a field near a black-hole horizon \cite{Unruh1981}. This idea has developed into a broad research program in which collective excitations in engineered media, such as phonons in Bose--Einstein condensates and electromagnetic waves in nonlinear optical systems, experience an emergent effective metric, typically within a hydrodynamic or long-wavelength regime \cite{Barcelo2011,Garay2000,Lahav2010,Philbin2008}. Such platforms have provided powerful laboratory access to horizon physics and the associated wave-conversion phenomena. Their curved geometry, however, is an effective description of excitations supported by the host medium and is consequently tied to its microscopic dynamics and dispersive corrections, rather than arising from a direct discretization of a prescribed curved-spacetime QFT.
+
+A conceptually distinct route is to discretize a prescribed curved-spacetime QFT itself so that the target theory is recovered in a controlled continuum limit. Quantum-walk and lattice approaches have pursued this direction by encoding geometry into discrete dynamics or spatially inhomogeneous local couplings \cite{DiMolfetta2013,Yang2020,LewisVidal2020}. In previous work by some of us, a general correspondence has been established between Majorana QFTs in arbitrary $(1+1)$-dimensional curved spacetimes with periodic spatial topology and one-dimensional spin-$1/2$ chains. Within this correspondence, the spacetime metric of the field theory is mapped directly onto the space- and time-dependent exchange couplings and magnetic fields of the spin chain~\cite{Kinoshita2025}. We refer to this framework, and more generally to such controlled lattice encodings of prescribed curved-spacetime QFTs, as \emph{digital curved spacetimes}. Here, ``digital'' primarily denotes the spatial discretization of the field theory itself, rather than any specific gate-based protocol, while also reflecting the natural compatibility of the resulting local lattice Hamiltonians with digital quantum processors and other programmable quantum-simulation platforms \cite{Altman2021}. The framework has subsequently been applied to thermal detector responses in an inflationary spacetime and extended to QFTs with spatial boundaries \cite{KinoshitaInflation2025,KinoshitaBoundary2026}. Unlike in analog-gravity platforms, the geometry is imposed through an explicit metric-to-coupling dictionary, and the target continuum theory is recovered systematically as the lattice spacing is reduced.
+
+Black-hole spacetimes provide a particularly stringent test of such lattice encodings. Position-dependent hopping and spin models have been used to study transport, entanglement, and information transfer near nominal lattice horizons, with outward propagation interpreted in some works as stimulated Hawking radiation or information escape \cite{Yang2020,Shi2023,Benhemou2023,Liu2026}. Before making such an interpretation, however, one must first verify that the lattice model reproduces the elementary causal dynamics of the target continuum QFT. A pre-existing one-particle wave packet initially inside a future horizon must propagate further into the black-hole interior rather than return to the exterior, whereas Hawking radiation, when present, is a distinct quantum-field-theoretic particle-production process. Establishing this basic correspondence and quantifying its finite-lattice corrections are therefore essential prerequisites for using lattice models to address genuinely quantum horizon phenomena.
+
+
+In this work, we establish this correspondence for particle dynamics in digital black-hole spacetimes. Starting from a one-dimensional lattice Majorana model obtained through the metric-to-coupling correspondence~\cite{Kinoshita2025}, we demonstrate that localized wave packets quantitatively follow the corresponding continuum geodesics as the lattice spacing is reduced. In particular, wave packets initialized inside a future horizon propagate further into the black-hole interior, faithfully reproducing its one-way causal structure. We further show that the surface gravity can be extracted from the evolution of the wave-packet width, and clarify how finite-size effects, fermion doubling, and different lattice regularizations modify the approach to the continuum limit. By contrasting black-hole and white-hole geometries, we separate the universal causal dynamics of the target spacetime from regularization-dependent lattice effects. These results establish a controlled benchmark for digital curved spacetimes and provide a necessary foundation for their extension to intrinsically quantum horizon phenomena, including Hawking particle production and quantum-information transport, as well as to time-dependent geometries and implementations on programmable quantum processors.
+
+%{This paper is organized as follows. In Sec. II, we introduce the one-dimensional lattice fermion model and explain how the effective metric and horizon structure emerge from its low-momentum dispersion. In Sec. III, we study wave-packet dynamics in a black-hole profile, compare the resulting trajectories with the corresponding geodesics, and analyze the role of fermion doubling. We also extract the surface gravity from wave-packet broadening and then examine finite-size effects in a white-hole profile. Finally, Sec. IV summarizes our results and discusses future directions.}
+
+%Throughout this paper, we use natural units with $\hbar=c=1$.
+
+\section{Digital black-hole spacetime on a lattice}
+\label{sec:model}
+
+We consider a massless Majorana field in a static
+$(1+1)$-dimensional curved spacetime described by the
+Painlev\'e--Gullstrand-type metric
+\begin{equation}
+  ds^2
+  =
+  -\bigl[1-\beta^2(x)\bigr]dt^2
+  -2\beta(x)\,dt\,dx
+  +dx^2.
+  \label{eq:PG_metric}
+\end{equation}
+If 
+\begin{equation}
+  \bigl|\beta(x_{\mathrm h})\bigr|=1 
+  \label{eq:horizon_condition}
+\end{equation}
+is satisfied at $x=x_{\mathrm h}$, the time-translation Killing vector field $\partial_t$ becomes null there, 
+indicating that the (Killing) horizon is located at $x=x_{\mathrm h}$.
+This coordinate system remains regular even at the horizon and covers both the
+exterior and interior regions within a single time slicing, allowing
+particle propagation across the horizon to be followed without
+encountering a coordinate singularity. 
+%A horizon is located at
+%$x=x_{\mathrm h}$ satisfying
+%\begin{equation}
+%  \bigl|\beta(x_{\mathrm h})\bigr|=1.
+%  \label{eq:horizon_condition}
+%\end{equation}
+The Hamiltonian of the massless Majorana field on this background is
+\begin{equation}
+\begin{aligned}
+  H_{\mathrm{QFT}}
+  =
+  \int_0^\ell dx\,
+  \Bigl[
+  &-\frac{1}{2}
+  \left(
+    \phi^\dagger\partial_x\phi^\dagger
+    -
+    \phi\partial_x\phi
+  \right)
+  \\
+  &-\frac{i\beta(x)}{2}
+  \left(
+    \phi^\dagger\partial_x\phi
+    +
+    \phi\partial_x\phi^\dagger
+  \right)
+  \Bigr],
+\end{aligned}
+  \label{eq:continuum_Hamiltonian}
+\end{equation}
+where $\ell$ is the length of the spatial interval. The field
+operators satisfy the equal-time canonical anticommutation relation
+\begin{equation}
+  \left\{
+    \phi(t,x),\phi^{\dagger}(t,y)
+  \right\}
+  =
+  \delta(x-y),
+\label{eq:continuum_anticommutation}
+\end{equation}
+with all other anticommutators vanishing.
+\red{
+The Heisenberg equations,
+$i\partial_t \phi = [\phi, H_{\mathrm{QFT}}]$ and $i\partial_t \phi^{\dagger} = [\phi^{\dagger}, H_{\mathrm{QFT}}]$,  
+yield  
+\begin{equation}
+    \left[\frac{\partial}{\partial t} + (\beta \pm 1) \frac{\partial}{\partial x}\right] (\sqrt{1\pm \beta} \phi_\pm) = 0 ,
+\end{equation}
+where the Hermitian operators $\phi_\pm$ are defined by 
+\begin{equation}
+    \phi_\pm = \pm \frac{1}{\sqrt{2}} \left(e^{\pm i \frac{\pi}{4}} \phi + e^{\mp i \frac{\pi}{4}} \phi^\dagger \right) .
+\end{equation}
+These equations show that $\phi_+$ and $\phi_-$, representing the right- and left-moving modes, respectively, propagate along the null geodesics of the metric~(\ref{eq:PG_metric}). 
+The trajectories of these geodesics are determined by 
+\begin{equation}
+    \frac{dx_\pm}{dt}=\beta(x_\pm) \pm 1,
+\end{equation}
+as obtained by setting $ds^2 = 0$.
+}
+
+The field-to-spin dictionary developed in
+Ref.~\cite{Kinoshita2025} is characterized by five space- and
+time-dependent functions. The three functions
+$\alpha(t,x)$, $\beta(t,x)$, and $\gamma(t,x)$ determine the
+spacetime metric, $\zeta(t,x)$ specifies a local gauge choice for the
+Majorana field, and $p(t,x)$ parametrizes a nontrivial degree of freedom in the
+spin-lattice realization. To obtain the static
+Painlev\'e--Gullstrand geometry in Eq.~\eqref{eq:PG_metric}, we set
+\begin{equation}
+  \alpha(t,x)=\gamma(t,x)=1,
+  \qquad
+  \beta(t,x)=\beta(x).
+  \label{eq:dictionary_specialization}
+\end{equation}
+We also fix the gauge as $\zeta(t,x)=0$ and, for simplicity, restrict
+$p(t,x)$ to a spatially and temporally uniform constant $p$. 
+Under this specialization, the dictionary maps the Majorana QFT on
+the Painlev\'e--Gullstrand background onto the
+Majorana QFT onto an anisotropic $XY$ chain with a bond-dependent Dzyaloshinskii--Moriya interaction and a transverse field:
+\begin{align}
+  H_{\mathrm{spin}}
+  ={}&
+  -\frac{1}{4\varepsilon}
+  \sum_{j=1}^{L-1}
+  \Bigl[
+    (1+p)\sigma_j^x\sigma_{j+1}^x
+    -(1-p)\sigma_j^y\sigma_{j+1}^y
+  \nonumber\\
+  &\hspace{18mm}
+    -\beta_{j+1/2}
+    \left(
+      \sigma_j^x\sigma_{j+1}^y
+      -
+      \sigma_j^y\sigma_{j+1}^x
+    \right)
+  \Bigr]
+  \nonumber\\
+  &-\frac{p}{2\varepsilon}
+  \sum_{j=1}^{L}\sigma_j^z.
+  \label{eq:spin_Hamiltonian}
+\end{align}
+
+
+The shift function $\beta(x)$, which specifies the spacetime geometry, is encoded in the bond-dependent
+Dzyaloshinskii--Moriya coupling. Here, we evaluate the shift function at the center of each bond,
+\begin{equation}
+  \beta_{j+\frac12}
+  \equiv
+  \beta\left(x_{j+\frac12}\right),
+  \qquad
+  x_{j+\frac12}
+  =
+  \varepsilon\left(j+\frac12\right).
+  \label{eq:lattice_beta}
+\end{equation}
+This bond-centered convention aligns the sampling point of
+$\beta(x)$ with the spatial location of the
+Dzyaloshinskii--Moriya coupling that it determines. It differs from
+the site-centered convention
+$\beta_j=\beta(x_j)$ adopted in Ref.~\cite{Kinoshita2025} only at
+finite lattice spacing, and the two prescriptions yield the same
+continuum QFT as $\varepsilon\to0$.
+
+For the analytical and numerical treatment below, we rewrite the
+spin Hamiltonian in terms of Jordan--Wigner fermions. For a finite
+open chain, this gives
+\begin{align}
+  H
+  ={}&
+  -\frac{1}{2\varepsilon}
+  \sum_{j=1}^{L-1}
+  \Bigg[
+    c_{j+1}c_j
+    +
+    c_j^\dagger c_{j+1}^\dagger
+    +
+    p\left(
+      c_j^\dagger c_{j+1}
+      +
+      c_{j+1}^\dagger c_j
+    \right)
+  \nonumber\\
+  &\hspace{10mm}
+    +
+    i\beta_{j+\frac12}
+    \left(
+      c_j^\dagger c_{j+1}
+      -
+      c_{j+1}^\dagger c_j
+    \right)
+  \Bigg]
+  \nonumber\\
+  &-
+  \frac{p}{2\varepsilon}
+  \sum_{j=1}^{L}
+  \left(
+    1-2c_j^\dagger c_j
+  \right).
+  \label{eq:lattice_Hamiltonian}
+\end{align}
+The operators satisfy
+\begin{equation}
+  \{c_j,c_{j'}^\dagger\}
+  =
+  \delta_{jj'},
+  \label{eq:lattice_anticommutation}
+\end{equation}
+with all other anticommutators vanishing.
+
+As established in Ref.~\cite{Kinoshita2025}, this Jordan--Wigner
+representation is related to the continuum Majorana field through
+the spatial discretization
+\begin{equation}
+  c_j
+  =
+  \sqrt{\varepsilon}\,
+  \phi(x_j),
+  \qquad
+  x_j=\varepsilon j,
+  \label{eq:continuum_identification}
+\end{equation}
+with the continuum theory recovered as
+$\varepsilon\to0$ at fixed physical length
+$\ell=\varepsilon L$. Thus,
+Eq.~\eqref{eq:lattice_Hamiltonian} is simultaneously the exact
+fermionic representation of the local spin simulator and a
+controlled lattice realization of the target curved-spacetime QFT.
+
+As shown in Ref.~\cite{KinoshitaBoundary2026}, the function
+$p(t,x)$ has two distinct roles in the field-to-spin dictionary.
+First, it participates in the realization of spatial boundary
+conditions in a finite open chain. Second, it controls the
+ultraviolet structure of the bulk lattice theory, including the
+presence and momentum-space structure of fermion doublers, without
+modifying the target spacetime geometry or continuum QFT. In the
+present work, the horizon and the initial wave packets are placed
+sufficiently far from the physical ends of the chain that boundary
+effects are negligible over the time scales considered. We therefore
+restrict $p(t,x)$ to the constant choices
+\begin{equation}
+  p=0
+  \qquad\text{and}\qquad
+  p=1,
+  \label{eq:p_choices}
+\end{equation}
+and focus on its second role, namely the regularization-dependent
+bulk dynamics.
+
+
+\subsection{Local dispersion and causal velocities}
+\label{subsec:dispersion}
+
+To identify the bulk modes relevant to the wave-packet dynamics, we
+examine the local dispersion relation of the lattice model. Because 
+$\beta(x)$ depends on the spatial coordinate, momentum is no longer a good quantum number for
+the full open chain. Nevertheless, as an auxiliary construction, we temporarily consider a homogeneous
+chain of $L'$ sites in which $\beta(x)$ is replaced by a constant
+local value $\beta$ and periodic boundary conditions are imposed.
+\red{In other words, we focus on local dynamics within a sufficiently narrow region where the spatial dependence of $\beta(x)$ can be ignored. }
+Here, $L'$ denotes the number of sites in this auxiliary homogeneous
+system and is distinct from the size $L$ of the open chain used in
+the real-space simulations.
+
+Using the Fourier transformation
+\begin{equation}
+  c_j
+  =
+  \frac{1}{\sqrt{L'}}
+  \sum_{\kappa}
+  e^{i\kappa j}c_{\kappa},
+  \qquad
+  \kappa=\frac{2\pi n}{L'},
+  \label{eq:Fourier_transform}
+\end{equation}
+where $\kappa\in[-\pi,\pi)$ is the dimensionless lattice momentum,
+the homogeneous Hamiltonian can be written in the
+Bogoliubov--de Gennes form
+\begin{equation}
+  H
+  =
+  \frac{1}{2}
+  \sum_{\kappa}
+  \Psi_{\kappa}^{\dagger}
+  \mathcal{H}(\kappa)
+  \Psi_{\kappa}
+  +\mathrm{const.},
+  \label{eq:BdG_Hamiltonian}
+\end{equation}
+where
+\begin{equation}
+  \Psi_{\kappa}
+  =
+  \begin{pmatrix}
+    c_{\kappa}\\
+    c_{-\kappa}^{\dagger}
+  \end{pmatrix},
+  \label{eq:Nambu_spinor}
+\end{equation}
+and
+\begin{equation}
+  \mathcal{H}(\kappa)
+  =
+  \frac{1}{\varepsilon}
+  \begin{pmatrix}
+    \beta\sin\kappa
+    +p(1-\cos\kappa)
+      & -i\sin\kappa
+    \\
+    i\sin\kappa
+      & \beta\sin\kappa
+        -p(1-\cos\kappa)
+  \end{pmatrix}.
+  \label{eq:BdG_matrix}
+\end{equation}
+The two eigenvalue branches are
+\begin{equation}
+\begin{aligned}
+  E_{\pm}(\kappa)
+  =
+  \frac{1}{\varepsilon}
+  \Biggl[
+    \beta\sin\kappa
+    \mathbin{\pm}
+    \Bigl\{
+      \sin^{2}\kappa
+      +p^{2}(1-\cos\kappa)^{2}
+    \Bigr\}^{1/2}
+  \Biggr].
+\end{aligned}
+  \label{eq:lattice_dispersion}
+\end{equation}
+
+To take the continuum limit, we introduce the physical momentum
+\begin{equation}
+  k=\frac{\kappa}{\varepsilon}
+  \label{eq:physical_momentum}
+\end{equation}
+and let $\varepsilon\to0$ at fixed $k$, so that
+$\kappa=\varepsilon k\to0$. The dispersion then becomes
+\begin{equation}
+  E_{\pm}(\varepsilon k)
+  =
+  \beta k
+  \pm |k|
+  +O\!\left(\varepsilon^{2}|k|^{3}\right).
+  \label{eq:continuum_dispersion_general}
+\end{equation}
+For the positive-momentum sector, $k>0$, this reduces to
+\begin{equation}
+  E_{\pm}(\varepsilon k)
+  =
+  (\beta\pm1)k
+  +O\!\left(\varepsilon^{2}k^{3}\right).
+  \label{eq:continuum_dispersion}
+\end{equation}
+The corresponding physical group velocities are therefore
+\begin{equation}
+  v_{\pm}
+  =
+  \frac{\partial E_{\pm}}{\partial k}
+  =
+  \varepsilon
+  \frac{\partial E_{\pm}}{\partial\kappa}
+  \longrightarrow
+  \beta\pm1
+  \qquad
+  (\varepsilon\to0).
+  \label{eq:group_velocities}
+\end{equation}
+These coincide with the two null characteristic velocities of the
+Painlev\'e--Gullstrand metric. Introducing a branch label
+$s=\pm1$, the corresponding null trajectories obey
+\begin{equation}
+  \frac{dx_s}{dt}
+  =
+  \beta(x_s)+s,
+  \qquad
+  s=\pm1,
+  \label{eq:null_characteristics}
+\end{equation}
+as obtained by setting $ds^{2}=0$.
+
+\begin{figure}[t]
+  \includegraphics[width=\linewidth]{figure/dispersion.png}
+  \caption{
+  Local dispersion relations and causal structure.
+  Panels (a) and (b) show the local dispersion relations for
+  $p=0$ and $p=1$, respectively, at $\beta=0$, $1$, and $2$
+  from left to right.
+  (c) An example of the spatial profile $\beta(x)$ used in the
+  real-space analysis. The dashed horizontal line marks $\beta=1$,
+  and its intersection with the profile defines the horizon
+  position.
+  (d) Sketches of the corresponding local light cones determined by
+  the low-momentum group velocities. Inside the black-hole horizon,
+  where $\beta>1$, both characteristic velocities are positive and
+  point toward increasing $x$, i.e., into the black-hole interior
+  for the profile shown.
+  }
+  \label{fig:local_dispersion}
+\end{figure}
+
+The corresponding local dispersion relations are shown in
+Figs.~\ref{fig:local_dispersion}(a) and
+\ref{fig:local_dispersion}(b) for $p=0$ and $p=1$, respectively.
+The three columns correspond to $\beta=0$, $1$, and $2$.
+For $\beta=0$, the two low-momentum branches have opposite group
+velocities, $v_{\pm}=\pm1$. At $\beta=1$, one of the
+characteristic velocities vanishes, corresponding to the horizon
+condition. For $\beta>1$, both low-momentum velocities become
+positive, and hence both branches propagate toward increasing $x$.
+
+Although the two choices of $p$ reproduce the same low-momentum
+dispersion, their finite-momentum structures are qualitatively
+different. For $p=0$, additional zero-energy modes occur at the
+Brillouin-zone boundary, corresponding to conventional fermion
+doublers. Their physical momenta are of order
+$|k|\sim\pi/\varepsilon$, even though their excitation energies
+remain low. For $p>0$, the term $p(1-\cos\kappa)$ lifts these
+zero-energy modes at the Brillouin-zone boundary. Its momentum
+dependence is analogous to that of the Wilson term used to lift
+fermion doublers in lattice gauge theories \cite{Wilson1974}.
+
+In the overtilted regime $|\beta|>1$, however, additional
+zero-energy crossings necessarily appear at finite lattice momenta
+$\kappa=\pm\kappa_\ast$, where
+\begin{equation}
+  \kappa_\ast
+  =
+  \arccos\left(
+    \frac{p^2-\beta^2+1}
+         {p^2+\beta^2-1}
+  \right).
+  \label{eq:finite_momentum_crossing}
+\end{equation}
+For the black-hole interior considered below, where $\beta>1$, the
+lower branch has positive energy immediately to the right of
+$\kappa=0$ but negative energy at the Brillouin-zone boundary for
+any $p\neq0$. The periodic lattice dispersion must therefore cross
+zero at an intermediate momentum. The Wilson-like term lifts the
+conventional zone-boundary doubler in the subcritical region
+$|\beta|<1$, but in the overtilted regime it shifts the unavoidable
+zero-energy lattice modes away from the Brillouin-zone boundary
+rather than eliminating them.
+
+Thus, although the two regularizations reproduce the same continuum
+causal velocities, they possess distinct finite-momentum modes that
+can affect the dynamics at finite lattice spacing. We now turn to
+real-space wave-packet dynamics to examine how these continuum and
+lattice modes manifest themselves in the inhomogeneous black-hole
+geometry.
+
+\subsection{Real-space dynamics and wave-packet preparation}
+\label{subsec:real_space}
+
+The preceding analysis provides a local description of the particle
+dynamics by treating $\beta(x)$ as approximately constant. We now
+restore the full spatial dependence of the couplings and study the
+finite open-chain Hamiltonian directly in real space.
+
+The quadratic fermion Hamiltonian in
+Eq.~\eqref{eq:lattice_Hamiltonian} can be written in the
+Bogoliubov--de Gennes form
+\begin{equation}
+  H
+  =
+  \frac{1}{2}
+  \boldsymbol{\Psi}^{\dagger}
+  \mathcal{H}_{\mathrm{BdG}}
+  \boldsymbol{\Psi}
+  +\mathrm{const.},
+  \label{eq:real_space_BdG}
+\end{equation}
+where
+\begin{equation}
+  \boldsymbol{\Psi}
+  =
+  \bigl(
+    c_1,\ldots,c_L,
+    c_1^\dagger,\ldots,c_L^\dagger
+  \bigr)^{\mathsf T}.
+  \label{eq:real_space_Nambu}
+\end{equation}
+We diagonalize $\mathcal{H}_{\mathrm{BdG}}$ by a fermionic
+Bogoliubov transformation,
+\begin{equation}
+  \boldsymbol{\Psi}
+  =
+  U\boldsymbol{\Gamma},
+  \qquad
+  \boldsymbol{\Gamma}
+  =
+  \bigl(
+    \gamma_1,\ldots,\gamma_L,
+    \gamma_1^\dagger,\ldots,\gamma_L^\dagger
+  \bigr)^{\mathsf T},
+  \label{eq:Bogoliubov_transformation}
+\end{equation}
+which brings the Hamiltonian to the diagonal form
+\begin{equation}
+  H
+  =
+  \sum_{n=1}^{L}
+  E_n\gamma_n^\dagger\gamma_n
+  +\mathrm{const.},
+  \qquad
+  E_n\geq0.
+  \label{eq:diagonal_Hamiltonian}
+\end{equation}
+The BdG vacuum is defined by
+\begin{equation}
+  \gamma_n\ket{\mathrm{vac}}=0,
+  \qquad
+  n=1,\ldots,L.
+  \label{eq:BdG_vacuum}
+\end{equation}
+Since the quasiparticle occupation numbers
+$\gamma_n^\dagger\gamma_n$ are conserved, the dynamics of an
+initial one-quasiparticle state can be evaluated within the subspace
+spanned by
+\begin{equation}
+  \ket{n}
+  =
+  \gamma_n^\dagger\ket{\mathrm{vac}},
+  \qquad
+  n=1,\ldots,L.
+  \label{eq:one_quasiparticle_basis}
+\end{equation}
+
+To distinguish the two continuum null branches, we introduce the
+Hermitian operators $a_j^\pm$ through
+\begin{subequations}
+\label{eq:a_definition}
+\begin{align}
+  c_j
+  ={}&
+  \frac{1}{2}
+  \left[
+    a_j^+-a_j^-
+    -i\left(a_j^++a_j^-\right)
+  \right],
+  \\
+  c_j^\dagger
+  ={}&
+  \frac{1}{2}
+  \left[
+    a_j^+-a_j^-
+    +i\left(a_j^++a_j^-\right)
+  \right].
+\end{align}
+\end{subequations}
+They satisfy
+\begin{equation}
+  \left\{
+    a_j^s,a_{j'}^{s'}
+  \right\}
+  =
+  \delta_{jj'}\delta_{ss'},
+  \qquad
+  s,s'=\pm.
+  \label{eq:a_anticommutation}
+\end{equation}
+In terms of these operators, the lattice Hamiltonian becomes
+\begin{align}
+  H
+  ={}&
+  -\frac{i}{2\varepsilon}
+  \sum_{j=1}^{L-1}
+  \Bigl[
+    \left(
+      1+\beta_{j+\frac12}
+    \right)
+    a_j^+a_{j+1}^+
+  \nonumber\\
+  &\hspace{12mm}
+    -
+    \left(
+      1-\beta_{j+\frac12}
+    \right)
+    a_j^-a_{j+1}^-
+  \nonumber\\
+  &\hspace{12mm}
+    +
+    p\left(
+      a_j^-a_{j+1}^+
+      -
+      a_j^+a_{j+1}^-
+    \right)
+  \Bigr]
+  \nonumber\\
+  &-
+  \frac{i p}{\varepsilon}
+  \sum_{j=1}^{L}
+  a_j^+a_j^- .
+  \label{eq:H_in_a}
+\end{align}
+For $p=0$, the $a^+$ and $a^-$ components are exactly decoupled,
+whereas a nonzero $p$ introduces finite-spacing mixing between them.
+
+The interpretation of the two components follows from their
+Heisenberg equations of motion. At a bulk site, they read
+\begin{subequations}
+\label{eq:a_eom_lattice}
+\begin{align}
+  i\frac{\partial a_j^+}{\partial t}
+  ={}&
+  -\frac{i}{2\varepsilon}
+  \Bigl[
+    \left(
+      1+\beta_{j+\frac12}
+    \right)a_{j+1}^+
+  \nonumber\\[-2pt]
+  &\hspace{21mm}
+    -
+    \left(
+      1+\beta_{j-\frac12}
+    \right)a_{j-1}^+
+  \Bigr]
+  \nonumber\\
+  &-
+  \frac{i p}{2\varepsilon}
+  \left(
+    2a_j^-
+    -a_{j+1}^-
+    -a_{j-1}^-
+  \right),
+  \label{eq:a_plus_eom}
+  \\
+  i\frac{\partial a_j^-}{\partial t}
+  ={}&
+  \frac{i}{2\varepsilon}
+  \Bigl[
+    \left(
+      1-\beta_{j+\frac12}
+    \right)a_{j+1}^-
+  \nonumber\\[-2pt]
+  &\hspace{21mm}
+    -
+    \left(
+      1-\beta_{j-\frac12}
+    \right)a_{j-1}^-
+  \Bigr]
+  \nonumber\\
+  &+
+  \frac{i p}{2\varepsilon}
+  \left(
+    2a_j^+
+    -a_{j+1}^+
+    -a_{j-1}^+
+  \right).
+  \label{eq:a_minus_eom}
+\end{align}
+\end{subequations}
+The $p$-dependent combinations are discrete second derivatives.
+For sufficiently smooth low-momentum modes, they are of order
+$\varepsilon$ and vanish in the continuum limit. To leading order,
+the two components therefore obey independent transport equations,
+\begin{equation}
+  \left[
+    \partial_t
+    +v_s(x)\partial_x
+    +\frac{1}{2}\partial_xv_s(x)
+  \right]
+  a^s(t,x)
+  =
+  0,
+  \qquad
+  s=\pm1,
+  \label{eq:continuum_transport}
+\end{equation}
+where $v_s(x)$ denotes the local characteristic velocity obtained
+from Eq.~\eqref{eq:group_velocities} by restoring the spatial
+dependence of $\beta$. For $p=0$, the two components remain exactly
+decoupled at any lattice spacing. For $p\neq0$, their mixing is
+suppressed for sufficiently smooth low-momentum modes and vanishes
+systematically toward the continuum limit.
+
+It follows from Eq.~\eqref{eq:null_characteristics} that the
+$a^+$ and $a^-$ branches have horizons at $\beta=-1$ and
+$\beta=1$, respectively. In the black-hole geometry considered
+below, $\beta(x)$ increases through $1$, and the relevant horizon
+is therefore associated with the $a^-$ branch.
+
+We prepare an initial wave packet by applying a Gaussian
+superposition of either $a_j^+$ or $a_j^-$ to the BdG vacuum:
+\begin{equation}
+  \ket{\psi_s(0)}
+  =
+  \mathcal{N}_s
+  \sum_{j=1}^{L}
+  G_j a_j^s
+  \ket{\mathrm{vac}},
+  \qquad
+  s=\pm,
+  \label{eq:initial_state_a}
+\end{equation}
+where
+\begin{equation}
+  G_j
+  =
+  \exp\left[
+    -\frac{(j-j_{\mathrm{ini}})^2}
+           {2\sigma_{\mathrm{ini}}^2}
+  \right].
+  \label{eq:Gaussian_envelope}
+\end{equation}
+Here, $j_{\mathrm{ini}}$ and $\sigma_{\mathrm{ini}}$ denote the
+initial center and width parameter of the Gaussian envelope,
+respectively. The normalization constant $\mathcal{N}_s$ is chosen
+such that
+\begin{equation}
+  \braket{\psi_s(0)|\psi_s(0)}=1.
+  \label{eq:initial_state_normalization}
+\end{equation}
+For $\sigma_{\mathrm{ini}}\gg1$, the momentum distribution is
+concentrated near $\kappa=0$, where the lattice dispersion
+approaches that of the target continuum QFT. Applying $a_j^+$ or
+$a_j^-$ therefore prepares a smooth wave packet associated
+predominantly with the corresponding continuum null branch. For
+$p=0$, this branch separation is exact, whereas for $p\neq0$ the
+mixing remains strongly suppressed for the smooth low-momentum
+packets considered here.
+
+Expanding the initial state in the one-quasiparticle eigenbasis, its
+time evolution is given by
+\begin{equation}
+  \ket{\psi_s(t)}
+  =
+  \sum_{n=1}^{L}
+  e^{-iE_nt}
+  \ket{n}
+  \braket{n|\psi_s(0)},
+  \label{eq:time_evolved_state}
+\end{equation}
+where an overall phase associated with the vacuum energy has been
+omitted. We compare the resulting real-space propagation with the
+continuum null trajectory in Eq.~\eqref{eq:null_characteristics},
+using the initial condition
+$x_s(0)=\varepsilon j_{\mathrm{ini}}$.
+
+To resolve the two propagation branches locally, we decompose the
+Hamiltonian density as
+\begin{equation}
+  H
+  =
+  \varepsilon\sum_{j=1}^{L}\mathcal{H}_j,
+  \qquad
+  \mathcal{H}_j
+  =
+  \mathcal{H}_j^+
+  +
+  \mathcal{H}_j^-
+  +
+  \mathcal{H}_j^{\mathrm{int}},
+  \label{eq:local_Hamiltonian_decomposition}
+\end{equation}
+where
+\begin{align}
+  \mathcal{H}_j^+
+  ={}&
+  -\frac{i}{4\varepsilon^2}
+  \Bigl[
+    \left(
+      1+\beta_{j+\frac12}
+    \right)
+    a_j^+a_{j+1}^+
+  \nonumber\\
+  &\hspace{13mm}
+    +
+    \left(
+      1+\beta_{j-\frac12}
+    \right)
+    a_{j-1}^+a_j^+
+  \Bigr],
+  \label{eq:H_density_plus}
+  \\
+  \mathcal{H}_j^-
+  ={}&
+  \frac{i}{4\varepsilon^2}
+  \Bigl[
+    \left(
+      1-\beta_{j+\frac12}
+    \right)
+    a_j^-a_{j+1}^-
+  \nonumber\\
+  &\hspace{13mm}
+    +
+    \left(
+      1-\beta_{j-\frac12}
+    \right)
+    a_{j-1}^-a_j^-
+  \Bigr],
+  \label{eq:H_density_minus}
+\end{align}
+and
+\begin{align}
+  \mathcal{H}_j^{\mathrm{int}}
+  ={}&
+  -\frac{i p}{4\varepsilon^2}
+  \Bigl[
+    a_j^-a_{j+1}^+
+    -
+    a_j^+a_{j+1}^-
+  \nonumber\\
+  &\hspace{9mm}
+    +
+    a_{j-1}^-a_j^+
+    -
+    a_{j-1}^+a_j^-
+    +
+    4a_j^+a_j^-
+  \Bigr].
+  \label{eq:H_density_interaction}
+\end{align}
+At the physical ends of the chain, terms containing operators
+outside the interval are omitted.
+
+For a wave packet initially prepared from the $a^s$ component, we
+monitor the corresponding branch-resolved, vacuum-subtracted energy
+density,
+\begin{equation}
+  \delta\mathcal{E}_{j,s}(t)
+  =
+  \bra{\psi_s(t)}
+  \mathcal{H}_j^s
+  \ket{\psi_s(t)}
+  -
+  \bra{\mathrm{vac}}
+  \mathcal{H}_j^s
+  \ket{\mathrm{vac}}.
+  \label{eq:branch_resolved_energy}
+\end{equation}
+Thus, for an initial $a^+$ ($a^-$) wave packet, we plot the
+$\mathcal{H}_j^+$ ($\mathcal{H}_j^-$) contribution. This quantity
+isolates the component associated with the corresponding continuum
+null direction. For $p\neq0$, it is not separately conserved
+because the $p$-dependent terms allow weight to be transferred
+between the two components at finite lattice spacing. Such mixing
+is suppressed for sufficiently smooth low-momentum packets and
+vanishes systematically in the continuum limit.
+
+For $p\neq0$, we also monitor the vacuum-subtracted mixed
+contribution,
+\begin{equation}
+\begin{aligned}
+  \delta\mathcal{E}_{j,\mathrm{int}}^{(s)}(t)
+  ={}&
+  \bra{\psi_s(t)}
+  \mathcal{H}_j^{\mathrm{int}}
+  \ket{\psi_s(t)}
+  \\
+  &-
+  \bra{\mathrm{vac}}
+  \mathcal{H}_j^{\mathrm{int}}
+  \ket{\mathrm{vac}},
+\end{aligned}
+  \label{eq:mixed_energy}
+\end{equation}
+which diagnoses the finite-spacing mixing between the two branches.
+
+Throughout the analysis below, we restrict the time evolution to
+the regime in which the wave packet remains well separated from the
+physical boundaries at $x=0$ and $x=\ell$. We examine the dynamics
+only before the packet reaches either end of the chain, so that
+boundary reflections do not affect the horizon physics discussed
+below.
+
+\section{Wave-packet dynamics in black- and white-hole geometries}
+\label{sec:dynamics}
+
+We now study the real-space dynamics of the wave packets introduced
+in Sec.~\ref{sec:model}. We first examine their propagation in a
+black-hole geometry and compare the lattice dynamics with the
+corresponding continuum null trajectories. We then investigate
+finite-spacing effects associated with additional finite-momentum
+lattice modes, extract the surface gravity from near-horizon
+wave-packet broadening, and finally contrast the results with
+wave-packet dynamics in a white-hole geometry.
+
+Throughout this section, we use the shift profile
+\begin{equation}
+  \beta(x)
+  =
+  A\tanh\left[B(x-x_0)\right]+C,
+  \label{eq:beta_profile}
+\end{equation}
+where $x_0$ is the inflection point of the profile and $A$, $B$,
+and $C$ are real parameters. For branch $s=\pm1$ in
+Eq.~\eqref{eq:null_characteristics}, a horizon occurs at
+$x=x_{\mathrm h}$ when its characteristic velocity vanishes, i.e.,
+\begin{equation}
+  \beta(x_{\mathrm h})=-s.
+  \label{eq:general_horizon_condition}
+\end{equation}
+When the horizon lies within the range of the profile, equivalently
+when
+\begin{equation}
+  \left|
+    \frac{-s-C}{A}
+  \right|
+  <1,
+\end{equation}
+its position is
+\begin{equation}
+  x_{\mathrm h}
+  =
+  x_0
+  +
+  \frac{1}{B}
+  \operatorname{arctanh}
+  \left(
+    \frac{-s-C}{A}
+  \right).
+  \label{eq:horizon_position}
+\end{equation}
+The inflection point $x_0$ coincides with the horizon of branch $s$
+only when $C=-s$.
+
+We denote the corresponding position in lattice units by
+\begin{equation}
+  j_{\mathrm h}
+  =
+  \frac{x_{\mathrm h}}{\varepsilon}
+  =
+  \frac{Lx_{\mathrm h}}{\ell},
+  \label{eq:lattice_horizon_position}
+\end{equation}
+where $j_{\mathrm h}$ is a continuous coordinate in lattice units
+rather than an integer site index. For each geometry considered
+below, $x_{\mathrm h}$ and $j_{\mathrm h}$ refer to the horizon of
+the relevant branch. In particular, the black-hole horizon is
+associated with the $a^-$ branch and satisfies
+$\beta(x_{\mathrm h})=1$, whereas the white-hole horizon is
+associated with the $a^+$ branch and satisfies
+$\beta(x_{\mathrm h})=-1$.
+
+
+\subsection{Black-hole geometry and wave-packet propagation}
+\label{subsec:black_hole_dynamics}
+
+For the black-hole simulations, we set
+\begin{equation}
+  A=0.6,
+  \qquad
+  B=3,
+  \qquad
+  C=0.6,
+  \qquad
+  \ell=2\pi.
+  \label{eq:black_hole_parameters}
+\end{equation}
+The resulting profile increases monotonically from approximately
+$\beta=0$ to $\beta=1.2$ and crosses $\beta=1$ at the
+black-hole horizon. The region $x>x_{\mathrm h}$, where
+$\beta(x)>1$, corresponds to the black-hole interior. The
+characteristic velocity of the $a^+$ branch remains positive
+throughout the system, whereas that of the $a^-$ branch changes
+sign at the horizon. Thus, the two branches propagate in opposite
+directions outside the horizon, whereas both propagate toward
+increasing $x$ inside the horizon. The corresponding change in the
+local causal structure is illustrated schematically in
+Fig.~\ref{fig:local_dispersion}(d).
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{figure/p=0_BH.png}
+  \caption{
+  Wave-packet dynamics in the black-hole geometry for $p=0$ for an
+  initially prepared $a^+$ wave packet outside the horizon.
+  The parameters are $L=300$, $\ell=2\pi$, $A=0.6$, $B=3$,
+  $C=0.6$, and $x_0=2\ell/3$ in the profile defined by
+  Eq.~\eqref{eq:beta_profile}. The horizon is located at
+  $x_{\mathrm h}/\ell\simeq0.709$
+  ($j_{\mathrm h}\simeq213$).
+  The packet is initialized at $j_{\mathrm{ini}}=60$ with
+  $\sigma_{\mathrm{ini}}=0.05L$.
+  Panels (a)--(c) show the vacuum-subtracted contributions
+  $\delta\mathcal{E}_{j,+}(t)$,
+  $\delta\mathcal{E}_{j,-}(t)$, and
+  $\delta\mathcal{E}_{j,\mathrm{int}}^{(+)}(t)$, respectively.
+  Black dotted lines indicate the horizon, and cyan dashed curves
+  show the corresponding continuum null trajectories obtained from
+  Eq.~\eqref{eq:null_characteristics}.
+  }
+  \label{fig:bh_p0}
+\end{figure*}
+
+We use a chain with $L=300$. For wave packets initialized outside
+the black hole, we set $x_0=2\ell/3$, which places the horizon at
+$x_{\mathrm h}/\ell\simeq0.709$, corresponding to
+$j_{\mathrm h}\simeq213$. For complementary wave packets initialized
+inside the black hole, we instead use $x_0=\ell/3$, giving
+$x_{\mathrm h}/\ell\simeq0.376$ and
+$j_{\mathrm h}\simeq113$. These choices provide sufficient
+propagation distance in the relevant direction while keeping the
+packets well separated from the physical boundaries.
+
+We first consider $p=0$, for which the $a^+$ and $a^-$ components
+are exactly decoupled at finite lattice spacing.
+Figure~\ref{fig:bh_p0} shows an $a^+$ wave packet initialized
+outside the horizon. It propagates toward the horizon and enters
+the black-hole interior, while its center closely follows the
+corresponding continuum null trajectory.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{figure/p=0_BH_aminus.png}
+  \caption{
+  Wave-packet dynamics in the black-hole geometry for $p=0$ for an
+  initially prepared $a^-$ wave packet outside the horizon.
+  The parameters and horizon position are the same as in
+  Fig.~\ref{fig:bh_p0}, except that the packet is initialized at
+  $j_{\mathrm{ini}}=120$.
+  Panels (a)--(c) show the vacuum-subtracted contributions
+  $\delta\mathcal{E}_{j,+}(t)$,
+  $\delta\mathcal{E}_{j,-}(t)$, and
+  $\delta\mathcal{E}_{j,\mathrm{int}}^{(-)}(t)$, respectively.
+  Black dotted lines indicate the horizon, and cyan dashed curves
+  show the corresponding continuum null trajectories obtained from
+  Eq.~\eqref{eq:null_characteristics}.
+  }
+  \label{fig:bh_p0_aminus}
+\end{figure*}
+
+Figure~\ref{fig:bh_p0_aminus} shows the corresponding $a^-$ packet,
+which propagates away from the horizon and again follows the
+continuum null trajectory. For packets initialized inside the
+horizon, both characteristic velocities are positive; complementary
+simulations therefore show both branches propagating toward
+increasing $x$, with neither packet returning to the exterior, in
+agreement with the continuum causal structure.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{figure/p=1_BH.png}
+  \caption{
+  Wave-packet dynamics in the black-hole geometry for $p=1$ for an
+  initially prepared $a^+$ wave packet outside the horizon.
+  The system parameters, horizon position, and initial condition are
+  the same as in Fig.~\ref{fig:bh_p0}.
+  Panels (a)--(c) show the vacuum-subtracted contributions
+  $\delta\mathcal{E}_{j,+}(t)$,
+  $\delta\mathcal{E}_{j,-}(t)$, and
+  $\delta\mathcal{E}_{j,\mathrm{int}}^{(+)}(t)$, respectively.
+  Black dotted lines indicate the horizon, and cyan dashed curves
+  show the continuum null trajectories obtained from
+  Eq.~\eqref{eq:null_characteristics}.
+  Short-wavelength modulations become pronounced in the black-hole
+  interior.
+  }
+  \label{fig:bh_p1}
+\end{figure*}
+
+We next consider $p=1$. As shown in Fig.~\ref{fig:bh_p1}, an $a^+$
+wave packet initialized outside the horizon enters the black-hole
+interior along the corresponding continuum null trajectory. Thus,
+despite finite-spacing mixing between the two components, the
+dominant dynamics of the smooth low-momentum packet accurately
+reproduces the continuum causal propagation.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{figure/p=1_BH_aminus.png}
+  \caption{
+  Wave-packet dynamics in the black-hole geometry for $p=1$ for an
+  initially prepared $a^-$ wave packet outside the horizon.
+  The parameters and horizon position are the same as in
+  Fig.~\ref{fig:bh_p1}, except that the packet is initialized at
+  $j_{\mathrm{ini}}=120$.
+  Panels (a)--(c) show the vacuum-subtracted contributions
+  $\delta\mathcal{E}_{j,+}(t)$,
+  $\delta\mathcal{E}_{j,-}(t)$, and
+  $\delta\mathcal{E}_{j,\mathrm{int}}^{(-)}(t)$, respectively.
+  Black dotted lines indicate the horizon, and cyan dashed curves
+  show the corresponding continuum null trajectories obtained from
+  Eq.~\eqref{eq:null_characteristics}.
+  }
+  \label{fig:bh_p1_aminus}
+\end{figure*}
+
+Figure~\ref{fig:bh_p1_aminus} shows the $a^-$ packet propagating
+away from the horizon along the corresponding continuum null
+trajectory. For the $a^+$ packet in Fig.~\ref{fig:bh_p1}, pronounced
+short-wavelength modulations appear within the dominant wave-packet
+envelope after it enters the black-hole interior. Complementary
+simulations initialized directly inside the horizon exhibit the
+same one-way causal propagation, with the modulation already present
+at the initial time. Nevertheless, the center of the modulated
+envelope continues to follow the corresponding continuum null
+trajectory.
+
+\subsection{Finite-momentum lattice structure inside the horizon}
+\label{subsec:finite_momentum_modes}
+
+We now examine the origin of the short-wavelength modulation
+observed for $p=1$. As discussed in
+Sec.~\ref{subsec:dispersion}, the Wilson-like term lifts the
+zero-energy modes at the Brillouin-zone boundary but does not
+eliminate the additional finite-momentum crossings that appear in
+the overtilted region $\beta>1$. Their positions are given by
+Eq.~\eqref{eq:finite_momentum_crossing}. For $p=1$ and
+$\beta=1.2$, representative of the deep black-hole interior in the
+present simulations, the crossing occurs at
+$\kappa_\ast\simeq1.171$.
+
+\begin{figure}[tbp]
+  \includegraphics[width=\linewidth]{figure/doubler_fft.png}
+  \caption{
+  Finite-momentum structure associated with the modulated
+  wave-packet dynamics for $p=1$.
+  (a) Local dispersion relation at $\beta=1.2$, representative of
+  the deep black-hole interior. Red circles mark the additional
+  zero-energy crossings at $\kappa=\pm\kappa_\ast$, where
+  $\kappa_\ast\simeq1.171$ is obtained from
+  Eq.~\eqref{eq:finite_momentum_crossing}.
+  (b) Spatial Fourier spectrum of the wave-packet profile in
+  Fig.~\ref{fig:bh_p1}(a) at
+  $t=0$, $3$, $3.5$, and $4$, normalized at each time by its
+  maximum value. The black dotted line indicates $\kappa_\ast$.
+  The initial peak near $\kappa=0$ represents the smooth
+  low-momentum component, whereas a secondary peak develops near
+  the finite-momentum crossing after the packet enters the
+  black-hole interior.
+  }
+  \label{fig:doubler_fft}
+\end{figure}
+
+Figure~\ref{fig:doubler_fft}(a) shows that the local spectrum in
+the black-hole interior contains, in addition to the low-momentum
+mode, a low-energy finite-momentum branch associated with the
+crossing at $\kappa=\kappa_\ast$.
+Figure~\ref{fig:doubler_fft}(b) shows that the initial Fourier
+spectrum of the packet in Fig.~\ref{fig:bh_p1}(a) is concentrated
+near $\kappa=0$, whereas a secondary peak develops near
+$\kappa_\ast$ after the packet enters the region $\beta>1$.
+The proximity of this secondary peak to the finite-momentum
+crossing supports the interpretation that the short-wavelength
+modulation originates from the additional lattice branch present
+in the overtilted region.
+
+The modulation already visible at the initial time for packets
+prepared directly in the overtilted region can be understood in
+terms of the structure of the prepared state. The wave packet is
+constructed by applying a smooth superposition of the local
+Majorana operators to the inhomogeneous BdG vacuum. Although the
+static vacuum contribution is subtracted from the plotted energy
+density, the connected matrix elements determining the
+excited-state profile can retain the finite-momentum structure
+encoded in the vacuum correlations and local BdG mode functions.
+A packet prepared directly in the overtilted region can therefore
+exhibit short-wavelength modulation already at the initial time.
+
+Although the finite-momentum branch can have a group velocity
+opposite to that of the low-momentum branch, the numerical dynamics
+does not exhibit a clearly separated counterpropagating packet.
+Instead, the finite-momentum structure appears as a modulation
+embedded within the dominant wave-packet envelope, whose center
+continues to follow the corresponding continuum null trajectory.
+Within the time window considered here, this lattice-induced
+modulation remains confined to the black-hole interior and does not
+modify the exterior causal dynamics. It therefore does not
+compromise the reproduction of the black-hole physics examined
+outside the horizon.
+
+\subsection{Extraction of the surface gravity}
+\label{subsec:surface_gravity}
+
+We next demonstrate that the surface gravity can be extracted from
+the near-horizon broadening of a wave packet. Consider an $a^-$
+wave packet localized in the exterior region close to the
+black-hole horizon. For this branch, the null-trajectory equation
+\eqref{eq:null_characteristics} gives
+$dx/dt=\beta(x)-1$. For the monotonically increasing profile
+considered here, the exterior region lies at $x<x_{\mathrm h}$,
+where $\beta(x)<1$. The packet therefore propagates toward
+decreasing $x$, away from the horizon, while being stretched by the
+spatially varying characteristic velocity.
+
+Writing $\xi=x-x_{\mathrm h}$ and linearizing the shift profile
+near the horizon, where $\beta(x_{\mathrm h})=1$, we obtain
+\begin{equation}
+  \frac{d\xi}{dt}
+  \simeq
+  \beta'(x_{\mathrm h})\xi.
+  \label{eq:near_horizon_linearization}
+\end{equation}
+The surface gravity is
+\begin{equation}
+  \kappa_{\mathrm h}
+  =
+  \left|
+    \beta'(x_{\mathrm h})
+  \right|
+  =
+  \left.
+  \frac{1}{2}
+  \left|
+    \partial_x\left(1-\beta^2\right)
+  \right|
+  \right|_{x=x_{\mathrm h}}.
+  \label{eq:surface_gravity}
+\end{equation}
+For the monotonically increasing black-hole profile,
+$\beta'(x_{\mathrm h})=\kappa_{\mathrm h}>0$, and hence
+\begin{equation}
+  \xi(t)
+  \simeq
+  \xi(0)e^{\kappa_{\mathrm h}t}.
+  \label{eq:near_horizon_separation}
+\end{equation}
+Thus, while a sufficiently narrow packet remains within the
+linear near-horizon regime, its spatial width is expected to grow
+exponentially.
+
+To quantify this broadening, we use the vacuum-subtracted
+branch-resolved energy density
+$\delta\mathcal{E}_{j,-}(t)$ as a spatial weight. This quantity
+remains positive in the exterior region considered here. Defining
+$x_j=\varepsilon j$, we introduce the center and standard deviation
+of the energy-density profile as
+\begin{align}
+  \bar{x}_{\mathcal E}(t)
+  &=
+  \frac{
+    \displaystyle
+    \sum_j
+    x_j\,
+    \delta\mathcal{E}_{j,-}(t)
+  }{
+    \displaystyle
+    \sum_j
+    \delta\mathcal{E}_{j,-}(t)
+  },
+  \label{eq:energy_center}
+  \\
+  \sigma_{\mathcal E}^2(t)
+  &=
+  \frac{
+    \displaystyle
+    \sum_j
+    \left[
+      x_j-\bar{x}_{\mathcal E}(t)
+    \right]^2
+    \delta\mathcal{E}_{j,-}(t)
+  }{
+    \displaystyle
+    \sum_j
+    \delta\mathcal{E}_{j,-}(t)
+  }.
+  \label{eq:energy_width}
+\end{align}
+Since all separations from the horizon scale as
+$e^{\kappa_{\mathrm h}t}$ in the linearized dynamics, the change in
+the wave-packet width is expected to obey
+\begin{equation}
+  \delta\sigma_{\mathcal E}(t)
+  \equiv
+  \sigma_{\mathcal E}(t)
+  -
+  \sigma_{\mathcal E}(0)
+  \simeq
+  a\left(
+    e^{\kappa_{\mathrm h}t}-1
+  \right),
+  \label{eq:sigma_kappa}
+\end{equation}
+where $a$ is a prefactor. We emphasize that
+$\sigma_{\mathcal E}(0)$ is calculated directly from the initial
+energy-density profile and is not identified with the Gaussian
+width parameter $\sigma_{\mathrm{ini}}$ used to prepare the state.
+
+For the numerical analysis, we choose
+$A=B=C=1$, $\ell=2\pi$, and $x_0=\ell/2=\pi$.
+Since $C=1$, the inflection point coincides with the $a^-$ horizon,
+which is located at
+$x_{\mathrm h}/\ell=1/2$ and
+$j_{\mathrm h}=L/2$, with exact surface gravity
+$\kappa_{\mathrm h}=1$. We set $L=500$ and prepare an $a^-$ wave
+packet immediately outside the horizon with
+$j_{\mathrm{ini}}=245$ and
+$\sigma_{\mathrm{ini}}=0.003L$.
+Here, $\sigma_{\mathrm{ini}}$ is the width parameter of the
+Gaussian amplitude used to construct the state, whereas
+$\sigma_{\mathcal E}(t)$ is the standard deviation measured from
+the resulting energy-density profile.
+
+We extract the surface gravity by fitting the numerical broadening
+over $t\in[0,1]$ to
+\begin{equation}
+  \delta\sigma_{\mathcal E}(t)
+  =
+  a\left[
+    e^{\kappa_{\mathrm h}^{\mathrm{fit}}t}-1
+  \right],
+  \label{eq:surface_gravity_fit}
+\end{equation}
+with $a$ and $\kappa_{\mathrm h}^{\mathrm{fit}}$ treated as fitting
+parameters. During this interval, the wave-packet center remains in
+the exterior near-horizon region, and the packet stays well
+separated from the physical boundaries.
+
+\begin{figure}[tbp]
+  \includegraphics[width=\linewidth]{figure/sg.png}
+  \caption{
+  Extraction of the surface gravity from near-horizon wave-packet
+  broadening. The parameters are $L=500$, $A=B=C=1$,
+  $x_0=\ell/2$, $j_{\mathrm{ini}}=245$, and
+  $\sigma_{\mathrm{ini}}=0.003L$.
+  The horizon is located at $x_{\mathrm h}/\ell=1/2$
+  ($j_{\mathrm h}=250$), and the exact surface gravity is
+  $\kappa_{\mathrm h}=1$.
+  Blue dots show the numerical change in the standard deviation of
+  the branch-resolved energy density,
+  $\delta\sigma_{\mathcal E}(t)
+  =\sigma_{\mathcal E}(t)-\sigma_{\mathcal E}(0)$.
+  Red curves show the near-horizon prediction
+  $a(e^{\kappa_{\mathrm h}t}-1)$ with
+  $\kappa_{\mathrm h}=1$, where $a$ fixes the vertical scale.
+  The fitted values $\kappa_{\mathrm h}^{\mathrm{fit}}$ are obtained
+  separately from fits to
+  $a[e^{\kappa_{\mathrm h}^{\mathrm{fit}}t}-1]$
+  over $t\in[0,1]$.
+  (a) For $p=0$, the fitted value is
+  $\kappa_{\mathrm h}^{\mathrm{fit}}=1.0332$, with a relative error
+  of approximately $3.3\%$.
+  (b) For $p=1$, the fitted value is
+  $\kappa_{\mathrm h}^{\mathrm{fit}}=0.9514$, with a relative error
+  of approximately $4.9\%$.
+  }
+  \label{fig:sg}
+\end{figure}
+
+Figure~\ref{fig:sg} compares the numerical broadening with the
+near-horizon prediction. For $p=0$, the fitted growth rate
+$\kappa_{\mathrm h}^{\mathrm{fit}}=1.0332$ agrees with the exact
+surface gravity $\kappa_{\mathrm h}=1$ within a relative error of
+approximately $3.3\%$. Small deviations at later times arise as the
+broadened packet begins to probe regions in which the linearization
+in Eq.~\eqref{eq:near_horizon_linearization} becomes less accurate.
+The close agreement demonstrates that the geometrical surface
+gravity is directly encoded in the real-time deformation of the
+lattice wave packet.
+
+For $p=1$, the fitted growth rate
+$\kappa_{\mathrm h}^{\mathrm{fit}}=0.9514$ differs from the exact
+value by approximately $4.9\%$. In this case, the geometrical stretching is
+accompanied by finite-spacing dispersion and deformation of the
+packet, so that the evolution of $\sigma_{\mathcal E}(t)$ is not
+governed solely by the exponential near-horizon stretching.
+Nevertheless, the numerical broadening retains the expected
+exponential trend and provides a quantitative estimate of the
+surface gravity. The comparison between $p=0$ and $p=1$ also
+illustrates how the lattice regularization affects the accuracy with
+which continuum geometrical information can be extracted at finite
+lattice spacing.
+
+\subsection{White-hole dynamics and ultraviolet cutoff effects}
+\label{subsec:white_hole}
+
+We finally consider wave-packet dynamics in a white-hole geometry.
+At the continuum level, the white-hole geometry is related to the
+black-hole geometry by time reversal. Under
+\begin{equation}
+  t\rightarrow -t,
+  \qquad
+  \beta(x)\rightarrow-\beta(x),
+  \qquad
+  s\rightarrow-s,
+  \label{eq:bh_wh_time_reversal}
+\end{equation}
+the Painlev\'e--Gullstrand metric retains its form, and the null
+trajectory in Eq.~\eqref{eq:null_characteristics} is mapped onto
+that of the opposite branch. Consequently, the exponential
+stretching of an $a^-$ wave packet propagating away from a
+black-hole horizon is mapped onto the exponential compression of an
+$a^+$ wave packet approaching a white-hole horizon.
+
+We use the shift profile in Eq.~\eqref{eq:beta_profile} with
+\begin{equation}
+  A=C=-0.6,
+  \qquad
+  B=3,
+  \qquad
+  x_0=\frac{2\ell}{3},
+  \qquad
+  \ell=2\pi.
+  \label{eq:white_hole_parameters}
+\end{equation}
+The resulting profile decreases monotonically from approximately
+$\beta=0$ to $\beta=-1.2$ and crosses $\beta=-1$ at the
+white-hole horizon. For $L=300$, the horizon is located at
+$x_{\mathrm h}/\ell\simeq0.709$, corresponding to
+$j_{\mathrm h}\simeq213$. The region $x>x_{\mathrm h}$, where
+$\beta(x)<-1$, corresponds to the white-hole interior. The
+characteristic velocity of the $a^-$ branch remains negative
+throughout the system, whereas that of the $a^+$ branch changes
+sign at the horizon. An $a^+$ wave packet in the exterior therefore
+propagates toward increasing $x$ and approaches the horizon, with
+its characteristic velocity decreasing in magnitude.
+
+Writing $\xi=x-x_{\mathrm h}$ and using the surface gravity defined
+in Eq.~\eqref{eq:surface_gravity}, the near-horizon $a^+$
+trajectory satisfies
+\begin{equation}
+  \frac{d\xi}{dt}
+  \simeq
+  -\kappa_{\mathrm h}\xi.
+  \label{eq:white_hole_near_horizon}
+\end{equation}
+For the parameters in Eq.~\eqref{eq:white_hole_parameters},
+$\kappa_{\mathrm h}=1$. Thus, both the distance from the horizon
+and the width of a sufficiently narrow wave packet decrease
+exponentially. In particular,
+\begin{equation}
+  \sigma_{\mathcal E}(t)
+  \simeq
+  \sigma_{\mathcal E}(0)
+  e^{-\kappa_{\mathrm h}t}
+  \label{eq:white_hole_compression}
+\end{equation}
+while the packet remains within the linear near-horizon regime.
+
+\begin{figure}[tbp]
+  \centering
+\setlength{\whiteholepanelheight}{0.675\linewidth}
+  \makebox[\linewidth][c]{%
+    \includegraphics[height=\whiteholepanelheight,clip,trim=0bp 0bp 270bp 0bp]{figure/WH_p=0.png}%
+    \hspace{0pt}%
+    \includegraphics[height=\whiteholepanelheight,clip,trim=221.4bp 0bp 208.2bp 0bp]{figure/WH_p=0.png}%
+  }\par
+  \vspace{2pt}
+  \makebox[\linewidth][c]{%
+    \hspace{0.0225\whiteholepanelheight}%
+    \includegraphics[height=\whiteholepanelheight,clip,trim=276bp 0bp 0bp 0bp]{figure/WH_p=0.png}%
+    \hspace{0.3246\whiteholepanelheight}%
+  }
+  \caption{
+  Wave-packet dynamics in the white-hole geometry for $p=0$.
+  The shift-profile parameters are
+  $A=C=-0.6$, $B=3$, $x_0=2\ell/3$, and $\ell=2\pi$.
+  (a) Space-time profile of the vacuum-subtracted
+  branch-resolved energy density
+  $\delta\mathcal{E}_{j,+}(t)$ for
+  $L=300$, $j_{\mathrm{ini}}=0.2L$, and
+  $\sigma_{\mathrm{ini}}=0.05L$.
+  The black dotted line indicates the white-hole horizon at
+  $x_{\mathrm h}/\ell\simeq0.709$
+  ($j_{\mathrm h}\simeq213$).
+  The packet is compressed as it approaches the horizon but is
+  eventually reflected when its width reaches the lattice scale.
+  (b) Lattice stagnation time $T_{\mathrm{lat}}$ as a function of
+  $\ln L$ for $L=100,200,\ldots,800$, using the same continuum
+  profile and initial conditions.
+  Blue dots show the numerical results. Their approximately linear
+  dependence on $\ln L$ is consistent with the cutoff-time scaling
+  derived in the text.
+  }
+  \label{fig:wh_p0}
+\end{figure}
+
+We first consider $p=0$, for which the $a^+$ and $a^-$ components
+are exactly decoupled at finite lattice spacing. As shown in
+Fig.~\ref{fig:wh_p0}(a), the $a^+$ packet initially propagates
+toward the white-hole horizon and becomes progressively narrower,
+in agreement with the continuum near-horizon dynamics. In the
+continuum theory, the packet approaches the horizon asymptotically
+while undergoing exponential compression and never enters the
+white-hole interior.
+
+On a finite lattice, however, this compression cannot continue
+indefinitely. Once the packet width becomes comparable to the
+lattice spacing $\varepsilon$, the smooth low-momentum description
+breaks down. The packet reaches a minimum width and is subsequently
+reflected. This late-time reflection is therefore a finite-spacing
+effect rather than a feature of the target continuum white-hole
+spacetime.
+
+This behavior may be viewed as a lattice analogue of the
+trans-Planckian problem, in which horizon dynamics drives initially
+low-energy modes toward a regime where their evolution becomes
+sensitive to ultraviolet dispersion and microscopic regularization
+\cite{Jacobson1991,Jacobson1993,Unruh1995,
+Corley1996,Akhmedov2024}. As the packet approaches the white-hole
+horizon, its characteristic wavelength is driven exponentially
+toward the ultraviolet cutoff set by the lattice spacing
+$\varepsilon$, while its characteristic wave number grows
+exponentially. Once the packet reaches this cutoff scale, its
+dynamics becomes sensitive to the microscopic regularization,
+producing the observed stagnation and reflection. Here,
+$\varepsilon$ plays the role of a generic ultraviolet cutoff and is
+not identified with a physical Planck length.
+
+The time required to reach the cutoff follows directly from the
+exponential compression. Defining $T_{\mathrm{cut}}$ by
+$\sigma_{\mathcal E}(T_{\mathrm{cut}})\sim\varepsilon$,
+Eq.~\eqref{eq:white_hole_compression} gives
+\begin{align}
+  T_{\mathrm{cut}}
+  &\sim
+  \frac{1}{\kappa_{\mathrm h}}
+  \ln\left[
+    \frac{\sigma_{\mathcal E}(0)}{\varepsilon}
+  \right]
+  \nonumber\\
+  &=
+  \frac{1}{\kappa_{\mathrm h}}\ln L
+  +\mathrm{const.},
+  \label{eq:T_logL}
+\end{align}
+where the continuum system size $\ell$ and the initial physical
+wave-packet width are held fixed. In the numerical simulations,
+this is achieved by taking
+$\sigma_{\mathrm{ini}}=0.05L$ as $L$ is varied.
+
+To test this prediction, we define the lattice stagnation time
+$T_{\mathrm{lat}}$ from the numerical evolution. We first identify
+an onset time $t_{\mathrm{in}}$ at which the packet enters the
+near-horizon compression regime. Operationally, after the onset of
+compression, $t_{\mathrm{in}}$ is taken as the first time at which
+$|\partial_x^2\beta(\bar{x}_{\mathcal E}(t))|<0.1$. We then
+determine the time $t_{\mathrm{min}}$ at which
+$\sigma_{\mathcal E}(t)$ reaches its minimum and define
+\begin{equation}
+  T_{\mathrm{lat}}
+  =
+  t_{\mathrm{min}}-t_{\mathrm{in}}.
+  \label{eq:lattice_stagnation_time}
+\end{equation}
+As shown in Fig.~\ref{fig:wh_p0}(b),
+$T_{\mathrm{lat}}$ depends approximately linearly on $\ln L$, in
+agreement with Eq.~\eqref{eq:T_logL}. This comparison tests the
+logarithmic dependence rather than its precise coefficient:
+$T_{\mathrm{lat}}$ is defined from the nonlinear lattice
+stagnation and reflection, and its slope need not coincide exactly
+with $1/\kappa_{\mathrm h}$. Nevertheless, the observed scaling
+supports the interpretation that the reflection occurs when the
+exponentially compressed packet reaches the ultraviolet lattice
+scale.
+
+\begin{figure*}[tbp]
+  \centering
+  \setlength{\whiteholepanelheight}{0.265\textwidth}
+  \begin{minipage}[t]{0.329\textwidth}
+    \centering
+    \makebox[\linewidth][c]{%
+      \includegraphics[height=\whiteholepanelheight,clip,trim=0bp 0bp 499.32bp 0bp]{figure/WH_p=1.png}%
+      \hspace{0pt}%
+      \includegraphics[height=\whiteholepanelheight,clip,trim=167.76bp 0bp 445.56bp 0bp]{figure/WH_p=1.png}%
+    }
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.329\textwidth}
+    \centering
+    \makebox[\linewidth][c]{%
+      \includegraphics[height=\whiteholepanelheight,clip,trim=214.80bp 0bp 283.56bp 0bp]{figure/WH_p=1.png}%
+      \hspace{0pt}%
+      \includegraphics[height=\whiteholepanelheight,clip,trim=383.04bp 0bp 227.16bp 0bp]{figure/WH_p=1.png}%
+    }
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.329\textwidth}
+    \centering
+    \makebox[\linewidth][c]{%
+      \includegraphics[height=\whiteholepanelheight,clip,trim=436.80bp 0bp 62.76bp 0bp]{figure/WH_p=1.png}%
+      \hspace{0pt}%
+      \includegraphics[height=\whiteholepanelheight,clip,trim=604.08bp 0bp 0bp 0bp]{figure/WH_p=1.png}%
+    }
+  \end{minipage}
+  \caption{
+  Wave-packet dynamics in the white-hole geometry for $p=1$.
+  The parameters are $L=300$, $A=C=-0.6$, $B=3$,
+  $x_0=2\ell/3$, $j_{\mathrm{ini}}=0.2L$, and
+  $\sigma_{\mathrm{ini}}=0.05L$.
+  The white-hole horizon is located at
+  $x_{\mathrm h}/\ell\simeq0.709$
+  ($j_{\mathrm h}\simeq213$).
+  Panels (a)--(c) show the vacuum-subtracted contributions
+  $\delta\mathcal{E}_{j,+}(t)$,
+  $\delta\mathcal{E}_{j,-}(t)$, and
+  $\delta\mathcal{E}_{j,\mathrm{int}}^{(+)}(t)$, respectively.
+  The black dotted line indicates the horizon.
+  Unlike the $p=0$ case, finite-spacing mixing between the two
+  components produces mode conversion and partial transmission into
+  the white-hole interior.
+  }
+  \label{fig:wh_p1}
+\end{figure*}
+
+For $p=1$, the initial low-momentum dynamics again follows the
+continuum $a^+$ trajectory, and the packet is compressed as it
+approaches the white-hole horizon. As the packet becomes narrower,
+however, its momentum distribution extends beyond the low-momentum
+regime in which the $p$-dependent mixing is suppressed. The
+Wilson-like terms then become important and couple the $a^+$ and
+$a^-$ components.
+
+As shown in Fig.~\ref{fig:wh_p1}, this coupling leads to mode
+conversion near the lattice cutoff. In contrast to the $p=0$ case,
+part of the packet is transmitted across the horizon rather than
+being entirely reflected. This transmission is not a continuum
+white-hole effect: it occurs only after the exponentially compressed
+packet reaches wavelengths at which the lattice regularization
+becomes relevant. The difference between the $p=0$ and $p=1$
+dynamics therefore illustrates directly how near-horizon evolution
+becomes sensitive to ultraviolet physics in the trans-cutoff regime.
+
+\section{Summary and discussion}
+\label{sec:summary}
+
+We have investigated real-time particle dynamics in a digital
+black-hole spacetime encoded in a local one-dimensional spin model.
+Using the field-to-spin dictionary for a massless Majorana field, we
+constructed a lattice realization of a static
+Painlev\'e--Gullstrand geometry and analyzed its exactly equivalent
+quadratic fermion representation. Smooth wave packets reproduce the
+continuum null trajectories both outside and inside the black-hole
+horizon. In particular, packets initialized inside the horizon
+propagate further into the interior and do not return to the
+exterior. These results provide a direct dynamical validation that
+the field-to-spin dictionary reproduces the causal structure of the
+target spacetime, beyond agreement at the level of the local
+low-momentum dispersion.
+
+Comparing the two lattice realizations, $p=0$ and $p=1$, allowed us
+to separate universal continuum propagation from
+regularization-dependent finite-spacing effects. Both choices
+reproduce the same low-momentum causal dynamics, whereas their
+finite-momentum structures differ. For $p=1$, additional
+finite-momentum modes in the overtilted region generate a
+short-wavelength modulation inside the black hole. The modulation
+remains embedded in the dominant wave-packet envelope, whose center
+continues to follow the continuum null trajectory, and does not
+modify the exterior propagation within the time window considered.
+We also showed that the surface gravity can be extracted from the
+exponential broadening of a near-horizon wave packet. The excellent
+agreement obtained for $p=0$, together with the larger
+finite-spacing correction for $p=1$, demonstrates both the
+geometrical information encoded in the lattice dynamics and its
+sensitivity to the ultraviolet regularization.
+
+The white-hole dynamics provides a direct and quantitative lattice
+analogue of the trans-Planckian problem. An initially smooth
+low-momentum packet approaching the white-hole horizon is
+exponentially compressed and dynamically driven toward the
+ultraviolet cutoff. Once its width becomes comparable to the lattice
+spacing, the continuum description breaks down and the subsequent
+evolution becomes sensitive to the microscopic regularization. For
+$p=0$, this produces stagnation and reflection, whereas for $p=1$,
+finite-spacing mixing leads to mode conversion and partial
+transmission. The approximately logarithmic growth of the
+stagnation time with system size is consistent with the time
+required for the exponentially blueshifted packet to reach the
+lattice cutoff. Importantly, the ultraviolet regime is reached not
+by imposing an artificially high-energy initial state, but through
+the near-horizon dynamics itself.
+
+Although the spin Hamiltonian is local and compatible with
+qubit-based platforms, preparing the branch-selective fermionic wave
+packets requires a nontrivial protocol because the corresponding
+operators contain Jordan--Wigner parity strings in the spin
+representation. Such states can in principle be prepared using
+compiled parity-string operations or fermionic Gaussian-state
+circuits, but developing an optimized end-to-end implementation is
+beyond the scope of this work. The principal contribution of the
+present study is instead to validate and calibrate the
+field-to-spin dictionary and to establish quantitative benchmarks
+that distinguish continuum black-hole physics from
+regularization-dependent lattice effects. The present results
+provide a calibrated basis for future studies of dynamical horizons,
+Hawking radiation, interacting quantum fields, and experimentally
+accessible state-preparation and measurement protocols.
+
+\begin{acknowledgments}
+We would like to thank $daredare$ for useful discussions. The work of D.Y. was supported by JSPS KAKENHI Grant Nos.~ JP23K25830, JP24K06890, and JP26K00664, and JST PRESTO Grant No.~JPMJPR245D.
+\end{acknowledgments}
+
+\bibliography{books}
+
+\end{document}

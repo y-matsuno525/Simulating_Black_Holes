@@ -12,10 +12,14 @@ sys.path.insert(0, str(REPO / "analysis"))
 from dispersion_relation import dispersion_bands  # noqa: E402
 
 try:
-    from .common import DT_DEFAULT, ensure_fig_dir
+    from .common import ensure_fig_dir
+    from .exact_profiles import compute_h_plus_profiles, save_profile_provenance
+    from .reproduce_panel import PANEL_SPECS, build_prepared_config
     from .style import configure_figure5_style
 except ImportError:
-    from common import DT_DEFAULT, ensure_fig_dir
+    from common import ensure_fig_dir
+    from exact_profiles import compute_h_plus_profiles, save_profile_provenance
+    from reproduce_panel import PANEL_SPECS, build_prepared_config
     from style import configure_figure5_style
 
 
@@ -24,7 +28,7 @@ P = 1
 FFT_TIMES = (0.0, 3.0, 3.5, 4.0)
 GENERATED_DIR = REPO / "paper_figures" / "generated" / "panels" / "FIG4"
 PAPER_FIGURE_DIR = REPO / "paper" / "figure"
-FFT_RUN_DIR = REPO / "paper_reproduction" / "runs" / "FIG3a"
+FFT_RUN_DIR = REPO / "paper_reproduction" / "runs" / "FIG4b_exact"
 
 
 def doubler_k(beta: float = BETA_INTERIOR) -> float:
@@ -33,12 +37,14 @@ def doubler_k(beta: float = BETA_INTERIOR) -> float:
 
 
 def fft_snapshots(data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Transform profiles already evaluated at ``FFT_TIMES``."""
+    if data.shape[0] != len(FFT_TIMES):
+        raise ValueError(f"expected {len(FFT_TIMES)} exact snapshots, got {data.shape[0]}")
     n_sites = data.shape[1]
     k = 2.0 * np.pi * np.fft.rfftfreq(n_sites, d=1.0)
     spectra = []
-    for tval in FFT_TIMES:
-        row = min(int(round(tval / DT_DEFAULT)), data.shape[0] - 1)
-        profile = data[row].astype(float)
+    for profile in data:
+        profile = profile.astype(float)
         profile = profile - profile.mean()
         spectra.append(np.abs(np.fft.rfft(profile)))
     spectra = np.asarray(spectra)
@@ -98,11 +104,10 @@ def set_positive_k_ticks(ax, kd: float) -> None:
 
 
 def draw_fft_panel(ax, kd: float) -> None:
-    csv = FFT_RUN_DIR / "H_p_val.csv"
-    if not csv.exists():
-        raise FileNotFoundError(f"{csv}. Run `python paper_figures/reproduce_panel.py FIG3a --rerun` first.")
-
-    data = load_time_site_data(csv)
+    config = build_prepared_config(PANEL_SPECS["fig3a"].overrides)
+    sample_times = np.asarray(FFT_TIMES, dtype=float)
+    data = compute_h_plus_profiles(config, sample_times)
+    save_profile_provenance(FFT_RUN_DIR, config, sample_times, data)
     k, spectra = fft_snapshots(data)
     colors = ("#0072B2", "#E69F00", "#009E73", "#D55E00")
     for tval, spectrum, color in zip(FFT_TIMES, spectra, colors):

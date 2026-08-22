@@ -1,0 +1,49 @@
+{
+  "target": "bhp0aplus",
+  "proposed_figure": 2,
+  "p": 0,
+  "packet": "a+",
+  "source_run": "paper_reproduction/runs/FIG2a",
+  "main_heatmap_observable": "H_p",
+  "cut_times": [
+    2.0,
+    3.5
+  ],
+  "cut_row_indices": {
+    "2": 199,
+    "3.5": 349
+  },
+  "shared_symmetric_cut_ylim": [
+    -2.5753573390754525,
+    2.5753573390754525
+  ],
+  "cuts": [
+    {
+      "time": 2.0,
+      "max_abs": {
+        "H_p": 2.298705637458454,
+        "H_m": 2.8421709430404007e-13,
+        "H_pm": 0.0
+      },
+      "source_csvs": {
+        "H_p": "paper_reproduction/runs/FIG2a/H_p_val.csv",
+        "H_m": "paper_reproduction/runs/FIG2a/H_m_val.csv",
+        "H_pm": "paper_reproduction/runs/FIG2a/H_pm_val.csv"
+      }
+    },
+    {
+      "time": 3.5,
+      "max_abs": {
+        "H_p": 2.4527212753099548,
+        "H_m": 3.410605131648481e-13,
+        "H_pm": 0.0
+      },
+      "source_csvs": {
+        "H_p": "paper_reproduction/runs/FIG2a/H_p_val.csv",
+        "H_m": "paper_reproduction/runs/FIG2a/H_m_val.csv",
+        "H_pm": "paper_reproduction/runs/FIG2a/H_pm_val.csv"
+      }
+    }
+  ],
+  "data_processing": "none; exact stored CSV rows are plotted without rescaling"
+}

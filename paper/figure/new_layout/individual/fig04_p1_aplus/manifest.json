@@ -1,0 +1,54 @@
+{
+  "target": "bhp1aplus",
+  "proposed_figure": 4,
+  "p": 1,
+  "packet": "a+",
+  "source_run": "paper_reproduction/runs/FIG3a",
+  "selected_scale_mode": "component",
+  "common_symmetric_scale": [
+    -50.27126194111531,
+    50.27126194111531
+  ],
+  "panels": [
+    {
+      "panel_id": "fig04a_Hplus",
+      "observable": "H_p",
+      "source_csv": "paper_reproduction/runs/FIG3a/H_p_val.csv",
+      "raw_max_abs": 35.359201113775725,
+      "component_symmetric_scale": [
+        -35.359201113775725,
+        35.359201113775725
+      ],
+      "normalization": "asinh",
+      "asinh_linear_width": 1.0,
+      "t_plot": 4.0
+    },
+    {
+      "panel_id": "fig04b_Hminus",
+      "observable": "H_m",
+      "source_csv": "paper_reproduction/runs/FIG3a/H_m_val.csv",
+      "raw_max_abs": 6.636716057964318,
+      "component_symmetric_scale": [
+        -6.636716057964318,
+        6.636716057964318
+      ],
+      "normalization": "linear",
+      "asinh_linear_width": null,
+      "t_plot": 4.0
+    },
+    {
+      "panel_id": "fig04c_Hint",
+      "observable": "H_pm",
+      "source_csv": "paper_reproduction/runs/FIG3a/H_pm_val.csv",
+      "raw_max_abs": 50.27126194111531,
+      "component_symmetric_scale": [
+        -50.27126194111531,
+        50.27126194111531
+      ],
+      "normalization": "linear",
+      "asinh_linear_width": null,
+      "t_plot": 4.0
+    }
+  ],
+  "data_processing": "none; only Matplotlib color normalization is changed"
+}

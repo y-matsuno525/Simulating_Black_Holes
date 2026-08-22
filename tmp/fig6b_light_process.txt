@@ -1,0 +1,3 @@
+24384
+C:\Users\ymats\ドキュメント\Simulating_Black_Holes\tmp\fig6b_light_20260812_223818.log
+C:\Users\ymats\ドキュメント\Simulating_Black_Holes\tmp\fig6b_light_20260812_223818.err

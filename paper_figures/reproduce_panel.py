@@ -35,6 +35,13 @@ except ImportError:
 REPO = Path(__file__).resolve().parent.parent
 RUN_ROOT = REPO / "paper_reproduction" / "runs"
 PANEL_ROOT = REPO / "paper_figures" / "generated" / "panels"
+PAPER_FIGURE_DIR = REPO / "paper" / "figure"
+PAPER_COMPOSITE_NAMES = {
+    "FIG2": "p=0_BH.png",
+    "FIG3": "p=1_BH.png",
+    "FIG6": "WH_p=0.png",
+    "FIG7": "WH_p=1.png",
+}
 
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
@@ -243,7 +250,7 @@ PANEL_SPECS: dict[str, PanelSpec] = {
         initial_direction="right", beta_center_fraction=2 / 3,
         j0_fraction=60 / 300, t_plot=4.0,
         title=r"FIG3(a) $p=1$, outside packet, $\chi^+$",
-        color_norm="asinh", asinh_linear_width=3.0,
+        color_norm="asinh", asinh_linear_width=1.0,
         geodesic_color="#009FB7", geodesic_linewidth=1.4,
     ),
     "fig3b": _bh_panel(
@@ -310,6 +317,25 @@ SPECIAL_GENERATORS = {
     "fig6b": ("make_fig6b_scaling", "Fig. 6(b) white-hole stagnation scaling"),
 }
 
+# Stable, meaning-based entry points for the proposed black-hole figure layout.
+# The existing FIG2/FIG3 and special numeric targets remain unchanged until the
+# manuscript text and figure numbering are revised by the authors.
+NEW_LAYOUT_TARGETS = {
+    "bhp0aplus",
+    "bhp0aminus",
+    "bhp1aplus",
+    "bhp1aminus",
+    "newlayout",
+}
+
+PROFILE_CUT_TARGETS = {
+    "bhprofilecuts": None,
+    "bhp0apluscuts": "bhp0aplus",
+    "bhp0aminuscuts": "bhp0aminus",
+    "bhp1apluscuts": "bhp1aplus",
+    "bhp1aminuscuts": "bhp1aminus",
+}
+
 
 def normalize_panel_name(name: str) -> str:
     token = re.sub(r"[^a-zA-Z0-9]", "", name).lower()
@@ -364,7 +390,7 @@ def horizon_positions_from_config(spec: PanelSpec) -> list[float]:
     return compute_horizon_positions_from_config(config)
 
 
-def load_panel_plot_data(spec: PanelSpec):
+def load_panel_plot_data(spec: PanelSpec, *, scale_override: float | None = None):
     from matplotlib.colors import AsinhNorm, TwoSlopeNorm
 
     csv = spec.run_dir / f"{spec.observable}_val.csv"
@@ -382,7 +408,11 @@ def load_panel_plot_data(spec: PanelSpec):
     if spec.use_abs:
         data = np.abs(data)
 
-    scale = float(np.nanmax(np.abs(data))) if data.size else 1.0
+    scale = (
+        float(scale_override)
+        if scale_override is not None
+        else (float(np.nanmax(np.abs(data))) if data.size else 1.0)
+    )
     if scale == 0.0 or not np.isfinite(scale):
         scale = 1.0
 
@@ -407,8 +437,24 @@ def configure_matplotlib():
     configure_figure5_style()
 
 
-def draw_panel(fig, ax, spec: PanelSpec):
-    times, data, t_max, norm, vmin, vmax = load_panel_plot_data(spec)
+def draw_panel(
+    fig,
+    ax,
+    spec: PanelSpec,
+    *,
+    scale_override: float | None = None,
+    panel_label_fontsize: float = 11,
+    colorbar_label_rotation: float = 0,
+    colorbar_tick_labelsize: float | None = None,
+    show_ylabel: bool = True,
+    show_geodesic: bool = True,
+    colorbar_ax=None,
+    legend_loc: str = "upper left",
+    legend_fontsize: float | None = None,
+):
+    times, data, t_max, norm, vmin, vmax = load_panel_plot_data(
+        spec, scale_override=scale_override
+    )
 
     im = ax.imshow(
         data,
@@ -432,7 +478,11 @@ def draw_panel(fig, ax, spec: PanelSpec):
             zorder=5,
         )
 
-    geo = load_geodesic(spec.run_dir / "geodesic.dat") if spec.show_geodesic else None
+    geo = (
+        load_geodesic(spec.run_dir / "geodesic.dat")
+        if spec.show_geodesic and show_geodesic
+        else None
+    )
     if geo is not None:
         j_geo, t_geo = geo
         mask = (t_geo >= 0.0) & (t_geo <= t_max)
@@ -447,25 +497,59 @@ def draw_panel(fig, ax, spec: PanelSpec):
         )
 
     if spec.show_legend:
-        ax.legend(loc="upper left", frameon=True, handlelength=1.8, borderpad=0.4)
+        ax.legend(
+            loc=legend_loc,
+            frameon=True,
+            handlelength=1.8,
+            borderpad=0.4,
+            fontsize=legend_fontsize,
+        )
 
     ax.set_xlim(0, L_DEFAULT)
     ax.set_ylim(0, t_max)
     ax.set_xlabel(r"$j$")
-    ax.set_ylabel(r"$t$", rotation=0, labelpad=8)
-    ax.text(-0.12, 1.03, f"({spec.tag})", transform=ax.transAxes, fontsize=11)
+    if show_ylabel:
+        ax.set_ylabel(r"$t$", rotation=0, labelpad=8)
+    else:
+        ax.set_ylabel("")
+    ax.text(
+        -0.12,
+        1.03,
+        f"({spec.tag})",
+        transform=ax.transAxes,
+        fontsize=panel_label_fontsize,
+    )
 
-    cbar = fig.colorbar(im, ax=ax, pad=0.025)
+    if colorbar_ax is None:
+        cbar = fig.colorbar(im, ax=ax, pad=0.025)
+    else:
+        cbar = fig.colorbar(im, cax=colorbar_ax)
     if spec.color_norm == "asinh":
-        scale = float(np.nanmax(np.abs(data)))
+        scale = (
+            float(scale_override)
+            if scale_override is not None
+            else float(np.nanmax(np.abs(data)))
+        )
+        if scale == 0.0 or not np.isfinite(scale):
+            scale = 1.0
         major = 10.0 ** np.floor(np.log10(scale))
         multipliers = (-3, -1, 0, 1, 3) if 3.0 * major <= scale else (-1, 0, 1)
         ticks = [value * major for value in multipliers]
         cbar.set_ticks(ticks)
         cbar.set_ticklabels([f"{value:g}" for value in ticks])
-        cbar.set_label(spec.label, rotation=0, labelpad=16)
+        cbar.set_label(
+            spec.label,
+            rotation=colorbar_label_rotation,
+            labelpad=8 if colorbar_label_rotation else 16,
+        )
     else:
-        cbar.set_label(spec.label, rotation=0, labelpad=10)
+        cbar.set_label(
+            spec.label,
+            rotation=colorbar_label_rotation,
+            labelpad=8 if colorbar_label_rotation else 10,
+        )
+    if colorbar_tick_labelsize is not None:
+        cbar.ax.tick_params(labelsize=colorbar_tick_labelsize)
     return im
 
 
@@ -512,7 +596,7 @@ def plot_composite(specs: list[PanelSpec]) -> Path | None:
             bottom=0.08,
             top=0.96,
             wspace=0.75,
-            hspace=0.62,
+            hspace=0.34,
         )
         axes = np.array(
             [
@@ -541,6 +625,10 @@ def plot_composite(specs: list[PanelSpec]) -> Path | None:
             dpi=600 if ext == "png" else None,
             bbox_inches="tight",
         )
+    paper_name = PAPER_COMPOSITE_NAMES.get(figure_id)
+    if paper_name:
+        PAPER_FIGURE_DIR.mkdir(parents=True, exist_ok=True)
+        fig.savefig(PAPER_FIGURE_DIR / paper_name, dpi=600, bbox_inches="tight")
     plt.close(fig)
     return out_base.with_suffix(".png")
 
@@ -570,6 +658,12 @@ def plot_fig6_composite() -> Path:
             dpi=600 if ext == "png" else None,
             bbox_inches="tight",
         )
+    PAPER_FIGURE_DIR.mkdir(parents=True, exist_ok=True)
+    fig.savefig(
+        PAPER_FIGURE_DIR / PAPER_COMPOSITE_NAMES["FIG6"],
+        dpi=600,
+        bbox_inches="tight",
+    )
     plt.close(fig)
     return out_base.with_suffix(".png")
 
@@ -613,11 +707,35 @@ def reproduce_special(selection: str, *, rerun: bool = False) -> bool:
     return True
 
 
+def reproduce_new_layout(selection: str) -> bool:
+    """Generate proposed layouts without changing current manuscript assets."""
+    key = normalize_panel_name(selection)
+    if key not in NEW_LAYOUT_TARGETS and key not in PROFILE_CUT_TARGETS:
+        return False
+    try:
+        from . import make_new_layout
+    except ImportError:
+        import make_new_layout
+
+    if key == "bhprofilecuts":
+        make_new_layout.generate_all_profile_cuts()
+    elif key in PROFILE_CUT_TARGETS:
+        make_new_layout.generate_profile_cut_target(PROFILE_CUT_TARGETS[key])
+    elif key == "newlayout":
+        make_new_layout.generate_all()
+    else:
+        make_new_layout.generate_target(key)
+    return True
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("selection", help="Panel or figure, e.g. FIG2c, FIG2(c), 2c, or FIG2")
     parser.add_argument("--rerun", action="store_true", help="Recompute the simulation before plotting")
     args = parser.parse_args(argv)
+
+    if reproduce_new_layout(args.selection):
+        return
 
     if reproduce_special(args.selection, rerun=args.rerun):
         return

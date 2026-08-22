@@ -1,0 +1,4 @@
+C:\Users\ymats\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\cbook.py:1719: ComplexWarning: Casting complex values to real discards the imaginary part
+  return math.isfinite(val)
+C:\Users\ymats\AppData\Local\Programs\Python\Python313\Lib\site-packages\matplotlib\cbook.py:1355: ComplexWarning: Casting complex values to real discards the imaginary part
+  return np.asarray(x, float)

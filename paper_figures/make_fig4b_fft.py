@@ -1,9 +1,9 @@
 """Generate the Fig. 4(b) FFT spectrum panel.
 
-The input is the black-hole interior p=1 run used in the manuscript:
-``paper_reproduction/runs/FIG3a/H_p_val.csv``.  The plotted spectrum is the
-positive-k magnitude of the spatial FFT after subtracting the spatial
-mean, normalized by the global maximum over the selected snapshots.
+The profiles are evaluated directly at the four times stated in the
+manuscript caption.  The plotted spectrum is the positive-k magnitude of the
+spatial FFT after subtracting the spatial mean, normalized by the global
+maximum over the selected snapshots.
 """
 
 from __future__ import annotations
@@ -17,46 +17,26 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "analysis"))
 from dispersion_relation import dispersion_bands  # noqa: E402
 
 try:
-    from .common import DT_DEFAULT, ensure_fig_dir
+    from .common import ensure_fig_dir
+    from .exact_profiles import compute_h_plus_profiles, save_profile_provenance
+    from .make_doubler_fft import FFT_RUN_DIR, FFT_TIMES, fft_snapshots
+    from .reproduce_panel import PANEL_SPECS, build_prepared_config
     from .style import configure_figure5_style
 except ImportError:
-    from common import DT_DEFAULT, ensure_fig_dir
+    from common import ensure_fig_dir
+    from exact_profiles import compute_h_plus_profiles, save_profile_provenance
+    from make_doubler_fft import FFT_RUN_DIR, FFT_TIMES, fft_snapshots
+    from reproduce_panel import PANEL_SPECS, build_prepared_config
     from style import configure_figure5_style
 
 
 BETA_INTERIOR = 1.2
 P = 1
-FFT_TIMES = (0.0, 3.0, 3.5, 4.0)
-FFT_RUN_DIR = Path(__file__).resolve().parent.parent / "paper_reproduction" / "runs" / "FIG3a"
-
-
 def doubler_k() -> float:
     """Positive low-energy doubler crossing for beta=1.2, p=1."""
     k, _, em = dispersion_bands(BETA_INTERIOR, P, nk=12000)
     mask = k > 0.3
     return float(k[mask][np.argmin(np.abs(em[mask]))])
-
-
-def fft_snapshots(data: np.ndarray):
-    """Return positive-k FFT spectra for the selected manuscript times."""
-    n_sites = data.shape[1]
-    k = 2.0 * np.pi * np.fft.rfftfreq(n_sites, d=1.0)
-    spectra = []
-    for t in FFT_TIMES:
-        row = min(int(round(t / DT_DEFAULT)), data.shape[0] - 1)
-        profile = data[row].astype(float)
-        profile = profile - profile.mean()
-        spectra.append(np.abs(np.fft.rfft(profile)))
-    spectra = np.asarray(spectra)
-    norm = float(np.max(spectra))
-    if norm == 0.0 or not np.isfinite(norm):
-        norm = 1.0
-    return k, spectra / norm
-
-
-def load_time_site_data(path: Path) -> np.ndarray:
-    raw = np.loadtxt(path, delimiter=",", skiprows=1, dtype=complex)
-    return np.real(raw[:, 1:])
 
 
 def main():
@@ -67,11 +47,10 @@ def main():
 
     configure_figure5_style()
 
-    csv = FFT_RUN_DIR / "H_p_val.csv"
-    if not csv.exists():
-        raise FileNotFoundError(f"{csv}. Run `python paper_figures/reproduce_panel.py FIG3a --rerun` first.")
-
-    data = load_time_site_data(csv)
+    config = build_prepared_config(PANEL_SPECS["fig3a"].overrides)
+    sample_times = np.asarray(FFT_TIMES, dtype=float)
+    data = compute_h_plus_profiles(config, sample_times)
+    save_profile_provenance(FFT_RUN_DIR, config, sample_times, data)
     k, spectra = fft_snapshots(data)
     kd = doubler_k()
 

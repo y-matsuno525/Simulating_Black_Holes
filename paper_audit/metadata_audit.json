@@ -1,0 +1,483 @@
+{
+  "dynamics": {
+    "FIG2a": {
+      "effective_beta_A_B_C_x0": [
+        0.6,
+        3.0,
+        0.6,
+        4.1887902047863905
+      ],
+      "analytic_horizon": {
+        "x_h": 4.457029856858741,
+        "j_h": 212.80749996816942,
+        "kappa": 0.9999999999999992
+      },
+      "selected_branch_horizon": null,
+      "stored_horizon": {
+        "j_h": 212.80750899,
+        "x_h": 4.4570300457
+      },
+      "horizon_error_sites": 9.02183057860384e-06,
+      "geodesic": {
+        "first_time": 0.0,
+        "last_time": 3.8124728358,
+        "initial_j": 59.999999998285084,
+        "last_x": 6.2831853072,
+        "max_path_error_x": 1.4297540928964736e-10,
+        "max_path_error_sites": 6.826572938710282e-09
+      },
+      "conservation_and_boundary": {
+        "integrated_energy_mean": 1.800217075767977,
+        "relative_peak_to_peak_energy_drift": 6.403980965898357e-13,
+        "selected_branch": "H_p",
+        "final_edge_fraction_10_sites_each_side": 0.20843384174452553,
+        "first_time_edge_fraction_gt_0.01": 3.01,
+        "first_time_edge_fraction_gt_0.05": 3.26,
+        "first_time_edge_fraction_gt_0.1": 3.4
+      }
+    },
+    "FIG2b": {
+      "effective_beta_A_B_C_x0": [
+        0.6,
+        3.0,
+        0.6,
+        4.1887902047863905
+      ],
+      "analytic_horizon": {
+        "x_h": 4.457029856858741,
+        "j_h": 212.80749996816942,
+        "kappa": 0.9999999999999992
+      },
+      "selected_branch_horizon": [
+        4.457029856858741,
+        212.80749996816942,
+        0.9999999999999992
+      ],
+      "stored_horizon": {
+        "j_h": 212.80750899,
+        "x_h": 4.4570300457
+      },
+      "horizon_error_sites": 9.02183057860384e-06,
+      "geodesic": {
+        "first_time": 0.0,
+        "last_time": 1.0,
+        "initial_j": 120.00000000134482,
+        "last_x": 1.513282712,
+        "max_path_error_x": 9.621592411690472e-11,
+        "max_path_error_sites": 4.5939719782080275e-09
+      },
+      "conservation_and_boundary": {
+        "integrated_energy_mean": 1.7925492432901862,
+        "relative_peak_to_peak_energy_drift": 4.634008633981391e-13,
+        "selected_branch": "H_m",
+        "final_edge_fraction_10_sites_each_side": 1.2785582917117137e-05,
+        "first_time_edge_fraction_gt_0.01": null,
+        "first_time_edge_fraction_gt_0.05": null,
+        "first_time_edge_fraction_gt_0.1": null
+      }
+    },
+    "FIG2c": {
+      "effective_beta_A_B_C_x0": [
+        0.6,
+        3.0,
+        0.6,
+        2.0943951023931953
+      ],
+      "analytic_horizon": {
+        "x_h": 2.3626347544655455,
+        "j_h": 112.80749996816941,
+        "kappa": 0.9999999999999992
+      },
+      "selected_branch_horizon": null,
+      "stored_horizon": {
+        "j_h": 112.80750923,
+        "x_h": 2.3626349485
+      },
+      "horizon_error_sites": 9.261830584250674e-06,
+      "geodesic": {
+        "first_time": 0.0,
+        "last_time": 1.0,
+        "initial_j": 150.00000000048735,
+        "last_x": 5.3414229584,
+        "max_path_error_x": 1.5852119616965865e-10,
+        "max_path_error_sites": 7.56882958657236e-09
+      },
+      "conservation_and_boundary": {
+        "integrated_energy_mean": 3.9395045618826545,
+        "relative_peak_to_peak_energy_drift": 2.080943602185702e-13,
+        "selected_branch": "H_p",
+        "final_edge_fraction_10_sites_each_side": 0.008650274722686306,
+        "first_time_edge_fraction_gt_0.01": null,
+        "first_time_edge_fraction_gt_0.05": null,
+        "first_time_edge_fraction_gt_0.1": null
+      }
+    },
+    "FIG2d": {
+      "effective_beta_A_B_C_x0": [
+        0.6,
+        3.0,
+        0.6,
+        2.0943951023931953
+      ],
+      "analytic_horizon": {
+        "x_h": 2.3626347544655455,
+        "j_h": 112.80749996816941,
+        "kappa": 0.9999999999999992
+      },
+      "selected_branch_horizon": [
+        2.3626347544655455,
+        112.80749996816941,
+        0.9999999999999992
+      ],
+      "stored_horizon": {
+        "j_h": 112.80750923,
+        "x_h": 2.3626349485
+      },
+      "horizon_error_sites": 9.261830584250674e-06,
+      "geodesic": {
+        "first_time": 0.0,
+        "last_time": 10.0,
+        "initial_j": 150.00000000048735,
+        "last_x": 5.1397164495,
+        "max_path_error_x": 5.845901540624254e-11,
+        "max_path_error_sites": 2.7912123810566295e-09
+      },
+      "conservation_and_boundary": {
+        "integrated_energy_mean": 0.3480900426189872,
+        "relative_peak_to_peak_energy_drift": 3.816680225666256e-12,
+        "selected_branch": "H_m",
+        "final_edge_fraction_10_sites_each_side": 0.0018140117998828617,
+        "first_time_edge_fraction_gt_0.01": null,
+        "first_time_edge_fraction_gt_0.05": null,
+        "first_time_edge_fraction_gt_0.1": null
+      }
+    },
+    "FIG3a": {
+      "effective_beta_A_B_C_x0": [
+        0.6,
+        3.0,
+        0.6,
+        4.1887902047863905
+      ],
+      "analytic_horizon": {
+        "x_h": 4.457029856858741,
+        "j_h": 212.80749996816942,
+        "kappa": 0.9999999999999992
+      },
+      "selected_branch_horizon": null,
+      "stored_horizon": {
+        "j_h": 212.80750899,
+        "x_h": 4.4570300457
+      },
+      "horizon_error_sites": 9.02183057860384e-06,
+      "geodesic": {
+        "first_time": 0.0,
+        "last_time": 3.8124728358,
+        "initial_j": 59.999999998285084,
+        "last_x": 6.2831853072,
+        "max_path_error_x": 1.4297540928964736e-10,
+        "max_path_error_sites": 6.826572938710282e-09
+      },
+      "conservation_and_boundary": {
+        "integrated_energy_mean": 1.7963696328577698,
+        "relative_peak_to_peak_energy_drift": 8.035717984837168e-13,
+        "selected_branch": "H_p",
+        "final_edge_fraction_10_sites_each_side": 0.5149966399015595,
+        "first_time_edge_fraction_gt_0.01": 2.88,
+        "first_time_edge_fraction_gt_0.05": 3.0999999999999996,
+        "first_time_edge_fraction_gt_0.1": 3.23
+      }
+    },
+    "FIG3b": {
+      "effective_beta_A_B_C_x0": [
+        0.6,
+        3.0,
+        0.6,
+        4.1887902047863905
+      ],
+      "analytic_horizon": {
+        "x_h": 4.457029856858741,
+        "j_h": 212.80749996816942,
+        "kappa": 0.9999999999999992
+      },
+      "selected_branch_horizon": [
+        4.457029856858741,
+        212.80749996816942,
+        0.9999999999999992
+      ],
+      "stored_horizon": {
+        "j_h": 212.80750899,
+        "x_h": 4.4570300457
+      },
+      "horizon_error_sites": 9.02183057860384e-06,
+      "geodesic": {
+        "first_time": 0.0,
+        "last_time": 1.0,
+        "initial_j": 120.00000000134482,
+        "last_x": 1.513282712,
+        "max_path_error_x": 9.621592411690472e-11,
+        "max_path_error_sites": 4.5939719782080275e-09
+      },
+      "conservation_and_boundary": {
+        "integrated_energy_mean": 1.7965409199853617,
+        "relative_peak_to_peak_energy_drift": 6.834838280471938e-13,
+        "selected_branch": "H_m",
+        "final_edge_fraction_10_sites_each_side": 1.2536744597818451e-05,
+        "first_time_edge_fraction_gt_0.01": null,
+        "first_time_edge_fraction_gt_0.05": null,
+        "first_time_edge_fraction_gt_0.1": null
+      }
+    },
+    "FIG3c": {
+      "effective_beta_A_B_C_x0": [
+        0.6,
+        3.0,
+        0.6,
+        2.0943951023931953
+      ],
+      "analytic_horizon": {
+        "x_h": 2.3626347544655455,
+        "j_h": 112.80749996816941,
+        "kappa": 0.9999999999999992
+      },
+      "selected_branch_horizon": null,
+      "stored_horizon": {
+        "j_h": 112.80750923,
+        "x_h": 2.3626349485
+      },
+      "horizon_error_sites": 9.261830584250674e-06,
+      "geodesic": {
+        "first_time": 0.0,
+        "last_time": 1.0,
+        "initial_j": 150.00000000048735,
+        "last_x": 5.3414229584,
+        "max_path_error_x": 1.5852119616965865e-10,
+        "max_path_error_sites": 7.56882958657236e-09
+      },
+      "conservation_and_boundary": {
+        "integrated_energy_mean": 3.9353002680198026,
+        "relative_peak_to_peak_energy_drift": 3.0750972338133e-13,
+        "selected_branch": "H_p",
+        "final_edge_fraction_10_sites_each_side": 0.016718426472379495,
+        "first_time_edge_fraction_gt_0.01": 0.97,
+        "first_time_edge_fraction_gt_0.05": null,
+        "first_time_edge_fraction_gt_0.1": null
+      }
+    },
+    "FIG3d": {
+      "effective_beta_A_B_C_x0": [
+        0.6,
+        3.0,
+        0.6,
+        2.0943951023931953
+      ],
+      "analytic_horizon": {
+        "x_h": 2.3626347544655455,
+        "j_h": 112.80749996816941,
+        "kappa": 0.9999999999999992
+      },
+      "selected_branch_horizon": [
+        2.3626347544655455,
+        112.80749996816941,
+        0.9999999999999992
+      ],
+      "stored_horizon": {
+        "j_h": 112.80750923,
+        "x_h": 2.3626349485
+      },
+      "horizon_error_sites": 9.261830584250674e-06,
+      "geodesic": {
+        "first_time": 0.0,
+        "last_time": 10.0,
+        "initial_j": 150.00000000048735,
+        "last_x": 5.1397164495,
+        "max_path_error_x": 5.845901540624254e-11,
+        "max_path_error_sites": 2.7912123810566295e-09
+      },
+      "conservation_and_boundary": {
+        "integrated_energy_mean": 0.3479129614236598,
+        "relative_peak_to_peak_energy_drift": 6.8147411655180355e-12,
+        "selected_branch": "H_m",
+        "final_edge_fraction_10_sites_each_side": 0.007105795851468239,
+        "first_time_edge_fraction_gt_0.01": null,
+        "first_time_edge_fraction_gt_0.05": null,
+        "first_time_edge_fraction_gt_0.1": null
+      }
+    },
+    "FIG6a": {
+      "effective_beta_A_B_C_x0": [
+        -0.6,
+        3.0,
+        -0.6,
+        4.1887902047863905
+      ],
+      "analytic_horizon": {
+        "x_h": 4.457029856858741,
+        "j_h": 212.80749996816942,
+        "kappa": 0.9999999999999992
+      },
+      "selected_branch_horizon": [
+        4.457029856858741,
+        212.80749996816942,
+        0.9999999999999992
+      ],
+      "stored_horizon": {
+        "j_h": 212.80750899,
+        "x_h": 4.4570300457
+      },
+      "horizon_error_sites": 9.02183057860384e-06,
+      "geodesic": {
+        "first_time": 0.0,
+        "last_time": 8.0,
+        "initial_j": 59.999999998285084,
+        "last_x": 4.4556539162,
+        "max_path_error_x": 9.596723415938868e-11,
+        "max_path_error_sites": 4.5820979073972304e-09
+      },
+      "conservation_and_boundary": {
+        "integrated_energy_mean": 1.7928751083184207,
+        "relative_peak_to_peak_energy_drift": 6.37818947933332e-13,
+        "selected_branch": "H_p",
+        "final_edge_fraction_10_sites_each_side": 1.1136270715545248e-06,
+        "first_time_edge_fraction_gt_0.01": null,
+        "first_time_edge_fraction_gt_0.05": null,
+        "first_time_edge_fraction_gt_0.1": null
+      }
+    },
+    "FIG7": {
+      "effective_beta_A_B_C_x0": [
+        -0.6,
+        3.0,
+        -0.6,
+        4.1887902047863905
+      ],
+      "analytic_horizon": {
+        "x_h": 4.457029856858741,
+        "j_h": 212.80749996816942,
+        "kappa": 0.9999999999999992
+      },
+      "selected_branch_horizon": [
+        4.457029856858741,
+        212.80749996816942,
+        0.9999999999999992
+      ],
+      "stored_horizon": {
+        "j_h": 212.80750899,
+        "x_h": 4.4570300457
+      },
+      "horizon_error_sites": 9.02183057860384e-06,
+      "geodesic": {
+        "first_time": 0.0,
+        "last_time": 8.0,
+        "initial_j": 59.999999998285084,
+        "last_x": 4.4556539162,
+        "max_path_error_x": 9.596723415938868e-11,
+        "max_path_error_sites": 4.5820979073972304e-09
+      },
+      "conservation_and_boundary": {
+        "integrated_energy_mean": 1.7963692980011323,
+        "relative_peak_to_peak_energy_drift": 9.967703723877063e-13,
+        "selected_branch": "H_p",
+        "final_edge_fraction_10_sites_each_side": 0.12843077629813623,
+        "first_time_edge_fraction_gt_0.01": 6.78,
+        "first_time_edge_fraction_gt_0.05": 7.47,
+        "first_time_edge_fraction_gt_0.1": 7.85
+      }
+    }
+  },
+  "surface_gravity": {
+    "current_density": {
+      "p0": {
+        "amplitude": 0.018257986765979818,
+        "kappa_fit": 1.0332160875779326,
+        "relative_error_percent": 3.3216087577932596,
+        "r_squared": 0.9999566317555115
+      },
+      "p1": {
+        "amplitude": 0.19175836317120343,
+        "kappa_fit": 0.951380051790941,
+        "relative_error_percent": 4.861994820905902,
+        "r_squared": 0.9944036739206088
+      }
+    },
+    "pre_density_fix": {
+      "p0": {
+        "amplitude": 0.019339386443754093,
+        "kappa_fit": 1.0029525448255012,
+        "relative_error_percent": 0.29525448255012243,
+        "r_squared": 0.9999681397593844
+      },
+      "p1": {
+        "amplitude": 0.20958675725427126,
+        "kappa_fit": 0.9036041812501162,
+        "relative_error_percent": 9.639581874988378,
+        "r_squared": 0.9946962514033469
+      }
+    }
+  },
+  "fig4_fft_times": {
+    "requested_times": [
+      0.0,
+      3.0,
+      3.5,
+      4.0
+    ],
+    "legacy_selected_times": [
+      0.01,
+      3.01,
+      3.51,
+      3.9899999999999998
+    ],
+    "k_d_analytic": 1.1713710869143017,
+    "k_d_fft_grid": 1.1728612573401895,
+    "max_spectrum_difference_by_time": [
+      0.0024381500641815212,
+      0.006995505351875347,
+      0.01298749499803753,
+      0.017226307689049647
+    ],
+    "exact_normalized_amplitude_at_kd": [
+      2.6203567976320782e-06,
+      0.19346574918843884,
+      0.8122225908881477,
+      0.984393784571267
+    ],
+    "legacy_normalized_amplitude_at_kd": [
+      3.933269926132977e-06,
+      0.20031317286283976,
+      0.8200925873078276,
+      0.9858614075732453
+    ]
+  },
+  "fig6b": {
+    "L_values": [
+      100,
+      200,
+      300,
+      400,
+      500,
+      600,
+      700,
+      800
+    ],
+    "T_lat": [
+      0.4187956650424578,
+      0.8267658867157457,
+      1.0999514213785022,
+      1.2867941387781485,
+      1.5065238384628201,
+      1.7024348868113082,
+      1.8682787678703074,
+      2.0484864809466874
+    ],
+    "linear_fit_slope": 0.7723754107545182,
+    "linear_fit_intercept": -3.2360081436083195,
+    "linear_fit_r_squared": 0.9780763401307424,
+    "curvature_threshold": 0.1,
+    "t_in_spatial_boundary": 4.18570343212366,
+    "beta_inflection_x0": 4.1887902047863905,
+    "white_hole_horizon_x": 4.457029856858741,
+    "abs_beta_second_at_boundary": 0.10000000000000211,
+    "abs_beta_second_at_horizon": 3.9999999999999996
+  }
+}

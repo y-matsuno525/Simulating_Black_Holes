@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import io
+import json
 from pathlib import Path
 import sys
 
@@ -25,6 +26,9 @@ except ImportError:
 
 
 RUN_ROOT = REPO / "paper_reproduction" / "runs"
+FIT_OUTPUT_DIR = RUN_ROOT / "FIG5_fit"
+PANEL_OUTPUT_DIR = REPO / "paper_figures" / "generated" / "panels" / "FIG5"
+PAPER_FIGURE_PATH = REPO / "paper" / "figure" / "sg.png"
 
 SG_SETTINGS = {
     "L": 500,
@@ -119,7 +123,14 @@ def _panel(ax, sigma_path, *, ell, L, panel_tag):
     ax.grid(True, alpha=0.3)
     ax.legend(loc="upper left")
     ax.text(-0.13, 1.04, panel_tag, transform=ax.transAxes, fontsize=11)
-    return kappa
+    return {
+        "kappa_fit": float(kappa),
+        "relative_error_percent": float(rel_err),
+        "prefactor_from_free_fit": float(A),
+        "first_time": float(times[0]),
+        "last_time": float(times[-1]),
+        "sample_count": int(len(times)),
+    }
 
 
 def main(argv: list[str] | None = None):
@@ -144,23 +155,46 @@ def main(argv: list[str] | None = None):
     p1 = PAPER_DATA / "H_m_sigmas_p1.txt"
 
     fig, axes = plt.subplots(1, 2, figsize=(6.2, 2.6), constrained_layout=True)
+    results = {}
     if p0.exists():
-        k0 = _panel(axes[0], p0, ell=ELL_DEFAULT, L=SG_SETTINGS["L"], panel_tag="(a)")
-        print(f"[sg] p=0 kappa_fit = {k0:.4f}")
+        results["p0"] = _panel(
+            axes[0], p0, ell=ELL_DEFAULT, L=SG_SETTINGS["L"], panel_tag="(a)"
+        )
+        print(f"[sg] p=0 kappa_fit = {results['p0']['kappa_fit']:.4f}")
     else:
         axes[0].set_title("(a) p=0 (data missing)")
     if p1.exists():
-        k1 = _panel(axes[1], p1, ell=ELL_DEFAULT, L=SG_SETTINGS["L"], panel_tag="(b)")
-        print(f"[sg] p=1 kappa_fit = {k1:.4f}")
+        results["p1"] = _panel(
+            axes[1], p1, ell=ELL_DEFAULT, L=SG_SETTINGS["L"], panel_tag="(b)"
+        )
+        print(f"[sg] p=1 kappa_fit = {results['p1']['kappa_fit']:.4f}")
     else:
         axes[1].set_title("(b) p=1 (data missing)")
 
     out_base = ensure_fig_dir() / "sg"
+    PANEL_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     for ext in ("pdf", "png"):
         out = out_base.with_suffix(f".{ext}")
         fig.savefig(out, dpi=600 if ext == "png" else None, bbox_inches="tight")
+        fig.savefig(
+            PANEL_OUTPUT_DIR / f"FIG5.{ext}",
+            dpi=600 if ext == "png" else None,
+            bbox_inches="tight",
+        )
         print(f"[sg] saved -> {out}")
+    PAPER_FIGURE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(PAPER_FIGURE_PATH, dpi=600, bbox_inches="tight")
     plt.close(fig)
+
+    FIT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    fit_summary = {
+        "settings": SG_SETTINGS,
+        "analytical_kappa": 1.0,
+        "width_conversion": "delta_sigma_physical=(ell/L)*delta_sigma_lattice",
+        "fits": results,
+    }
+    with (FIT_OUTPUT_DIR / "fit_summary.json").open("w", encoding="utf-8") as handle:
+        json.dump(fit_summary, handle, indent=2)
 
 
 if __name__ == "__main__":
